@@ -5,3 +5,4 @@ environment:
 
 workspace:
   - packages/dart_analyzer_kit
+  - packages/analyzer_kit_annotation

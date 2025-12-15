@@ -1,5 +1,6 @@
 {
   "roots": [
+    "analyzer_kit_annotation",
     "analyzer_kit_workspace",
     "dart_analyzer_kit"
   ],
@@ -18,6 +19,15 @@
         "analyzer",
         "analyzer_plugin"
       ],
+      "devDependencies": [
+        "lints",
+        "test"
+      ]
+    },
+    {
+      "name": "analyzer_kit_annotation",
+      "version": "1.0.0",
+      "dependencies": [],
       "devDependencies": [
         "lints",
         "test"

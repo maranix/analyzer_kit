@@ -1,0 +1,19 @@
+name: analyzer_kit_annotation
+description: A collection of annotations for analyzer_kit.
+version: 1.0.0
+repository: https://github.com/maranix/analyzer_kit/tree/main/packages/analyzer_kit_annotation
+homepage: https://github.com/maranix/analyzer_kit/tree/main/packages/analyzer_kit_annotation
+issue_tracker: https://github.com/maranix/analyzer_kit/tree/main/packages/analyzer_kit_annotation
+
+environment:
+  sdk: ^3.10.4
+
+resolution: workspace
+
+# Add regular dependencies here.
+dependencies:
+  # path: ^1.9.0
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.6

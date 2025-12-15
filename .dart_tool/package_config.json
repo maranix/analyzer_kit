@@ -324,6 +324,12 @@
       "rootUri": "../packages/dart_analyzer_kit",
       "packageUri": "lib/",
       "languageVersion": "3.10"
+    },
+    {
+      "name": "analyzer_kit_annotation",
+      "rootUri": "../packages/analyzer_kit_annotation",
+      "packageUri": "lib/",
+      "languageVersion": "3.10"
     }
   ],
   "generator": "pub",

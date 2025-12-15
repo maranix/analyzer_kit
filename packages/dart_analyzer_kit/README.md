@@ -17,6 +17,7 @@ Add the package to your `pubspec.yaml` as a dev dependency:
 ```yaml
 dev_dependencies:
   dart_analyzer_kit: ^1.0.0
+  analyzer_kit_annotation: ^1.0.0
 ```
 
 Enable the plugin in your `analysis_options.yaml`:
