@@ -4,7 +4,7 @@ import 'package:analysis_server_plugin/edit/dart/dart_fix_kind_priority.dart'
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer_plugin/utilities/change_builder/change_builder_core.dart';
 import 'package:analyzer_plugin/utilities/fixes/fixes.dart';
-import '../utils/utils.dart' show hasAnnotation, hasMethod;
+import '../utils/utils.dart' show hasAnnotation, hasMethod, formatCode;
 
 final class AddCopyWithMethod extends ResolvedCorrectionProducer {
   AddCopyWithMethod({required super.context});
@@ -47,31 +47,33 @@ final class AddCopyWithMethod extends ResolvedCorrectionProducer {
 
     await builder.addDartFileEdit(file, (fileEditBuilder) {
       fileEditBuilder.insertMethod(declaration, (editBuilder) {
-        editBuilder.write('$className copyWith({');
+        final codeBuf = StringBuffer('$className copyWith({');
 
         for (final (i, field) in fields.indexed) {
           final type = field.type;
           final fieldName = field.displayName;
           final trailingComma = i < fields.length - 1 ? ',' : '';
 
-          editBuilder.writeln("$type? $fieldName$trailingComma");
+          codeBuf.writeln("$type? $fieldName$trailingComma");
         }
 
-        editBuilder.writeln('}) {');
+        codeBuf.writeln('}) {');
 
-        editBuilder.write('return $className(');
+        codeBuf.write('return $className(');
 
         for (final (i, field) in fields.indexed) {
           final fieldName = field.displayName;
           final trailingComma = i < fields.length - 1 ? ',' : '';
 
-          editBuilder.writeln(
+          codeBuf.writeln(
             '$fieldName: $fieldName ?? this.$fieldName$trailingComma',
           );
         }
 
-        editBuilder.writeln(');');
-        editBuilder.writeln('}');
+        codeBuf.writeln(');');
+        codeBuf.writeln('}');
+
+        editBuilder.write(formatCode(codeBuf.toString()));
       });
     });
   }
