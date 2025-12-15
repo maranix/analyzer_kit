@@ -4,7 +4,9 @@ import 'package:analysis_server_plugin/edit/dart/dart_fix_kind_priority.dart'
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer_plugin/utilities/change_builder/change_builder_core.dart';
 import 'package:analyzer_plugin/utilities/fixes/fixes.dart';
-import '../utils/utils.dart' show hasAnnotation, hasMethod, formatCode;
+import '../enums.dart';
+import '../utils/code_gen_utils.dart';
+import '../utils/utils.dart' show hasAnnotation, hasMethod;
 
 final class AddCopyWithMethod extends ResolvedCorrectionProducer {
   AddCopyWithMethod({required super.context});
@@ -32,7 +34,7 @@ final class AddCopyWithMethod extends ResolvedCorrectionProducer {
 
     final element = fragment.element;
 
-    if (!hasAnnotation(element, .copyWith)) return;
+    if (!hasAnnotation(element, Annotations.copyWith)) return;
     if (hasMethod(element, "copyWith")) return;
 
     final hasGenerativeConstructor = element.constructors.any(
@@ -43,37 +45,9 @@ final class AddCopyWithMethod extends ResolvedCorrectionProducer {
     final fields = element.fields.where((f) => !f.isStatic && !f.isSynthetic);
     if (fields.isEmpty) return;
 
-    final className = element.displayName;
-
     await builder.addDartFileEdit(file, (fileEditBuilder) {
       fileEditBuilder.insertMethod(declaration, (editBuilder) {
-        final codeBuf = StringBuffer('$className copyWith({');
-
-        for (final (i, field) in fields.indexed) {
-          final type = field.type;
-          final fieldName = field.displayName;
-          final trailingComma = i < fields.length - 1 ? ',' : '';
-
-          codeBuf.writeln("$type? $fieldName$trailingComma");
-        }
-
-        codeBuf.writeln('}) {');
-
-        codeBuf.write('return $className(');
-
-        for (final (i, field) in fields.indexed) {
-          final fieldName = field.displayName;
-          final trailingComma = i < fields.length - 1 ? ',' : '';
-
-          codeBuf.writeln(
-            '$fieldName: $fieldName ?? this.$fieldName$trailingComma',
-          );
-        }
-
-        codeBuf.writeln(');');
-        codeBuf.writeln('}');
-
-        editBuilder.write(formatCode(codeBuf.toString()));
+        editBuilder.write(generateCopyWithMethod(element));
       });
     });
   }

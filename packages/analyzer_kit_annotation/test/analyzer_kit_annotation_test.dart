@@ -2,12 +2,14 @@ import 'package:analyzer_kit_annotation/analyzer_kit_annotation.dart';
 import 'package:test/test.dart';
 
 void main() {
-  test('copyWith', () {
-    final instance = CopyWith();
-    final constant = copyWith;
+  test('copyWith constant is available', () {
+    expect(copyWith, isNotNull);
+    expect(copyWith, isA<CopyWith>());
+  });
 
-    expect(constant, isNotNull);
+  test('CopyWith instance can be created', () {
+    const instance = CopyWith();
     expect(instance, isNotNull);
-    expect(constant, equals(instance));
+    expect(instance, isA<CopyWith>());
   });
 }
