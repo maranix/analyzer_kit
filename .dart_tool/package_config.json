@@ -330,6 +330,12 @@
       "rootUri": "../packages/analyzer_kit_annotation",
       "packageUri": "lib/",
       "languageVersion": "3.10"
+    },
+    {
+      "name": "copy_with_demo",
+      "rootUri": "../examples/copy_with_demo",
+      "packageUri": "lib/",
+      "languageVersion": "3.10"
     }
   ],
   "generator": "pub",

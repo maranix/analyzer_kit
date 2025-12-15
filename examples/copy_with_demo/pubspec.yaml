@@ -1,4 +1,4 @@
-name: demo
+name: copy_with_demo
 description: A sample command-line application.
 version: 1.0.0
 publish_to: none
@@ -6,9 +6,10 @@ publish_to: none
 environment:
   sdk: ^3.10.4
 
+resolution: workspace
+
 dependencies:
-  dart_analyzer_kit:
-    path: ../
+  analyzer_kit_annotation: any
 
 dev_dependencies:
   lints: ^6.0.0

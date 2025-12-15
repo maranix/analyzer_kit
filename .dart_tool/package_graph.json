@@ -2,6 +2,7 @@
   "roots": [
     "analyzer_kit_annotation",
     "analyzer_kit_workspace",
+    "copy_with_demo",
     "dart_analyzer_kit"
   ],
   "packages": [
@@ -28,6 +29,17 @@
       "name": "analyzer_kit_annotation",
       "version": "1.0.0",
       "dependencies": [],
+      "devDependencies": [
+        "lints",
+        "test"
+      ]
+    },
+    {
+      "name": "copy_with_demo",
+      "version": "1.0.0",
+      "dependencies": [
+        "analyzer_kit_annotation"
+      ],
       "devDependencies": [
         "lints",
         "test"
