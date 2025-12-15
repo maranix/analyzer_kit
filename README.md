@@ -1,39 +1,28 @@
-<!-- 
-This README describes the package. If you publish this package to pub.dev,
-this README's contents appear on the landing page for your package.
+# Analyzer Kit
 
-For information about how to write a good package README, see the guide for
-[writing package pages](https://dart.dev/tools/pub/writing-package-pages). 
+This repository contains the source code for the `analyzer_kit` project, organized as a Dart workspace.
 
-For general information about developing packages, see the Dart guide for
-[creating packages](https://dart.dev/guides/libraries/create-packages)
-and the Flutter guide for
-[developing packages and plugins](https://flutter.dev/to/develop-packages). 
--->
+## Packages
 
-TODO: Put a short description of the package here that helps potential users
-know whether this package might be useful for them.
+- [dart_analyzer_kit](packages/dart_analyzer_kit): A Dart Analyzer plugin providing various utilities, including lint rules and quick fixes.
 
-## Features
+## Development
 
-TODO: List what your package can do. Maybe include images, gifs, or videos.
+This project is configured as a Dart workspace.
 
-## Getting started
+### Getting Started
 
-TODO: List prerequisites and provide or point to information on how to
-start using the package.
+1.  **Resolve Dependencies**:
+    Run `dart pub get` from the root directory to resolve dependencies for all packages in the workspace.
 
-## Usage
+    ```bash
+    dart pub get
+    ```
 
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder. 
+2.  **Running Tests**:
+    Navigate to the specific package directory to run tests.
 
-```dart
-const like = 'sample';
-```
-
-## Additional information
-
-TODO: Tell users more about the package: where to find more information, how to 
-contribute to the package, how to file issues, what response they can expect 
-from the package authors, and more.
+    ```bash
+    cd packages/dart_analyzer_kit
+    dart test
+    ```

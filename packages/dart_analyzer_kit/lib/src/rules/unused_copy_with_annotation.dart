@@ -5,8 +5,8 @@ import 'package:analyzer/dart/ast/ast.dart' show Annotation;
 import 'package:analyzer/dart/ast/visitor.dart' show GeneralizingAstVisitor;
 import 'package:analyzer/error/error.dart' show DiagnosticCode, LintCode;
 
-import 'package:dart_analyzer_toolkit/src/enums.dart';
-import 'package:dart_analyzer_toolkit/src/utils/utils.dart';
+import '../enums.dart';
+import '../utils/utils.dart';
 
 final class UnusedCopyWithAnnotation extends AnalysisRule {
   UnusedCopyWithAnnotation()

@@ -1,4 +1,4 @@
-import 'package:dart_analyzer_toolkit/dart_analyzer_toolkit.dart';
+import 'package:dart_analyzer_kit/dart_analyzer_kit.dart';
 
 @CopyWith()
 final class User {

@@ -7,7 +7,7 @@ environment:
   sdk: ^3.10.4
 
 dependencies:
-  dart_analyzer_toolkit:
+  dart_analyzer_kit:
     path: ../
 
 dev_dependencies:

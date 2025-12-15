@@ -1,0 +1,27 @@
+name: dart_analyzer_kit
+description: A Dart Analyzer plugin providing various utilities, including lint rules and quick fixes.
+version: 1.0.0
+homepage: https://github.com/maranix/analyzer_kit/tree/main/packages/dart_analyzer_kit
+repository: https://github.com/maranix/analyzer_kit/tree/main/packages/dart_analyzer_kit
+issues: https://github.com/maranix/analyzer_kit/tree/main/packages/dart_analyzer_kit/issues
+
+topics:
+  - analyzer
+  - copyWith
+  - dataclass
+  - equals
+  - hashCode
+
+environment:
+  sdk: ^3.10.4
+
+resolution: workspace
+
+dependencies:
+  analysis_server_plugin: ^0.3.4
+  analyzer: ^9.0.0
+  analyzer_plugin: ^0.13.11
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.6
