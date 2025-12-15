@@ -1,0 +1,7 @@
+include: package:lints/recommended.yaml
+
+plugins:
+  dart_analyzer_toolkit:
+    path: ../
+    diagnostics:
+      unused_copy_with_annotation: true

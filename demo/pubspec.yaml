@@ -1,0 +1,15 @@
+name: demo
+description: A sample command-line application.
+version: 1.0.0
+publish_to: none
+
+environment:
+  sdk: ^3.10.4
+
+dependencies:
+  dart_analyzer_toolkit:
+    path: ../
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.6

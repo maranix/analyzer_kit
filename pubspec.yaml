@@ -1,0 +1,19 @@
+name: dart_analyzer_toolkit
+description: TBD 
+version: 1.0.0
+homepage: https://github.com/maranix/dart_analyzer_toolkit
+repository: https://github.com/maranix/dart_analyzer_toolkit
+issues: https://github.com/maranix/dart_analyzer_toolkit/issues
+publish_to: none
+
+environment:
+  sdk: ^3.10.4
+
+dependencies:
+  analysis_server_plugin: ^0.3.4
+  analyzer: ^9.0.0
+  analyzer_plugin: ^0.13.11
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.6
