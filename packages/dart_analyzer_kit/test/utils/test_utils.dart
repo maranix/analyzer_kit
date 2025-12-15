@@ -2,12 +2,13 @@ import 'package:analyzer/dart/analysis/analysis_context_collection.dart';
 import 'package:analyzer/dart/analysis/results.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/file_system/physical_file_system.dart';
-import 'package:path/path.dart' as p;
 import 'dart:io';
 
 Future<ResolvedLibraryResult> getResolvedLibrary(String content) async {
   final tempDir = Directory.systemTemp.createTempSync('dart_analyzer_kit_test');
-  final file = File(p.join(tempDir.path, 'lib', 'test.dart'));
+  final file = File(
+    [tempDir.path, 'lib', 'test.dart'].join(Platform.pathSeparator),
+  );
   file.createSync(recursive: true);
   file.writeAsStringSync(content);
 
