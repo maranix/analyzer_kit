@@ -36,10 +36,11 @@ final class _AnnotationVisitor extends GeneralizingAstVisitor<void> {
     final declaration = node.thisOrAncestorOfType<ClassDeclaration>();
     if (declaration == null) return;
 
-    if (!declaration.hasAnnotation(.debugString)) return;
-    print("Found Anotation");
-    if (declaration.hasMethod("toString")) return;
-    print("Method not found");
+    final hasEqualityOverride = declaration.hasMethod("==");
+    final hasHashCodeOverride = declaration.hasGetter("hashCode");
+
+    print("Equality: $hasEqualityOverride");
+    print("HashCode: $hasHashCodeOverride");
 
     final fields = declaration.fields
         .map(ClassField.fromFieldDeclaration)
@@ -52,6 +53,7 @@ final class _AnnotationVisitor extends GeneralizingAstVisitor<void> {
               !f.isLate,
         );
 
-    print(generateToStringMethod(declaration.name.lexeme, fields));
+    print(generateHashCodeOverride(fields));
+    print(generateEqualityOperatorOverride(declaration.name.lexeme, fields));
   }
 }

@@ -1,8 +1,6 @@
 import 'package:analyzer_kit_annotation/analyzer_kit_annotation.dart';
 
-@copyWith
-@serialize
-@debugString
+@overrideEquality
 final class User {
   User({required this.name, this.age});
 
@@ -10,12 +8,12 @@ final class User {
 
   int? age;
 
-  User copyWith({String? name, int? age}) {
-    return User(name: name ?? this.name, age: age ?? this.age);
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is User && other.name == name && other.age == age;
   }
 
-  Map<String, dynamic> toMap() => {'name': name, 'age': age};
-
   @override
-  String toString() => "User(name: $name, age: $age)";
+  int get hashCode => Object.hashAll([name, age]);
 }

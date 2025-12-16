@@ -71,3 +71,56 @@ String generateToStringMethod(String className, Iterable<ClassField> fields) {
 
   return formatCode("${method.accept(dartEmitter)}");
 }
+
+String generateHashCodeOverride(Iterable<ClassField> fields) {
+  final override = Method(
+    (b) => b
+      ..type = .getter
+      ..annotations.add(refer("override"))
+      ..returns = refer("int")
+      ..name = "hashCode"
+      ..lambda = true
+      ..body = refer(
+        'Object.hashAll',
+      ).call([literalList(fields.map((f) => refer(f.name)))]).statement,
+  );
+
+  return formatCode("${override.accept(dartEmitter)}");
+}
+
+String generateEqualityOperatorOverride(
+  String className,
+  Iterable<ClassField> fields,
+) {
+  final codeBuf = StringBuffer("\nif (identical(this, other)) return true;");
+
+  codeBuf.writeln();
+  codeBuf.writeln("return other is $className");
+  codeBuf.writeln();
+
+  for (final field in fields) {
+    codeBuf.writeln("&& other.${field.name} == ${field.name}");
+    codeBuf.writeln();
+  }
+
+  codeBuf.write(';');
+
+  final override = Method(
+    (b) => b
+      ..annotations.add(refer("override"))
+      ..returns = refer("bool")
+      ..name = "operator =="
+      ..requiredParameters.add(
+        Parameter(
+          (b) => b
+            ..name = "other"
+            ..type = refer("Object"),
+        ),
+      )
+      ..body = Code(codeBuf.toString()),
+  );
+
+  // Cannot run format here because `==` override expects to be inside a class
+  // Which isn't the case here since we are generating it outside of a class manually.
+  return "${override.accept(dartEmitter)}";
+}
