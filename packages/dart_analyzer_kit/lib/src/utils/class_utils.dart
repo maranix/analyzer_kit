@@ -1,10 +1,21 @@
 part of 'utils.dart';
 
-bool hasAnnotation(ClassElement element, Annotations annotation) =>
-    element.metadata.annotations.any(
-      (a) =>
-          stringsMatchByCharCode(a.element?.displayName ?? "", annotation.name),
-    );
+extension ClassDeclarationExtension on ClassDeclaration {
+  bool hasAnnotation(Annotations annotation) =>
+      metadata.any((a) => stringsMatchByCharCode(a.name.name, annotation.name));
 
-bool hasMethod(ClassElement element, String methodName) =>
-    element.getMethod(methodName) != null;
+  bool hasMethod(String methodName) =>
+      methods.any((m) => stringsMatchByCharCode(m.name.lexeme, methodName));
+
+  Iterable<MethodDeclaration> get methods =>
+      members.whereType<MethodDeclaration>();
+
+  Iterable<FieldDeclaration> get fields =>
+      members.whereType<FieldDeclaration>();
+}
+
+extension VariableDeclarationX on VariableDeclaration {
+  bool get isPrivate => name.lexeme.startsWith('_');
+
+  bool get isPublic => !isPrivate;
+}

@@ -1,4 +1,9 @@
-import 'package:analyzer/dart/element/element.dart';
+import 'package:analyzer/dart/ast/ast.dart'
+    show
+        ClassDeclaration,
+        FieldDeclaration,
+        MethodDeclaration,
+        VariableDeclaration;
 import 'package:dart_style/dart_style.dart';
 import 'package:dart_analyzer_kit/src/enums.dart';
 

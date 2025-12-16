@@ -1,20 +1,16 @@
-import 'package:analyzer/dart/element/element.dart';
+import 'package:dart_analyzer_kit/src/types.dart';
 import 'package:dart_analyzer_kit/src/utils/utils.dart';
 
-String generateCopyWithMethod(ClassElement element) {
-  final fields = element.fields.where((f) => !f.isStatic && !f.isSynthetic);
-  final className = element.displayName;
-
+String generateCopyWithMethod(String className, Iterable<ClassField> fields) {
   final codeBuf = StringBuffer('$className copyWith({');
 
   for (final (i, field) in fields.indexed) {
     final type = field.type;
-    final fieldName = field.displayName;
+    final fieldName = field.name;
     final trailingComma = i < fields.length - 1 ? ',' : '';
 
     // Avoid double-nullable types like `String??`
-    final typeStr = type.getDisplayString();
-    final paramType = typeStr.endsWith('?') ? typeStr : '$typeStr?';
+    final paramType = type.endsWith('?') ? type : '$type?';
 
     codeBuf.writeln("$paramType $fieldName$trailingComma");
   }
@@ -24,7 +20,7 @@ String generateCopyWithMethod(ClassElement element) {
   codeBuf.write('return $className(');
 
   for (final (i, field) in fields.indexed) {
-    final fieldName = field.displayName;
+    final fieldName = field.name;
     final trailingComma = i < fields.length - 1 ? ',' : '';
 
     codeBuf.writeln('$fieldName: $fieldName ?? this.$fieldName$trailingComma');
