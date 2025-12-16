@@ -15,9 +15,9 @@ final class UnusedCopyWithAnnotation extends AnalysisRule {
 
   static const diagCode = LintCode(
     "unused_copy_with_annotation",
-    "CopyWith annotation used but no such method found",
+    "Classes annotated with `@copyWith` or `@CopyWith()` must have a `copyWith` method.",
     severity: .WARNING,
-    correctionMessage: "Either remove the annotation or add this method",
+    correctionMessage: "Either remove the annotation or add `copyWith` method",
   );
 
   @override

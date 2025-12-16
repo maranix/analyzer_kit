@@ -4,9 +4,10 @@ import 'package:analysis_server_plugin/edit/dart/dart_fix_kind_priority.dart'
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer_plugin/utilities/change_builder/change_builder_core.dart';
 import 'package:analyzer_plugin/utilities/fixes/fixes.dart';
-import '../enums.dart';
-import '../utils/code_gen_utils.dart';
-import '../utils/utils.dart' show hasAnnotation, hasMethod;
+import 'package:dart_analyzer_kit/src/enums.dart';
+import 'package:dart_analyzer_kit/src/utils/code_gen_utils.dart';
+import 'package:dart_analyzer_kit/src/utils/utils.dart'
+    show hasAnnotation, hasMethod;
 
 final class AddCopyWithMethod extends ResolvedCorrectionProducer {
   AddCopyWithMethod({required super.context});
@@ -14,7 +15,7 @@ final class AddCopyWithMethod extends ResolvedCorrectionProducer {
   static const _fix = FixKind(
     'dart.fix.addCopyWithMethod',
     DartFixKindPriority.standard,
-    "Add copyWith method in annotated class",
+    "Add `copyWith` method",
   );
 
   @override
@@ -42,7 +43,9 @@ final class AddCopyWithMethod extends ResolvedCorrectionProducer {
     );
     if (!hasGenerativeConstructor) return;
 
-    final fields = element.fields.where((f) => !f.isStatic && !f.isSynthetic);
+    final fields = element.fields.where(
+      (f) => f.isPublic && !f.isLate && !f.isStatic && !f.isSynthetic,
+    );
     if (fields.isEmpty) return;
 
     await builder.addDartFileEdit(file, (fileEditBuilder) {
