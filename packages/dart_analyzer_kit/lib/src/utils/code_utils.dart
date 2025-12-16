@@ -1,9 +1,13 @@
 part of 'utils.dart';
 
-final _codeFormatter = DartFormatter(
+// Global Singleton
+final codeFormatter = DartFormatter(
   languageVersion: DartFormatter.latestLanguageVersion,
 );
 
+// Global Singleton
+final dartEmitter = DartEmitter();
+
 String formatCode(String code) {
-  return _codeFormatter.format(code);
+  return codeFormatter.format(code);
 }

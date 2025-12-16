@@ -2,6 +2,7 @@ import 'package:analyzer_kit_annotation/analyzer_kit_annotation.dart';
 
 @copyWith
 @serialize
+@debugString
 final class User {
   User({required this.name, this.age});
 
@@ -14,4 +15,7 @@ final class User {
   }
 
   Map<String, dynamic> toMap() => {'name': name, 'age': age};
+
+  @override
+  String toString() => "User(name: $name, age: $age)";
 }

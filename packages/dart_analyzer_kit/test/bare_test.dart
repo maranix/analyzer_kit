@@ -8,6 +8,7 @@ import 'package:dart_analyzer_kit/src/utils/utils.dart';
 void main() async {
   final source = """
 @copyWith
+@debugString
 final class User {
   User({required this.name});
 
@@ -35,13 +36,22 @@ final class _AnnotationVisitor extends GeneralizingAstVisitor<void> {
     final declaration = node.thisOrAncestorOfType<ClassDeclaration>();
     if (declaration == null) return;
 
-    if (!declaration.hasAnnotation(.copyWith)) return;
+    if (!declaration.hasAnnotation(.debugString)) return;
     print("Found Anotation");
-    if (declaration.hasMethod("copyWith")) return;
+    if (declaration.hasMethod("toString")) return;
     print("Method not found");
 
-    final fields = declaration.fields.map(ClassField.fromFieldDeclaration);
+    final fields = declaration.fields
+        .map(ClassField.fromFieldDeclaration)
+        .where(
+          (f) =>
+              f.isPublic &&
+              !f.isConst &&
+              !f.isStatic &&
+              !f.isSynthetic &&
+              !f.isLate,
+        );
 
-    print(generateCopyWithMethod(declaration.name.lexeme, fields));
+    print(generateToStringMethod(declaration.name.lexeme, fields));
   }
 }

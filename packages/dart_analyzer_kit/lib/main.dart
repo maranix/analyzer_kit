@@ -3,6 +3,8 @@ import 'package:analysis_server_plugin/registry.dart';
 
 import 'package:dart_analyzer_kit/src/fixes/add_copy_with_method.dart';
 import 'package:dart_analyzer_kit/src/fixes/add_serialize_method.dart';
+import 'package:dart_analyzer_kit/src/fixes/override_to_string_method.dart';
+import 'package:dart_analyzer_kit/src/rules/unused_debug_string_annotation.dart';
 import 'package:dart_analyzer_kit/src/rules/unused_serialize_annotation.dart';
 import 'package:dart_analyzer_kit/src/rules/unused_copy_with_annotation.dart';
 
@@ -26,6 +28,13 @@ class Analyzerkit extends Plugin {
     registry.registerFixForRule(
       UnusedSerializeAnnotation.diagCode,
       AddSerializeMethod.new,
+    );
+
+    // Debug String
+    registry.registerLintRule(UnusedDebugStringAnnotation());
+    registry.registerFixForRule(
+      UnusedDebugStringAnnotation.diagCode,
+      OverrideToStringMethod.new,
     );
   }
 }
