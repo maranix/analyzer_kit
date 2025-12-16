@@ -6,3 +6,4 @@ plugins:
 
     diagnostics:
       unused_copy_with_annotation: true
+      unused_serialize_annotation: true

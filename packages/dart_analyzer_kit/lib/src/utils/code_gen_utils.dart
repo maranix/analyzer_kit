@@ -31,3 +31,17 @@ String generateCopyWithMethod(String className, Iterable<ClassField> fields) {
 
   return formatCode(codeBuf.toString());
 }
+
+String generateSerializeMethod(Iterable<ClassField> fields) {
+  final codeBuf = StringBuffer('Map<String, dynamic> toMap() => {');
+
+  for (final (i, field) in fields.indexed) {
+    final name = field.name;
+    final trailingComma = i < fields.length - 1 ? "," : "";
+
+    codeBuf.writeln("'$name': $name$trailingComma");
+  }
+  codeBuf.writeln("};");
+
+  return formatCode(codeBuf.toString());
+}

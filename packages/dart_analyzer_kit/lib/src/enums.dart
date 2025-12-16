@@ -1,7 +1,8 @@
 enum CaseStyle { sensitive, insensitive }
 
 enum Annotations {
-  copyWith("CopyWith");
+  copyWith("CopyWith"),
+  serialize("Serialize");
 
   final String name;
 
