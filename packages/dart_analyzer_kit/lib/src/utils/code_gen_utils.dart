@@ -3,69 +3,63 @@ import 'package:dart_analyzer_kit/src/types.dart';
 import 'package:dart_analyzer_kit/src/utils/utils.dart';
 
 String generateCopyWithMethod(String className, Iterable<ClassField> fields) {
-  final codeBuf = StringBuffer('$className copyWith({');
+  final namedArgs = <String, Expression>{};
+  final functionParams = <Parameter>[];
 
-  for (final (i, field) in fields.indexed) {
-    final type = field.type;
-    final fieldName = field.name;
-    final trailingComma = i < fields.length - 1 ? ',' : '';
+  for (final field in fields) {
+    functionParams.add(
+      Parameter(
+        (b) => b
+          ..name = field.name
+          ..named = true
+          ..type = refer("${field.type}?"),
+      ),
+    );
 
-    // Avoid double-nullable types like `String??`
-    final paramType = type.endsWith('?') ? type : '$type?';
-
-    codeBuf.writeln("$paramType $fieldName$trailingComma");
+    namedArgs[field.name] = refer(
+      field.name,
+    ).ifNullThen(refer('this.${field.name}'));
   }
 
-  codeBuf.writeln('}) {');
+  final method = Method(
+    (b) => b
+      ..name = "copyWith"
+      ..optionalParameters.addAll(functionParams)
+      ..lambda = true
+      ..body = refer(className).call(const [], namedArgs).statement
+      ..returns = refer(className),
+  );
 
-  codeBuf.write('return $className(');
-
-  for (final (i, field) in fields.indexed) {
-    final fieldName = field.name;
-    final trailingComma = i < fields.length - 1 ? ',' : '';
-
-    codeBuf.writeln('$fieldName: $fieldName ?? this.$fieldName$trailingComma');
-  }
-
-  codeBuf.writeln(');');
-  codeBuf.writeln('}');
-
-  return formatCode(codeBuf.toString());
+  return formatCode("${method.accept(dartEmitter)}");
 }
 
 String generateSerializeMethod(Iterable<ClassField> fields) {
-  final codeBuf = StringBuffer('Map<String, dynamic> toMap() => {');
+  final jsonMap = <String, Expression>{
+    for (final field in fields) field.name: refer(field.name),
+  };
 
-  for (final (i, field) in fields.indexed) {
-    final name = field.name;
-    final trailingComma = i < fields.length - 1 ? "," : "";
+  final method = Method(
+    (m) => m
+      ..name = "toMap"
+      ..lambda = true
+      ..body = literalMap(jsonMap).statement
+      ..returns = refer("Map<String, dynamic>"),
+  );
 
-    codeBuf.writeln("'$name': $name$trailingComma");
-  }
-  codeBuf.writeln("};");
-
-  return formatCode(codeBuf.toString());
+  return formatCode("${method.accept(dartEmitter)}");
 }
 
 String generateToStringMethod(String className, Iterable<ClassField> fields) {
-  final bodyBuf = StringBuffer("\"$className(");
-
-  for (final (i, field) in fields.indexed) {
-    final name = field.name;
-    final trailingComma = i < fields.length - 1 ? "," : "";
-    final space = i > 0 ? " " : "";
-
-    bodyBuf.write("$space$name: \$$name$trailingComma");
-  }
-
-  bodyBuf.write(")\";");
+  final body = literalString(
+    "$className(${fields.map((f) => '${f.name}: \$${f.name}').join(', ')})",
+  );
 
   final method = Method(
     (b) => b
       ..name = "toString"
       ..lambda = true
       ..annotations.add(refer('override'))
-      ..body = Code(bodyBuf.toString())
+      ..body = body.statement
       ..returns = refer("String"),
   );
 
@@ -92,18 +86,16 @@ String generateEqualityOperatorOverride(
   String className,
   Iterable<ClassField> fields,
 ) {
-  final codeBuf = StringBuffer("\nif (identical(this, other)) return true;");
+  final comparisons = fields.isEmpty
+      ? ""
+      : "&& ${fields.map((f) => "other.${f.name} == ${f.name}").join(" && ")}";
 
-  codeBuf.writeln();
-  codeBuf.writeln("return other is $className");
-  codeBuf.writeln();
-
-  for (final field in fields) {
-    codeBuf.writeln("&& other.${field.name} == ${field.name}");
-    codeBuf.writeln();
-  }
-
-  codeBuf.write(';');
+  final statements = <Code>[
+    Code(""),
+    Code("if (identical(this, other)) return true;"),
+    Code("return other is $className $comparisons;"),
+    Code(""),
+  ];
 
   final override = Method(
     (b) => b
@@ -117,7 +109,7 @@ String generateEqualityOperatorOverride(
             ..type = refer("Object"),
         ),
       )
-      ..body = Code(codeBuf.toString()),
+      ..body = Block.of(statements),
   );
 
   // Cannot run format here because `==` override expects to be inside a class

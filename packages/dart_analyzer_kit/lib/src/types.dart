@@ -32,9 +32,11 @@ final class ClassField {
   final bool isPrivate;
 
   static ClassField fromFieldDeclaration(FieldDeclaration fd) {
+    final typeAnnotation = fd.fields.type;
+
     return ClassField(
       keyword: fd.fields.keyword?.lexeme,
-      type: fd.fields.type?.type?.getDisplayString() ?? "dynamic",
+      type: typeAnnotation?.toSource() ?? "dynamic",
       name: fd.fields.variables.single.name.lexeme,
       equals: fd.fields.variables.single.equals?.lexeme,
       initializer: fd.fields.variables.single.initializer?.toString(),
@@ -51,7 +53,7 @@ final class ClassField {
   static ClassField fromVariableDeclarationList(VariableDeclarationList vdl) {
     return ClassField(
       keyword: vdl.keyword?.lexeme,
-      type: vdl.type?.type?.getDisplayString() ?? "dynamic",
+      type: vdl.type?.toSource() ?? "dynamic",
       name: vdl.variables.single.name.lexeme,
       equals: vdl.variables.single.equals?.lexeme,
       initializer: vdl.variables.single.initializer?.toString(),

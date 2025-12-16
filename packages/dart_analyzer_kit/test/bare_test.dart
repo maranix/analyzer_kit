@@ -8,20 +8,11 @@ import 'package:dart_analyzer_kit/src/utils/utils.dart';
 void main() async {
   final source = """
 @copyWith
-@debugString
 final class User {
-  User({required this.name});
-
-  static final someVar = "someVlaue";
-  static final _someVar = "someVlaue";
-
-  late final String someLateVar;
-
-  final _private = "value";
-
-  static const p = "sadsd";
+  User({required this.name, required this.age});
 
   final String name;
+  final int age;
 }
 """;
 
@@ -36,11 +27,13 @@ final class _AnnotationVisitor extends GeneralizingAstVisitor<void> {
     final declaration = node.thisOrAncestorOfType<ClassDeclaration>();
     if (declaration == null) return;
 
-    final hasEqualityOverride = declaration.hasMethod("==");
-    final hasHashCodeOverride = declaration.hasGetter("hashCode");
+    final className = declaration.name.lexeme;
 
-    print("Equality: $hasEqualityOverride");
-    print("HashCode: $hasHashCodeOverride");
+    // final hasEqualityOverride = declaration.hasMethod("==");
+    // final hasHashCodeOverride = declaration.hasGetter("hashCode");
+    //
+    // print("Equality: $hasEqualityOverride");
+    // print("HashCode: $hasHashCodeOverride");
 
     final fields = declaration.fields
         .map(ClassField.fromFieldDeclaration)
@@ -53,7 +46,9 @@ final class _AnnotationVisitor extends GeneralizingAstVisitor<void> {
               !f.isLate,
         );
 
-    print(generateHashCodeOverride(fields));
-    print(generateEqualityOperatorOverride(declaration.name.lexeme, fields));
+    print(generateEqualityOperatorOverride(className, fields));
+
+    // print(generateHashCodeOverride(fields));
+    // print(generateEqualityOperatorOverride(declaration.name.lexeme, fields));
   }
 }
