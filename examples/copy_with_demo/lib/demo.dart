@@ -3,7 +3,7 @@ import 'package:analyzer_kit_annotation/analyzer_kit_annotation.dart';
 @copyWith
 @serialize
 @overrideEquality
-@debugString
+@overrideToString
 final class User {
   User({required this.name, required this.age});
 
@@ -32,7 +32,7 @@ final class User {
 @copyWith
 @serialize
 @overrideEquality
-@debugString
+@overrideToString
 final class Todo {
   Todo({required this.id, required this.title, required this.completed});
 
