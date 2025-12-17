@@ -4,7 +4,6 @@ import 'package:analyzer_plugin/utilities/change_builder/change_builder_core.dar
 import 'package:analyzer_plugin/utilities/fixes/fixes.dart';
 import 'package:dart_analyzer_kit/src/types.dart';
 import 'package:dart_analyzer_kit/src/utils/code_gen_utils.dart';
-import 'package:dart_analyzer_kit/src/utils/utils.dart';
 
 final class OverrideToStringMethod extends ResolvedCorrectionProducer {
   OverrideToStringMethod({required super.context});
@@ -26,15 +25,19 @@ final class OverrideToStringMethod extends ResolvedCorrectionProducer {
     final declaration = node.thisOrAncestorOfType<ClassDeclaration>();
     if (declaration == null) return;
 
-    final fields = declaration.fields
-        .map(ClassField.fromFieldDeclaration)
+    final fields = declaration.members
+        .map(
+          (m) =>
+              m is FieldDeclaration ? ClassField.fromFieldDeclaration(m) : null,
+        )
+        .nonNulls
         .where(
-          (f) =>
-              f.isPublic &&
-              !f.isConst &&
-              !f.isStatic &&
-              !f.isSynthetic &&
-              !f.isLate,
+          (fd) =>
+              fd.isPublic &&
+              !fd.isConst &&
+              !fd.isLate &&
+              !fd.isStatic &&
+              !fd.isSynthetic,
         );
 
     await builder.addDartFileEdit(file, (fileEditBuilder) {

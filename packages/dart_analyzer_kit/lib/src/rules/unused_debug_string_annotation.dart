@@ -1,9 +1,11 @@
 import 'package:analyzer/analysis_rule/analysis_rule.dart' show AnalysisRule;
 import 'package:analyzer/analysis_rule/rule_context.dart';
 import 'package:analyzer/analysis_rule/rule_visitor_registry.dart';
-import 'package:analyzer/dart/ast/ast.dart' show Annotation, ClassDeclaration;
+import 'package:analyzer/dart/ast/ast.dart'
+    show ClassDeclaration, MethodDeclaration;
 import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:analyzer/error/error.dart' show LintCode, DiagnosticCode;
+import 'package:dart_analyzer_kit/src/enums.dart';
 import 'package:dart_analyzer_kit/src/utils/utils.dart';
 
 final class UnusedDebugStringAnnotation extends AnalysisRule {
@@ -26,26 +28,38 @@ final class UnusedDebugStringAnnotation extends AnalysisRule {
     RuleVisitorRegistry registry,
     RuleContext context,
   ) {
-    final visitor = DebugStringAnnotationVisitor(this);
-    registry.addAnnotation(this, visitor);
+    registry.addClassDeclaration(this, DebugStringAnnotationClassVisitor(this));
   }
 }
 
-final class DebugStringAnnotationVisitor extends SimpleAstVisitor {
-  const DebugStringAnnotationVisitor(this._rule);
+final class DebugStringAnnotationClassVisitor extends SimpleAstVisitor {
+  DebugStringAnnotationClassVisitor(this._rule);
 
   final AnalysisRule _rule;
 
   @override
-  visitAnnotation(Annotation node) {
-    final declaration = node.thisOrAncestorOfType<ClassDeclaration>();
-    if (declaration == null) return;
+  void visitClassDeclaration(ClassDeclaration node) {
+    for (final annotation in node.metadata) {
+      if (stringEqualsIgnoreCaseByAscii(
+        annotation.name.name,
+        Annotations.debugString.name,
+      )) {
+        bool hasToString = false;
+        for (var member in node.members) {
+          if (member is! MethodDeclaration) continue;
 
-    final isMarked = declaration.hasAnnotation(.debugString);
-    if (!isMarked) return;
+          if (stringEqualsIgnoreCaseByAscii(member.name.lexeme, 'toString')) {
+            hasToString = true;
+            break;
+          }
+        }
 
-    if (!declaration.hasMethod("toString")) {
-      _rule.reportAtNode(node);
+        if (!hasToString) {
+          _rule.reportAtNode(annotation);
+        }
+
+        return;
+      }
     }
   }
 }

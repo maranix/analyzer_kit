@@ -2,6 +2,7 @@ import 'package:analysis_server_plugin/edit/dart/correction_producer.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer_plugin/utilities/change_builder/change_builder_core.dart';
 import 'package:analyzer_plugin/utilities/fixes/fixes.dart';
+import 'package:dart_analyzer_kit/src/enums.dart';
 import 'package:dart_analyzer_kit/src/types.dart';
 import 'package:dart_analyzer_kit/src/utils/code_gen_utils.dart';
 import 'package:dart_analyzer_kit/src/utils/utils.dart';
@@ -26,32 +27,53 @@ final class OverrideEqualityMethods extends ResolvedCorrectionProducer {
     final declaration = node.thisOrAncestorOfType<ClassDeclaration>();
     if (declaration == null) return;
 
-    final fields = declaration.fields
-        .map(ClassField.fromFieldDeclaration)
-        .where(
-          (f) =>
-              f.isPublic &&
-              !f.isConst &&
-              !f.isStatic &&
-              !f.isSynthetic &&
-              !f.isLate,
+    for (final annotation in declaration.metadata) {
+      if (stringEqualsIgnoreCaseByAscii(
+        annotation.name.name,
+        Annotations.overrideEquality.name,
+      )) {
+        final hasHashCodeOverride = declaration.members.any(
+          (m) => m is MethodDeclaration && m.name.lexeme == 'hashCode',
+        );
+        final hasEqualityOperatorOverride = declaration.members.any(
+          (m) => m is MethodDeclaration && m.name.lexeme == '==',
         );
 
-    final hasHashCodeOverride = declaration.hasGetter("hashCode");
-    final hasEqualityOperatorOverride = declaration.hasMethod("==");
+        final fields = declaration.members
+            .map(
+              (m) => m is FieldDeclaration
+                  ? ClassField.fromFieldDeclaration(m)
+                  : null,
+            )
+            .nonNulls
+            .where(
+              (fd) =>
+                  fd.isPublic &&
+                  !fd.isConst &&
+                  !fd.isLate &&
+                  !fd.isStatic &&
+                  !fd.isSynthetic,
+            );
 
-    await builder.addDartFileEdit(file, (fileEditBuilder) {
-      fileEditBuilder.insertMethod(declaration, (editBuilder) {
-        if (!hasHashCodeOverride) {
-          editBuilder.writeln(generateHashCodeOverride(fields));
-        }
+        if (fields.isEmpty) return;
 
-        if (!hasEqualityOperatorOverride) {
-          editBuilder.writeln(
-            generateEqualityOperatorOverride(declaration.name.lexeme, fields),
-          );
-        }
-      });
-    });
+        await builder.addDartFileEdit(file, (fileEditBuilder) {
+          fileEditBuilder.insertMethod(declaration, (editBuilder) {
+            if (!hasHashCodeOverride) {
+              editBuilder.writeln(generateHashCodeOverride(fields));
+            }
+
+            if (!hasEqualityOperatorOverride) {
+              editBuilder.writeln(
+                generateEqualityOperatorOverride(
+                  declaration.name.lexeme,
+                  fields,
+                ),
+              );
+            }
+          });
+        });
+      }
+    }
   }
 }

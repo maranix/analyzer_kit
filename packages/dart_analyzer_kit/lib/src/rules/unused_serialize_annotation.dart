@@ -2,7 +2,7 @@ import 'package:analyzer/analysis_rule/analysis_rule.dart' show AnalysisRule;
 import 'package:analyzer/analysis_rule/rule_context.dart';
 import 'package:analyzer/analysis_rule/rule_visitor_registry.dart';
 import 'package:analyzer/dart/ast/ast.dart'
-    show MethodDeclaration, ClassDeclaration, Annotation;
+    show ClassDeclaration, MethodDeclaration;
 import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:analyzer/error/error.dart' show DiagnosticCode, LintCode;
 import 'package:dart_analyzer_kit/src/enums.dart';
@@ -27,31 +27,37 @@ final class UnusedSerializeAnnotation extends AnalysisRule {
     RuleVisitorRegistry registry,
     RuleContext context,
   ) {
-    final visitor = SerializeAnnotationVisitor(this);
-    registry.addAnnotation(this, visitor);
+    registry.addClassDeclaration(this, SerializeAnnotationClassVisitor(this));
   }
 }
 
-final class SerializeAnnotationVisitor extends GeneralizingAstVisitor<void> {
-  const SerializeAnnotationVisitor(this._rule);
+final class SerializeAnnotationClassVisitor extends SimpleAstVisitor<void> {
+  SerializeAnnotationClassVisitor(this._rule);
 
   final AnalysisRule _rule;
 
   @override
-  void visitAnnotation(Annotation node) {
-    final nodeName = node.name.name;
-    if (nodeName.isEmpty) return;
+  void visitClassDeclaration(ClassDeclaration node) {
+    for (final annotation in node.metadata) {
+      if (stringEqualsIgnoreCaseByAscii(
+        annotation.name.name,
+        Annotations.serialize.name,
+      )) {
+        bool hasToMap = false;
+        for (var member in node.members) {
+          if (member is! MethodDeclaration) continue;
 
-    if (stringsMatchByCharCode(nodeName, Annotations.serialize.name)) {
-      final declaration = node.thisOrAncestorOfType<ClassDeclaration>();
-      if (declaration == null || declaration.members.isEmpty) return;
+          if (stringEqualsIgnoreCaseByAscii(member.name.lexeme, 'toMap')) {
+            hasToMap = true;
+            break;
+          }
+        }
 
-      final hasSerializeMethod = declaration.members
-          .whereType<MethodDeclaration>()
-          .any((m) => stringsMatchByCharCode(m.name.lexeme, "toMap"));
+        if (!hasToMap) {
+          _rule.reportAtNode(annotation);
+        }
 
-      if (!hasSerializeMethod) {
-        _rule.reportAtNode(node);
+        return;
       }
     }
   }

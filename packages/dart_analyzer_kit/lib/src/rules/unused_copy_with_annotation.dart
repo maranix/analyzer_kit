@@ -2,11 +2,11 @@ import 'package:analyzer/analysis_rule/analysis_rule.dart';
 import 'package:analyzer/analysis_rule/rule_context.dart';
 import 'package:analyzer/analysis_rule/rule_visitor_registry.dart';
 import 'package:analyzer/dart/ast/ast.dart'
-    show Annotation, ClassDeclaration, MethodDeclaration;
-import 'package:analyzer/dart/ast/visitor.dart' show GeneralizingAstVisitor;
+    show ClassDeclaration, MethodDeclaration;
+import 'package:analyzer/dart/ast/visitor.dart' show SimpleAstVisitor;
 import 'package:analyzer/error/error.dart' show DiagnosticCode, LintCode;
-
 import 'package:dart_analyzer_kit/src/enums.dart';
+
 import 'package:dart_analyzer_kit/src/utils/utils.dart';
 
 final class UnusedCopyWithAnnotation extends AnalysisRule {
@@ -28,38 +28,37 @@ final class UnusedCopyWithAnnotation extends AnalysisRule {
     RuleVisitorRegistry registry,
     RuleContext context,
   ) {
-    final visitor = CopyWithAnnotationVisitor(this);
-    registry.addAnnotation(this, visitor);
+    registry.addClassDeclaration(this, CopyWithAnnotationClassVisitor(this));
   }
 }
 
-final class CopyWithAnnotationVisitor extends GeneralizingAstVisitor<void> {
-  CopyWithAnnotationVisitor(this._rule);
+final class CopyWithAnnotationClassVisitor extends SimpleAstVisitor {
+  CopyWithAnnotationClassVisitor(this._rule);
 
   final AnalysisRule _rule;
 
   @override
-  void visitAnnotation(Annotation node) {
-    final nodeName = node.name.name;
-    if (nodeName.isEmpty) {
-      return;
-    }
+  void visitClassDeclaration(ClassDeclaration node) {
+    for (final annotation in node.metadata) {
+      if (stringEqualsIgnoreCaseByAscii(
+        annotation.name.name,
+        Annotations.copyWith.name,
+      )) {
+        bool hasCopyWith = false;
+        for (var member in node.members) {
+          if (member is! MethodDeclaration) continue;
 
-    if (stringsMatchByCharCode(nodeName, Annotations.copyWith.name)) {
-      final classDeclaration = node.thisOrAncestorOfType<ClassDeclaration>();
-      if (classDeclaration == null || classDeclaration.members.isEmpty) return;
+          if (stringEqualsIgnoreCaseByAscii(member.name.lexeme, 'copyWith')) {
+            hasCopyWith = true;
+            break;
+          }
+        }
 
-      final containsCopyWith = classDeclaration.members
-          .whereType<MethodDeclaration>()
-          .any(
-            (m) => stringsMatchByCharCode(
-              m.name.lexeme,
-              Annotations.copyWith.name,
-            ),
-          );
+        if (!hasCopyWith) {
+          _rule.reportAtNode(annotation);
+        }
 
-      if (!containsCopyWith) {
-        _rule.reportAtNode(node);
+        return;
       }
     }
   }

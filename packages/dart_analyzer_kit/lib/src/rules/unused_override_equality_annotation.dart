@@ -1,9 +1,11 @@
 import 'package:analyzer/analysis_rule/analysis_rule.dart' show AnalysisRule;
 import 'package:analyzer/analysis_rule/rule_context.dart';
 import 'package:analyzer/analysis_rule/rule_visitor_registry.dart';
-import 'package:analyzer/dart/ast/ast.dart' show Annotation, ClassDeclaration;
+import 'package:analyzer/dart/ast/ast.dart'
+    show ClassDeclaration, MethodDeclaration;
 import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:analyzer/error/error.dart' show LintCode, DiagnosticCode;
+import 'package:dart_analyzer_kit/src/enums.dart' show Annotations;
 import 'package:dart_analyzer_kit/src/utils/utils.dart';
 
 final class UnusedOverrideEqualityAnnotation extends AnalysisRule {
@@ -26,26 +28,55 @@ final class UnusedOverrideEqualityAnnotation extends AnalysisRule {
     RuleVisitorRegistry registry,
     RuleContext context,
   ) {
-    final visitor = OverrideEqualityAnnotationVisitor(this);
-    registry.addAnnotation(this, visitor);
+    registry.addClassDeclaration(
+      this,
+      OverrideEqualityAnnotationClassVisitor(this),
+    );
   }
 }
 
-final class OverrideEqualityAnnotationVisitor extends SimpleAstVisitor {
-  const OverrideEqualityAnnotationVisitor(this._rule);
+final class OverrideEqualityAnnotationClassVisitor extends SimpleAstVisitor {
+  OverrideEqualityAnnotationClassVisitor(this._rule);
 
   final AnalysisRule _rule;
 
   @override
-  visitAnnotation(Annotation node) {
-    final declaration = node.thisOrAncestorOfType<ClassDeclaration>();
-    if (declaration == null) return;
+  void visitClassDeclaration(ClassDeclaration node) {
+    for (final annotation in node.metadata) {
+      if (stringEqualsIgnoreCaseByAscii(
+        annotation.name.name,
+        Annotations.overrideEquality.name,
+      )) {
+        bool hasEquals = false;
+        bool hasHashCode = false;
 
-    final isMarked = declaration.hasAnnotation(.overrideEquality);
-    if (!isMarked) return;
+        for (var member in node.members) {
+          if (hasEquals && hasHashCode) break;
+          if (member is! MethodDeclaration) continue;
 
-    if (!declaration.hasMethod("==") || !declaration.hasGetter("hashCode")) {
-      _rule.reportAtNode(node);
+          final isEquals = stringEqualsIgnoreCaseByAscii(
+            member.name.lexeme,
+            '==',
+          );
+
+          final isHashCode = stringEqualsIgnoreCaseByAscii(
+            member.name.lexeme,
+            'hashCode',
+          );
+
+          if (isEquals && !hasEquals) {
+            hasEquals = true;
+          } else if (isHashCode && !hasHashCode) {
+            hasHashCode = true;
+          }
+        }
+
+        if (!hasEquals || !hasHashCode) {
+          _rule.reportAtNode(annotation);
+        }
+
+        return;
+      }
     }
   }
 }

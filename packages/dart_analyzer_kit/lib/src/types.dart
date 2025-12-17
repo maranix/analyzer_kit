@@ -1,6 +1,5 @@
 import 'package:analyzer/dart/ast/ast.dart'
     show VariableDeclarationList, FieldDeclaration;
-import 'package:dart_analyzer_kit/src/utils/utils.dart';
 
 final class ClassField {
   const ClassField({
@@ -33,36 +32,41 @@ final class ClassField {
 
   static ClassField fromFieldDeclaration(FieldDeclaration fd) {
     final typeAnnotation = fd.fields.type;
+    final variable = fd.fields.variables.single;
+    final isPrivate = variable.name.lexeme.startsWith('_');
 
     return ClassField(
       keyword: fd.fields.keyword?.lexeme,
       type: typeAnnotation?.toSource() ?? "dynamic",
-      name: fd.fields.variables.single.name.lexeme,
-      equals: fd.fields.variables.single.equals?.lexeme,
-      initializer: fd.fields.variables.single.initializer?.toString(),
-      isConst: fd.fields.variables.single.isConst,
-      isLate: fd.fields.variables.single.isLate,
-      isFinal: fd.fields.variables.single.isFinal,
+      name: variable.name.lexeme,
+      equals: variable.equals?.lexeme,
+      initializer: variable.initializer?.toString(),
+      isConst: variable.isConst,
+      isLate: variable.isLate,
+      isFinal: variable.isFinal,
       isStatic: fd.isStatic,
-      isSynthetic: fd.fields.variables.single.isSynthetic,
-      isPublic: fd.fields.variables.single.isPublic,
-      isPrivate: fd.fields.variables.single.isPrivate,
+      isSynthetic: variable.isSynthetic,
+      isPublic: !isPrivate,
+      isPrivate: isPrivate,
     );
   }
 
   static ClassField fromVariableDeclarationList(VariableDeclarationList vdl) {
+    final variable = vdl.variables.single;
+    final isPrivate = variable.name.lexeme.startsWith('_');
+
     return ClassField(
       keyword: vdl.keyword?.lexeme,
       type: vdl.type?.toSource() ?? "dynamic",
-      name: vdl.variables.single.name.lexeme,
-      equals: vdl.variables.single.equals?.lexeme,
-      initializer: vdl.variables.single.initializer?.toString(),
-      isConst: vdl.variables.single.isConst,
-      isLate: vdl.variables.single.isLate,
-      isFinal: vdl.variables.single.isFinal,
-      isSynthetic: vdl.variables.single.isSynthetic,
-      isPublic: vdl.variables.single.isPublic,
-      isPrivate: vdl.variables.single.isPrivate,
+      name: variable.name.lexeme,
+      equals: variable.equals?.lexeme,
+      initializer: variable.initializer?.toString(),
+      isConst: variable.isConst,
+      isLate: variable.isLate,
+      isFinal: variable.isFinal,
+      isSynthetic: variable.isSynthetic,
+      isPublic: !isPrivate,
+      isPrivate: isPrivate,
     );
   }
 

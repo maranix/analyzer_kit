@@ -4,10 +4,10 @@ import 'package:analysis_server_plugin/edit/dart/dart_fix_kind_priority.dart'
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer_plugin/utilities/change_builder/change_builder_core.dart';
 import 'package:analyzer_plugin/utilities/fixes/fixes.dart';
-import 'package:dart_analyzer_kit/src/types.dart' show ClassField;
+import 'package:dart_analyzer_kit/src/enums.dart';
+import 'package:dart_analyzer_kit/src/types.dart';
 import 'package:dart_analyzer_kit/src/utils/code_gen_utils.dart';
-import 'package:dart_analyzer_kit/src/utils/utils.dart'
-    show ClassDeclarationExtension;
+import 'package:dart_analyzer_kit/src/utils/utils.dart';
 
 final class AddSerializeMethod extends ResolvedCorrectionProducer {
   AddSerializeMethod({required super.context});
@@ -30,24 +30,35 @@ final class AddSerializeMethod extends ResolvedCorrectionProducer {
     final declaration = node.thisOrAncestorOfType<ClassDeclaration>();
     if (declaration == null) return;
 
-    if (!declaration.hasAnnotation(.serialize)) return;
-    if (declaration.hasMethod("toMap")) return;
+    for (final annotation in declaration.metadata) {
+      if (stringEqualsIgnoreCaseByAscii(
+        annotation.name.name,
+        Annotations.serialize.name,
+      )) {
+        final fields = declaration.members
+            .map(
+              (m) => m is FieldDeclaration
+                  ? ClassField.fromFieldDeclaration(m)
+                  : null,
+            )
+            .nonNulls
+            .where(
+              (fd) =>
+                  fd.isPublic &&
+                  !fd.isConst &&
+                  !fd.isLate &&
+                  !fd.isStatic &&
+                  !fd.isSynthetic,
+            );
 
-    final fields = declaration.fields
-        .map(ClassField.fromFieldDeclaration)
-        .where(
-          (cf) =>
-              cf.isPublic &&
-              !cf.isConst &&
-              !cf.isLate &&
-              !cf.isStatic &&
-              !cf.isSynthetic,
-        );
+        if (fields.isEmpty) return;
 
-    await builder.addDartFileEdit(file, (fileEditBuilder) {
-      fileEditBuilder.insertMethod(declaration, (editBuilder) {
-        editBuilder.write(generateSerializeMethod(fields));
-      });
-    });
+        await builder.addDartFileEdit(file, (fileEditBuilder) {
+          fileEditBuilder.insertMethod(declaration, (editBuilder) {
+            editBuilder.write(generateSerializeMethod(fields));
+          });
+        });
+      }
+    }
   }
 }
