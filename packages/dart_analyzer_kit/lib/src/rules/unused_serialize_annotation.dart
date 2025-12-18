@@ -6,11 +6,12 @@ import 'package:analyzer/dart/ast/ast.dart'
 import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:analyzer/error/error.dart' show DiagnosticCode, LintCode;
 import 'package:dart_analyzer_kit/src/enums.dart';
+import 'package:dart_analyzer_kit/src/utils/constants.dart';
 import 'package:dart_analyzer_kit/src/utils/utils.dart';
 
 final class UnusedSerializeAnnotation extends AnalysisRule {
   UnusedSerializeAnnotation()
-    : super(name: diagCode.name, description: diagCode.problemMessage);
+      : super(name: diagCode.name, description: diagCode.problemMessage);
 
   static const diagCode = LintCode(
     "unused_serialize_annotation",
@@ -47,7 +48,8 @@ final class SerializeAnnotationClassVisitor extends SimpleAstVisitor<void> {
         for (var member in node.members) {
           if (member is! MethodDeclaration) continue;
 
-          if (stringEqualsIgnoreCaseByAscii(member.name.lexeme, 'toMap')) {
+          if (stringEqualsIgnoreCaseByAscii(
+              member.name.lexeme, MethodConstants.toMap)) {
             hasToMap = true;
             break;
           }

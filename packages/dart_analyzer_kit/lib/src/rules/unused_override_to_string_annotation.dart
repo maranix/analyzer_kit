@@ -6,11 +6,12 @@ import 'package:analyzer/dart/ast/ast.dart'
 import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:analyzer/error/error.dart' show LintCode, DiagnosticCode;
 import 'package:dart_analyzer_kit/src/enums.dart';
+import 'package:dart_analyzer_kit/src/utils/constants.dart';
 import 'package:dart_analyzer_kit/src/utils/utils.dart';
 
 final class UnusedOverrideToStringAnnotation extends AnalysisRule {
   UnusedOverrideToStringAnnotation()
-    : super(name: diagCode.name, description: diagCode.problemMessage);
+      : super(name: diagCode.name, description: diagCode.problemMessage);
 
   static const diagCode = LintCode(
     'unused_debug_string_annotation',
@@ -48,8 +49,10 @@ final class DebugStringAnnotationClassVisitor extends SimpleAstVisitor {
         for (var member in node.members) {
           if (member is! MethodDeclaration) continue;
 
-          if (stringEqualsIgnoreCaseByAscii(member.name.lexeme, 'toString')) {
+          if (stringEqualsIgnoreCaseByAscii(
+              member.name.lexeme, MethodConstants.toString)) {
             hasToString = true;
+
             break;
           }
         }

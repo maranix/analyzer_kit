@@ -1,5 +1,6 @@
 import 'package:code_builder/code_builder.dart';
 import 'package:dart_analyzer_kit/src/types.dart';
+import 'package:dart_analyzer_kit/src/utils/constants.dart';
 import 'package:dart_analyzer_kit/src/utils/utils.dart';
 
 String generateCopyWithMethod(String className, Iterable<ClassField> fields) {
@@ -23,7 +24,7 @@ String generateCopyWithMethod(String className, Iterable<ClassField> fields) {
 
   final method = Method(
     (b) => b
-      ..name = "copyWith"
+      ..name = MethodConstants.copyWith
       ..optionalParameters.addAll(functionParams)
       ..lambda = true
       ..body = refer(className).call(const [], namedArgs).statement
@@ -40,7 +41,7 @@ String generateSerializeMethod(Iterable<ClassField> fields) {
 
   final method = Method(
     (m) => m
-      ..name = "toMap"
+      ..name = MethodConstants.toMap
       ..lambda = true
       ..body = literalMap(jsonMap).statement
       ..returns = refer("Map<String, dynamic>"),
@@ -56,7 +57,7 @@ String generateToStringMethod(String className, Iterable<ClassField> fields) {
 
   final method = Method(
     (b) => b
-      ..name = "toString"
+      ..name = MethodConstants.toString
       ..lambda = true
       ..annotations.add(refer('override'))
       ..body = body.statement
@@ -72,7 +73,7 @@ String generateHashCodeOverride(Iterable<ClassField> fields) {
       ..type = .getter
       ..annotations.add(refer("override"))
       ..returns = refer("int")
-      ..name = "hashCode"
+      ..name = MethodConstants.hashCode
       ..lambda = true
       ..body = refer(
         'Object.hashAll',
@@ -101,7 +102,7 @@ String generateEqualityOperatorOverride(
     (b) => b
       ..annotations.add(refer("override"))
       ..returns = refer("bool")
-      ..name = "operator =="
+      ..name = MethodConstants.operatorEquals
       ..requiredParameters.add(
         Parameter(
           (b) => b

@@ -6,12 +6,13 @@ import 'package:analyzer/dart/ast/ast.dart'
 import 'package:analyzer/dart/ast/visitor.dart' show SimpleAstVisitor;
 import 'package:analyzer/error/error.dart' show DiagnosticCode, LintCode;
 import 'package:dart_analyzer_kit/src/enums.dart';
+import 'package:dart_analyzer_kit/src/utils/constants.dart';
 
 import 'package:dart_analyzer_kit/src/utils/utils.dart';
 
 final class UnusedCopyWithAnnotation extends AnalysisRule {
   UnusedCopyWithAnnotation()
-    : super(name: diagCode.name, description: diagCode.problemMessage);
+      : super(name: diagCode.name, description: diagCode.problemMessage);
 
   static const diagCode = LintCode(
     "unused_copy_with_annotation",
@@ -48,7 +49,8 @@ final class CopyWithAnnotationClassVisitor extends SimpleAstVisitor {
         for (var member in node.members) {
           if (member is! MethodDeclaration) continue;
 
-          if (stringEqualsIgnoreCaseByAscii(member.name.lexeme, 'copyWith')) {
+          if (stringEqualsIgnoreCaseByAscii(
+              member.name.lexeme, MethodConstants.copyWith)) {
             hasCopyWith = true;
             break;
           }

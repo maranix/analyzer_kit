@@ -6,11 +6,12 @@ import 'package:analyzer/dart/ast/ast.dart'
 import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:analyzer/error/error.dart' show LintCode, DiagnosticCode;
 import 'package:dart_analyzer_kit/src/enums.dart' show Annotations;
+import 'package:dart_analyzer_kit/src/utils/constants.dart';
 import 'package:dart_analyzer_kit/src/utils/utils.dart';
 
 final class UnusedOverrideEqualityAnnotation extends AnalysisRule {
   UnusedOverrideEqualityAnnotation()
-    : super(name: diagCode.name, description: diagCode.problemMessage);
+      : super(name: diagCode.name, description: diagCode.problemMessage);
 
   static const diagCode = LintCode(
     'unused_override_equality_annotation',
@@ -56,12 +57,12 @@ final class OverrideEqualityAnnotationClassVisitor extends SimpleAstVisitor {
 
           final isEquals = stringEqualsIgnoreCaseByAscii(
             member.name.lexeme,
-            '==',
+            MethodConstants.equals,
           );
 
           final isHashCode = stringEqualsIgnoreCaseByAscii(
             member.name.lexeme,
-            'hashCode',
+            MethodConstants.hashCode,
           );
 
           if (isEquals && !hasEquals) {
