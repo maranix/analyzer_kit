@@ -33,7 +33,7 @@ final class AddCopyWithMethod extends ResolvedCorrectionProducer {
     for (final annotation in declaration.metadata) {
       if (stringEqualsIgnoreCaseByAscii(
         annotation.name.name,
-        Annotations.copyWith.name,
+        FeatureAnnotation.copyWith.name,
       )) {
         final fields = declaration.members
             .map(

@@ -4,8 +4,8 @@ import 'package:analyzer_plugin/utilities/change_builder/change_builder_core.dar
 import 'package:analyzer_plugin/utilities/fixes/fixes.dart';
 import 'package:dart_analyzer_kit/src/enums.dart';
 import 'package:dart_analyzer_kit/src/types.dart';
+import 'package:dart_analyzer_kit/src/constants.dart';
 import 'package:dart_analyzer_kit/src/utils/code_gen_utils.dart';
-import 'package:dart_analyzer_kit/src/utils/constants.dart';
 import 'package:dart_analyzer_kit/src/utils/utils.dart';
 
 final class OverrideEqualityMethods extends ResolvedCorrectionProducer {
@@ -31,12 +31,12 @@ final class OverrideEqualityMethods extends ResolvedCorrectionProducer {
     for (final annotation in declaration.metadata) {
       if (stringEqualsIgnoreCaseByAscii(
         annotation.name.name,
-        Annotations.overrideEquality.name,
+        FeatureAnnotation.overrideEquality.name,
       )) {
         final hasHashCodeOverride = declaration.members.any(
           (m) =>
               m is MethodDeclaration &&
-              m.name.lexeme == MethodConstants.hashCode,
+              m.name.lexeme == MethodConstants.overrideHashCode,
         );
         final hasEqualityOperatorOverride = declaration.members.any(
           (m) =>

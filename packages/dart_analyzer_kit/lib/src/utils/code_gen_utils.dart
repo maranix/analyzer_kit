@@ -1,6 +1,6 @@
 import 'package:code_builder/code_builder.dart';
 import 'package:dart_analyzer_kit/src/types.dart';
-import 'package:dart_analyzer_kit/src/utils/constants.dart';
+import 'package:dart_analyzer_kit/src/constants.dart';
 import 'package:dart_analyzer_kit/src/utils/utils.dart';
 
 String generateCopyWithMethod(String className, Iterable<ClassField> fields) {
@@ -57,7 +57,7 @@ String generateToStringMethod(String className, Iterable<ClassField> fields) {
 
   final method = Method(
     (b) => b
-      ..name = MethodConstants.toString
+      ..name = MethodConstants.overrideToString
       ..lambda = true
       ..annotations.add(refer('override'))
       ..body = body.statement
@@ -73,7 +73,7 @@ String generateHashCodeOverride(Iterable<ClassField> fields) {
       ..type = .getter
       ..annotations.add(refer("override"))
       ..returns = refer("int")
-      ..name = MethodConstants.hashCode
+      ..name = MethodConstants.overrideHashCode
       ..lambda = true
       ..body = refer(
         'Object.hashAll',

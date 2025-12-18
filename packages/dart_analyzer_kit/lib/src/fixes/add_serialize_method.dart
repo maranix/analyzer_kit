@@ -33,7 +33,7 @@ final class AddSerializeMethod extends ResolvedCorrectionProducer {
     for (final annotation in declaration.metadata) {
       if (stringEqualsIgnoreCaseByAscii(
         annotation.name.name,
-        Annotations.serialize.name,
+        FeatureAnnotation.serialize.name,
       )) {
         final fields = declaration.members
             .map(
