@@ -17,14 +17,14 @@ abstract final class DiagnosticLintCode {
   static const LintCode copyWith = LintCode(
     "unused_copy_with_annotation",
     "Classes annotated with `@copyWith` or `@CopyWith()` must have a `copyWith` method.",
-    severity: .WARNING,
+    severity: .ERROR,
     correctionMessage: "Either remove the annotation or add `copyWith` method",
   );
 
   static const LintCode overrideEquality = LintCode(
     'unused_override_equality_annotation',
     "Classes annotated with @overrideEquality must override both `==` and `hashCode`.",
-    severity: .WARNING,
+    severity: .ERROR,
     correctionMessage:
         "Either remove this annotation or override both `==` and `hashCode`.",
   );
@@ -32,7 +32,7 @@ abstract final class DiagnosticLintCode {
   static const LintCode overrideToString = LintCode(
     'unused_debug_string_annotation',
     "Classes annotated with @debugString must override `toString` method.",
-    severity: .WARNING,
+    severity: .ERROR,
     correctionMessage:
         "Either remove this annotation or override `toString` method.",
   );
@@ -40,7 +40,7 @@ abstract final class DiagnosticLintCode {
   static const LintCode serialize = LintCode(
     "unused_serialize_annotation",
     "Classes annotated with @serialize must have a `toMap` method.",
-    severity: .WARNING,
+    severity: .ERROR,
     correctionMessage: "Either remove this annotation or add `toMap` method.",
   );
 }
