@@ -31,14 +31,7 @@ final class OverrideToStringMethod extends ResolvedCorrectionProducer {
               m is FieldDeclaration ? ClassField.fromFieldDeclaration(m) : null,
         )
         .nonNulls
-        .where(
-          (fd) =>
-              fd.isPublic &&
-              !fd.isConst &&
-              !fd.isLate &&
-              !fd.isStatic &&
-              !fd.isSynthetic,
-        );
+        .where((fd) => fd.isGeneratable);
 
     await builder.addDartFileEdit(file, (fileEditBuilder) {
       fileEditBuilder.insertMethod(declaration, (editBuilder) {

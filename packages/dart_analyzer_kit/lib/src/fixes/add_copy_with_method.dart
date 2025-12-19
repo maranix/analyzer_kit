@@ -42,14 +42,7 @@ final class AddCopyWithMethod extends ResolvedCorrectionProducer {
                   : null,
             )
             .nonNulls
-            .where(
-              (fd) =>
-                  fd.isPublic &&
-                  !fd.isConst &&
-                  !fd.isLate &&
-                  !fd.isStatic &&
-                  !fd.isSynthetic,
-            );
+            .where((fd) => fd.isGeneratable);
 
         if (fields.isEmpty) return;
 
