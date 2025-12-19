@@ -38,29 +38,28 @@ final class UnusedAnnotationVisitor extends SimpleAstVisitor {
   UnusedAnnotationVisitor(
     this._rule, {
     required this.annotation,
-    required this.methods,
-  });
+    required Set<FeatureMethod> methods,
+  }) : _methods = Set.from(methods.map((m) => m.name));
 
   final AnalysisRule _rule;
   final FeatureAnnotation annotation;
-  final Set<FeatureMethod> methods;
+  final Set<String> _methods;
 
   @override
   void visitClassDeclaration(ClassDeclaration node) {
-    for (final metadatum in node.metadata) {
-      if (stringEqualsIgnoreCaseByAscii(metadatum.name.name, annotation.name)) {
+    final remainingMethods = Set.from(_methods); // clone
+
+    for (final metadata in node.metadata) {
+      if (stringEqualsIgnoreCaseByAscii(metadata.name.name, annotation.name)) {
         for (var member in node.members) {
-          if (methods.isEmpty) break;
+          if (remainingMethods.isEmpty) break;
           if (member is! MethodDeclaration) continue;
 
-          methods.removeWhere(
-            (method) =>
-                stringEqualsIgnoreCaseByAscii(member.name.lexeme, method.name),
-          );
+          remainingMethods.remove(member.name.lexeme);
         }
 
-        if (methods.isNotEmpty) {
-          _rule.reportAtNode(metadatum);
+        if (remainingMethods.isNotEmpty) {
+          _rule.reportAtNode(metadata);
         }
 
         return;
