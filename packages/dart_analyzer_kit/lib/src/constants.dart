@@ -43,4 +43,11 @@ abstract final class DiagnosticLintCode {
     severity: .ERROR,
     correctionMessage: "Either remove this annotation or add `toMap` method.",
   );
+
+  static const LintCode missingField = LintCode(
+    "missing_class_fields",
+    'One or more field declared in this class are missing from this method.',
+    severity: .WARNING,
+    correctionMessage: 'Update this methods to include the missing fields.',
+  );
 }

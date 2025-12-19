@@ -51,6 +51,9 @@ final class ClassField {
     );
   }
 
+  bool get isGeneratable =>
+      isPublic && !isConst && !isLate && !isStatic && !isSynthetic;
+
   static ClassField fromVariableDeclarationList(VariableDeclarationList vdl) {
     final variable = vdl.variables.single;
     final isPrivate = variable.name.lexeme.startsWith('_');

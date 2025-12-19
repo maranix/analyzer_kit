@@ -5,6 +5,7 @@ import 'package:dart_analyzer_kit/src/fixes/add_copy_with_method.dart';
 import 'package:dart_analyzer_kit/src/fixes/add_serialize_method.dart';
 import 'package:dart_analyzer_kit/src/fixes/override_equality_methods.dart';
 import 'package:dart_analyzer_kit/src/fixes/override_to_string_method.dart';
+import 'package:dart_analyzer_kit/src/rules/missing_field_rule.dart';
 import 'package:dart_analyzer_kit/src/rules/unused_annotation_rule.dart';
 import 'package:dart_analyzer_kit/src/constants.dart';
 
@@ -78,6 +79,26 @@ class Analyzerkit extends Plugin {
     registry.registerFixForRule(
       DiagnosticLintCode.overrideEquality,
       OverrideEqualityMethods.new,
+    );
+
+    // Missing fields
+    registry.registerLintRule(
+      MissingFieldRule(
+        diagCode: .missingField,
+        annotations: {
+          .copyWith,
+          .serialize,
+          .overrideToString,
+          .overrideEquality,
+        },
+        methods: {
+          .toMap,
+          .copyWith,
+          .overrideEquals,
+          .overrideHashCode,
+          .overrideToString,
+        },
+      ),
     );
   }
 }
