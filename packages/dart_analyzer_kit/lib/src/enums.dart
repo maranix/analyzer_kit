@@ -30,8 +30,7 @@ enum FeatureDiagnosticCode {
   copyWith(DiagnosticLintCode.copyWith),
   serialize(DiagnosticLintCode.serialize),
   overrideToString(DiagnosticLintCode.overrideToString),
-  overrideEquality(DiagnosticLintCode.overrideEquality),
-  missingField(DiagnosticLintCode.missingField);
+  overrideEquality(DiagnosticLintCode.overrideEquality);
 
   final DiagnosticCode diag;
 

@@ -8,4 +8,4 @@ plugins:
       unused_serialize_annotation: true
       unused_debug_string_annotation: true
       unused_override_equality_annotation: true
-      missing_class_fields: true
+

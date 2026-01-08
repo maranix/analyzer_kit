@@ -39,3 +39,14 @@ String toAsciiLower(String s) {
 
   return buffer.toString();
 }
+
+@pragma('vm:prefer-inline')
+int asciiLowerHash(String s) {
+  var hash = 0;
+  for (var i = 0; i < s.length; i++) {
+    var c = s.codeUnitAt(i);
+    if (c >= 0x41 && c <= 0x5A) c += 0x20;
+    hash = 31 * hash + c;
+  }
+  return hash;
+}
