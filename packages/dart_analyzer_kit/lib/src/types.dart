@@ -48,8 +48,7 @@ final class ClassField {
   bool get isMapType => _isType('Map');
 
   /// Whether this field's type is any collection type.
-  bool get isCollectionType =>
-      isListOrIterableType || isSetType || isMapType;
+  bool get isCollectionType => isListOrIterableType || isSetType || isMapType;
 
   /// Checks if [type] matches the given [typeName], accounting for generics
   /// and nullability (e.g. `List`, `List<int>`, `List<int>?`).

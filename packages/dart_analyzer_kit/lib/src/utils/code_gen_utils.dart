@@ -60,7 +60,10 @@ String generateHashCodeOverride(
   bool? deepCollectionEquality,
 }) {
   final hashElements = fields
-      .map((f) => _hashExpression(f, deepCollectionEquality: deepCollectionEquality))
+      .map(
+        (f) =>
+            _hashExpression(f, deepCollectionEquality: deepCollectionEquality),
+      )
       .join(', ');
 
   final override = Method(
@@ -70,19 +73,16 @@ String generateHashCodeOverride(
       ..returns = refer('int')
       ..name = MethodNames.overrideHashCode
       ..lambda = true
-      ..body = Code('Object.hashAll([$hashElements])'),
+      ..body = Code('Object.hashAll([$hashElements]);'),
   );
 
   return formatCode('${override.accept(_dartEmitter)}');
 }
 
 /// Returns the hash expression for a single [field].
-String _hashExpression(
-  ClassField field, {
-  bool? deepCollectionEquality,
-}) {
+String _hashExpression(ClassField field, {bool? deepCollectionEquality}) {
   final name = field.name;
-  
+
   if (field.isCollectionType && deepCollectionEquality != false) {
     return 'AnalyzerKit.deepHash($name)';
   }
@@ -149,10 +149,7 @@ String generateEqualityOperatorOverride(
 }
 
 /// Returns the equality comparison expression for a single [field].
-String _equalityExpression(
-  ClassField field, {
-  bool? deepCollectionEquality,
-}) {
+String _equalityExpression(ClassField field, {bool? deepCollectionEquality}) {
   final name = field.name;
 
   if (field.isCollectionType && deepCollectionEquality != false) {
@@ -163,7 +160,8 @@ String _equalityExpression(
   final bang = nullable ? '!' : '';
 
   if (field.isListOrIterableType) {
-    final expr = 'other.$name$bang.length == $name$bang.length '
+    final expr =
+        'other.$name$bang.length == $name$bang.length '
         '&& $name$bang.indexed.every((e) => other.$name$bang[e.\$1] == e.\$2)';
     return nullable
         ? '(identical(other.$name, $name) || (other.$name != null && $name != null && $expr))'
@@ -171,7 +169,8 @@ String _equalityExpression(
   }
 
   if (field.isSetType) {
-    final expr = 'other.$name$bang.length == $name$bang.length '
+    final expr =
+        'other.$name$bang.length == $name$bang.length '
         '&& other.$name$bang.containsAll($name$bang)';
     return nullable
         ? '(identical(other.$name, $name) || (other.$name != null && $name != null && $expr))'
@@ -179,7 +178,8 @@ String _equalityExpression(
   }
 
   if (field.isMapType) {
-    final expr = 'other.$name$bang.length == $name$bang.length '
+    final expr =
+        'other.$name$bang.length == $name$bang.length '
         '&& $name$bang.entries.every((e) => other.$name$bang[e.key] == e.value)';
     return nullable
         ? '(identical(other.$name, $name) || (other.$name != null && $name != null && $expr))'

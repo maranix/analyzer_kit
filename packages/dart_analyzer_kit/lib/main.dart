@@ -17,37 +17,49 @@ class AnalyzerKit extends Plugin {
 
   @override
   void register(PluginRegistry registry) {
-    registry..registerLintRule(
-      UnusedAnnotationRule(
-        diagnosticCode: .copyWith,
-        visitor: (rule) => UnusedAnnotationVisitor(
-          rule,
-          annotation: .copyWith,
-          methods: {.copyWith},
+    registry
+      ..registerLintRule(
+        UnusedAnnotationRule(
+          diagnosticCode: .copyWith,
+          visitor: (rule) => UnusedAnnotationVisitor(
+            rule,
+            annotation: .copyWith,
+            methods: {.copyWith},
+          ),
         ),
-      ),
-    )..registerFixForRule(LintCodes.copyWith, AddCopyWithMethod.new);
+      )
+      ..registerFixForRule(LintCodes.copyWith, AddCopyWithMethod.new);
 
-    registry..registerLintRule(
-      UnusedAnnotationRule(
-        diagnosticCode: .overrideToString,
-        visitor: (rule) => UnusedAnnotationVisitor(
-          rule,
-          annotation: .overrideToString,
-          methods: {.overrideToString},
+    registry
+      ..registerLintRule(
+        UnusedAnnotationRule(
+          diagnosticCode: .overrideToString,
+          visitor: (rule) => UnusedAnnotationVisitor(
+            rule,
+            annotation: .overrideToString,
+            methods: {.overrideToString},
+          ),
         ),
-      ),
-    )..registerFixForRule(LintCodes.overrideToString, OverrideToStringMethod.new);
+      )
+      ..registerFixForRule(
+        LintCodes.overrideToString,
+        OverrideToStringMethod.new,
+      );
 
-    registry..registerLintRule(
-      UnusedAnnotationRule(
-        diagnosticCode: .overrideEquality,
-        visitor: (rule) => UnusedAnnotationVisitor(
-          rule,
-          annotation: .overrideEquality,
-          methods: {.overrideHashCode, .overrideEquals},
+    registry
+      ..registerLintRule(
+        UnusedAnnotationRule(
+          diagnosticCode: .overrideEquality,
+          visitor: (rule) => UnusedAnnotationVisitor(
+            rule,
+            annotation: .overrideEquality,
+            methods: {.overrideHashCode, .overrideEquals},
+          ),
         ),
-      ),
-    )..registerFixForRule(LintCodes.overrideEquality, OverrideEqualityMethods.new);
+      )
+      ..registerFixForRule(
+        LintCodes.overrideEquality,
+        OverrideEqualityMethods.new,
+      );
   }
 }
