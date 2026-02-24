@@ -84,7 +84,7 @@ String _hashExpression(ClassField field, {bool? deepCollectionEquality}) {
   final name = field.name;
 
   if (field.isCollectionType && deepCollectionEquality != false) {
-    return 'AnalyzerKit.deepHash($name)';
+    return 'deepHash($name)';
   }
 
   final nullable = field.isNullableType;
@@ -153,7 +153,7 @@ String _equalityExpression(ClassField field, {bool? deepCollectionEquality}) {
   final name = field.name;
 
   if (field.isCollectionType && deepCollectionEquality != false) {
-    return 'AnalyzerKit.deepEquals(other.$name, $name)';
+    return 'deepEquals(other.$name, $name)';
   }
 
   final nullable = field.isNullableType;
