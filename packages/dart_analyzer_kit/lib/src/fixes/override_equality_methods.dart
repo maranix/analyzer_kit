@@ -35,6 +35,21 @@ final class OverrideEqualityMethods extends ResolvedCorrectionProducer {
         annotation.name.name,
         FeatureAnnotation.overrideEquality.name,
       )) {
+        final arguments = annotation.arguments?.arguments;
+        bool? deepCollectionEquality;
+
+        if (arguments != null) {
+          for (final arg in arguments) {
+            if (arg is NamedExpression &&
+                arg.name.label.name == 'deepCollectionEquality') {
+              final expression = arg.expression;
+              if (expression is BooleanLiteral) {
+                deepCollectionEquality = expression.value;
+              }
+            }
+          }
+        }
+
         final hasHashCodeOverride = declaration.members.any(
           (m) =>
               m is MethodDeclaration &&
@@ -50,7 +65,12 @@ final class OverrideEqualityMethods extends ResolvedCorrectionProducer {
         await builder.addDartFileEdit(file, (fileEditBuilder) {
           fileEditBuilder.insertMethod(declaration, (editBuilder) {
             if (!hasHashCodeOverride) {
-              editBuilder.writeln(generateHashCodeOverride(fields));
+              editBuilder.writeln(
+                generateHashCodeOverride(
+                  fields,
+                  deepCollectionEquality: deepCollectionEquality,
+                ),
+              );
             }
 
             if (!hasEqualityOperatorOverride) {
@@ -58,6 +78,7 @@ final class OverrideEqualityMethods extends ResolvedCorrectionProducer {
                 generateEqualityOperatorOverride(
                   declaration.name.lexeme,
                   fields,
+                  deepCollectionEquality: deepCollectionEquality,
                 ),
               );
             }

@@ -35,6 +35,29 @@ final class ClassField {
   /// Excludes static, synthetic, and late fields.
   bool get isGeneratable => !isStatic && !isSynthetic && !isLate;
 
+  /// Whether this field's type is nullable (ends with `?`).
+  bool get isNullableType => type.endsWith('?');
+
+  /// Whether this field's type is a `List` or `Iterable` (ordered collection).
+  bool get isListOrIterableType => _isType('List') || _isType('Iterable');
+
+  /// Whether this field's type is a `Set` (unordered collection).
+  bool get isSetType => _isType('Set');
+
+  /// Whether this field's type is a `Map`.
+  bool get isMapType => _isType('Map');
+
+  /// Whether this field's type is any collection type.
+  bool get isCollectionType =>
+      isListOrIterableType || isSetType || isMapType;
+
+  /// Checks if [type] matches the given [typeName], accounting for generics
+  /// and nullability (e.g. `List`, `List<int>`, `List<int>?`).
+  bool _isType(String typeName) =>
+      type == typeName ||
+      type.startsWith('$typeName<') ||
+      type.startsWith('$typeName?');
+
   static ClassField fromFieldDeclaration(FieldDeclaration fd) {
     final typeAnnotation = fd.fields.type;
     final variable = fd.fields.variables.single;

@@ -51,7 +51,18 @@ String generateToStringMethod(String className, Iterable<ClassField> fields) {
 }
 
 /// Generates a `hashCode` getter override for the given [fields].
-String generateHashCodeOverride(Iterable<ClassField> fields) {
+///
+/// If [deepCollectionEquality] is explicit `false`, generates pure dart
+/// shallow hashing for collections. If `true` or `null` (defer to global config),
+/// generates calls to `AnalyzerKit.deepHash`.
+String generateHashCodeOverride(
+  Iterable<ClassField> fields, {
+  bool? deepCollectionEquality,
+}) {
+  final hashElements = fields
+      .map((f) => _hashExpression(f, deepCollectionEquality: deepCollectionEquality))
+      .join(', ');
+
   final override = Method(
     (b) => b
       ..type = .getter
@@ -59,22 +70,58 @@ String generateHashCodeOverride(Iterable<ClassField> fields) {
       ..returns = refer('int')
       ..name = MethodNames.overrideHashCode
       ..lambda = true
-      ..body = refer(
-        'Object.hashAll',
-      ).call([literalList(fields.map((f) => refer(f.name)))]).statement,
+      ..body = Code('Object.hashAll([$hashElements])'),
   );
 
   return formatCode('${override.accept(_dartEmitter)}');
 }
 
+/// Returns the hash expression for a single [field].
+String _hashExpression(
+  ClassField field, {
+  bool? deepCollectionEquality,
+}) {
+  final name = field.name;
+  
+  if (field.isCollectionType && deepCollectionEquality != false) {
+    return 'AnalyzerKit.deepHash($name)';
+  }
+
+  final nullable = field.isNullableType;
+  final bang = nullable ? '!' : '';
+
+  if (field.isListOrIterableType) {
+    final expr = 'Object.hashAll($name$bang)';
+    return nullable ? '$name == null ? null : $expr' : expr;
+  }
+
+  if (field.isSetType) {
+    final expr = 'Object.hashAllUnordered($name$bang)';
+    return nullable ? '$name == null ? null : $expr' : expr;
+  }
+
+  if (field.isMapType) {
+    final expr =
+        'Object.hashAllUnordered($name$bang.entries.map((e) => Object.hash(e.key, e.value)))';
+    return nullable ? '$name == null ? null : $expr' : expr;
+  }
+
+  return name;
+}
+
 /// Generates an `operator ==` override for the given [className] and [fields].
+///
+/// If [deepCollectionEquality] is explicit `false`, generates pure dart
+/// shallow equality for collections. If `true` or `null` (defer to global config),
+/// generates calls to `AnalyzerKit.deepEquals`.
 String generateEqualityOperatorOverride(
   String className,
-  Iterable<ClassField> fields,
-) {
+  Iterable<ClassField> fields, {
+  bool? deepCollectionEquality,
+}) {
   final comparisons = fields.isEmpty
       ? ''
-      : '&& ${fields.map((f) => 'other.${f.name} == ${f.name}').join(' && ')}';
+      : '&& ${fields.map((f) => _equalityExpression(f, deepCollectionEquality: deepCollectionEquality)).join(' && ')}';
 
   final statements = <Code>[
     Code(''),
@@ -99,4 +146,45 @@ String generateEqualityOperatorOverride(
   );
 
   return '${override.accept(_dartEmitter)}';
+}
+
+/// Returns the equality comparison expression for a single [field].
+String _equalityExpression(
+  ClassField field, {
+  bool? deepCollectionEquality,
+}) {
+  final name = field.name;
+
+  if (field.isCollectionType && deepCollectionEquality != false) {
+    return 'AnalyzerKit.deepEquals(other.$name, $name)';
+  }
+
+  final nullable = field.isNullableType;
+  final bang = nullable ? '!' : '';
+
+  if (field.isListOrIterableType) {
+    final expr = 'other.$name$bang.length == $name$bang.length '
+        '&& $name$bang.indexed.every((e) => other.$name$bang[e.\$1] == e.\$2)';
+    return nullable
+        ? '(identical(other.$name, $name) || (other.$name != null && $name != null && $expr))'
+        : expr;
+  }
+
+  if (field.isSetType) {
+    final expr = 'other.$name$bang.length == $name$bang.length '
+        '&& other.$name$bang.containsAll($name$bang)';
+    return nullable
+        ? '(identical(other.$name, $name) || (other.$name != null && $name != null && $expr))'
+        : expr;
+  }
+
+  if (field.isMapType) {
+    final expr = 'other.$name$bang.length == $name$bang.length '
+        '&& $name$bang.entries.every((e) => other.$name$bang[e.key] == e.value)';
+    return nullable
+        ? '(identical(other.$name, $name) || (other.$name != null && $name != null && $expr))'
+        : expr;
+  }
+
+  return 'other.$name == $name';
 }
