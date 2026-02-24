@@ -5,7 +5,5 @@ plugins:
     path: packages/dart_analyzer_kit
     diagnostics:
       unused_copy_with_annotation: true
-      unused_serialize_annotation: true
-      unused_debug_string_annotation: true
+      unused_override_to_string_annotation: true
       unused_override_equality_annotation: true
-

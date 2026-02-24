@@ -1,45 +1,52 @@
 # Dart Analyzer Kit
 
-`dart_analyzer_kit` is a comprehensive Dart Analyzer plugin designed to enhance your development experience by providing custom lint rules and automated quick fixes.
+A Dart Analyzer plugin that provides custom lint rules and quick fixes for [analyzer_kit_annotation](https://pub.dev/packages/analyzer_kit_annotation) annotations.
 
 ## Features
 
-- **Lint Rules**:
-  - `unused_copy_with_annotation`: Warns when a class is annotated with `@CopyWith` but lacks the corresponding `copyWith` method.
-
-- **Quick Fixes**:
-  - **Add `copyWith` Method**: Automatically generates a `copyWith` method for classes annotated with `@CopyWith`, including support for all class fields.
+| Annotation | Lint Rule | Quick Fix |
+|---|---|---|
+| `@CopyWith` | Warns when `copyWith` method is missing | Generates `copyWith` method |
+| `@OverrideEquality` | Warns when `==` or `hashCode` is missing | Generates `==` and `hashCode` |
+| `@OverrideToString` | Warns when `toString` is missing | Generates `toString` override |
 
 ## Installation
 
-Add the package to your `pubspec.yaml` as a dev dependency:
+Add both packages to your `pubspec.yaml`:
 
 ```yaml
+dependencies:
+  analyzer_kit_annotation: ^1.0.0
+
 dev_dependencies:
   dart_analyzer_kit: ^1.0.0
-  analyzer_kit_annotation: ^1.0.0
 ```
 
 Enable the plugin in your `analysis_options.yaml`:
 
 ```yaml
-analyzer:
-  plugins:
-    - dart_analyzer_kit
+plugins:
+  dart_analyzer_kit:
+    diagnostics:
+      unused_copy_with_annotation: true
+      unused_override_equality_annotation: true
+      unused_override_to_string_annotation: true
 ```
 
 ## Usage
 
-Annotate your class with `@CopyWith()` or `@copyWith`. The analyzer will flag the missing method and offer a quick fix to generate it.
-
 ```dart
-@CopyWith()
-class MyModel {
+import 'package:analyzer_kit_annotation/analyzer_kit_annotation.dart';
+
+@copyWith
+@overrideEquality
+@overrideToString
+class User {
   final String name;
   final int age;
 
-  MyModel({required this.name, required this.age});
-  
-  // Quick fix will generate copyWith here
+  User({required this.name, required this.age});
+
+  // Quick fixes generate: copyWith, ==, hashCode, toString
 }
 ```

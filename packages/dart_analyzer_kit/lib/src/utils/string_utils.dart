@@ -1,5 +1,6 @@
 part of 'utils.dart';
 
+/// Case-insensitive ASCII string equality comparison.
 @pragma('vm:prefer-inline')
 bool stringEqualsIgnoreCaseByAscii(String a, String b) {
   final length = a.length;
@@ -15,38 +16,4 @@ bool stringEqualsIgnoreCaseByAscii(String a, String b) {
     if (ca != cb) return false;
   }
   return true;
-}
-
-@pragma('vm:prefer-inline')
-String toAsciiLower(String s) {
-  final codeUnits = s.codeUnits;
-  var changed = false;
-
-  for (var i = 0; i < codeUnits.length; i++) {
-    final c = codeUnits[i];
-    if (c >= 0x41 && c <= 0x5A) {
-      changed = true;
-      break;
-    }
-  }
-
-  if (!changed) return s; // Already lowercase
-
-  final buffer = StringBuffer();
-  for (final c in codeUnits) {
-    buffer.writeCharCode((c >= 0x41 && c <= 0x5A) ? (c + 0x20) : c);
-  }
-
-  return buffer.toString();
-}
-
-@pragma('vm:prefer-inline')
-int asciiLowerHash(String s) {
-  var hash = 0;
-  for (var i = 0; i < s.length; i++) {
-    var c = s.codeUnitAt(i);
-    if (c >= 0x41 && c <= 0x5A) c += 0x20;
-    hash = 31 * hash + c;
-  }
-  return hash;
 }

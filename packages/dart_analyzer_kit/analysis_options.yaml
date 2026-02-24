@@ -1,1 +1,8 @@
 include: package:lints/recommended.yaml
+
+linter:
+  rules:
+    - prefer_single_quotes
+    - sort_constructors_first
+    - prefer_final_locals
+    - directives_ordering

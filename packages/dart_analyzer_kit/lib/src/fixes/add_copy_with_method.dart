@@ -5,17 +5,17 @@ import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer_plugin/utilities/change_builder/change_builder_core.dart';
 import 'package:analyzer_plugin/utilities/fixes/fixes.dart';
 import 'package:dart_analyzer_kit/src/enums.dart';
-import 'package:dart_analyzer_kit/src/types.dart';
-import 'package:dart_analyzer_kit/src/utils/code_gen_utils.dart';
 import 'package:dart_analyzer_kit/src/utils/utils.dart';
 
+/// Quick fix that generates a `copyWith` method for classes annotated
+/// with `@CopyWith`.
 final class AddCopyWithMethod extends ResolvedCorrectionProducer {
   AddCopyWithMethod({required super.context});
 
   static const _fix = FixKind(
     'dart.fix.addCopyWithMethod',
     DartFixKindPriority.standard,
-    "Add `copyWith` method",
+    'Add `copyWith` method',
   );
 
   @override
@@ -35,15 +35,7 @@ final class AddCopyWithMethod extends ResolvedCorrectionProducer {
         annotation.name.name,
         FeatureAnnotation.copyWith.name,
       )) {
-        final fields = declaration.members
-            .map(
-              (m) => m is FieldDeclaration
-                  ? ClassField.fromFieldDeclaration(m)
-                  : null,
-            )
-            .nonNulls
-            .where((fd) => fd.isGeneratable);
-
+        final fields = extractGeneratableFields(declaration);
         if (fields.isEmpty) return;
 
         await builder.addDartFileEdit(file, (fileEditBuilder) {

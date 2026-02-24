@@ -8,6 +8,7 @@ import 'package:analyzer/error/error.dart' show DiagnosticCode;
 import 'package:dart_analyzer_kit/src/enums.dart';
 import 'package:dart_analyzer_kit/src/utils/utils.dart';
 
+/// Lint rule that reports annotations whose required methods are missing.
 final class UnusedAnnotationRule extends AnalysisRule {
   UnusedAnnotationRule({
     required FeatureDiagnosticCode diagnosticCode,
@@ -34,6 +35,7 @@ final class UnusedAnnotationRule extends AnalysisRule {
   }
 }
 
+/// Visitor that checks if annotated classes contain the expected methods.
 final class UnusedAnnotationVisitor extends SimpleAstVisitor {
   UnusedAnnotationVisitor(
     this._rule, {
@@ -47,7 +49,7 @@ final class UnusedAnnotationVisitor extends SimpleAstVisitor {
 
   @override
   void visitClassDeclaration(ClassDeclaration node) {
-    final remainingMethods = Set.from(_methods); // clone
+    final remainingMethods = Set.from(_methods);
 
     for (final metadata in node.metadata) {
       if (stringEqualsIgnoreCaseByAscii(metadata.name.name, annotation.name)) {

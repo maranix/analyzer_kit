@@ -1,23 +1,23 @@
 import 'package:analysis_server_plugin/plugin.dart';
 import 'package:analysis_server_plugin/registry.dart';
 
+import 'package:dart_analyzer_kit/src/constants.dart';
 import 'package:dart_analyzer_kit/src/fixes/add_copy_with_method.dart';
-import 'package:dart_analyzer_kit/src/fixes/add_serialize_method.dart';
 import 'package:dart_analyzer_kit/src/fixes/override_equality_methods.dart';
 import 'package:dart_analyzer_kit/src/fixes/override_to_string_method.dart';
 import 'package:dart_analyzer_kit/src/rules/unused_annotation_rule.dart';
-import 'package:dart_analyzer_kit/src/constants.dart';
 
-final plugin = Analyzerkit();
+final plugin = AnalyzerKit();
 
-class Analyzerkit extends Plugin {
+/// Dart analyzer plugin providing lint rules and quick fixes for
+/// `analyzer_kit_annotation` annotations.
+class AnalyzerKit extends Plugin {
   @override
-  String get name => 'Analyzer kit';
+  String get name => 'Analyzer Kit';
 
   @override
   void register(PluginRegistry registry) {
-    // CopyWith
-    registry.registerLintRule(
+    registry..registerLintRule(
       UnusedAnnotationRule(
         diagnosticCode: .copyWith,
         visitor: (rule) => UnusedAnnotationVisitor(
@@ -26,30 +26,9 @@ class Analyzerkit extends Plugin {
           methods: {.copyWith},
         ),
       ),
-    );
-    registry.registerFixForRule(
-      DiagnosticLintCode.copyWith,
-      AddCopyWithMethod.new,
-    );
+    )..registerFixForRule(LintCodes.copyWith, AddCopyWithMethod.new);
 
-    // Serialize
-    registry.registerLintRule(
-      UnusedAnnotationRule(
-        diagnosticCode: .serialize,
-        visitor: (rule) => UnusedAnnotationVisitor(
-          rule,
-          annotation: .serialize,
-          methods: {.toMap},
-        ),
-      ),
-    );
-    registry.registerFixForRule(
-      DiagnosticLintCode.serialize,
-      AddSerializeMethod.new,
-    );
-
-    // Override toString
-    registry.registerLintRule(
+    registry..registerLintRule(
       UnusedAnnotationRule(
         diagnosticCode: .overrideToString,
         visitor: (rule) => UnusedAnnotationVisitor(
@@ -58,14 +37,9 @@ class Analyzerkit extends Plugin {
           methods: {.overrideToString},
         ),
       ),
-    );
-    registry.registerFixForRule(
-      DiagnosticLintCode.overrideToString,
-      OverrideToStringMethod.new,
-    );
+    )..registerFixForRule(LintCodes.overrideToString, OverrideToStringMethod.new);
 
-    // Override Equality
-    registry.registerLintRule(
+    registry..registerLintRule(
       UnusedAnnotationRule(
         diagnosticCode: .overrideEquality,
         visitor: (rule) => UnusedAnnotationVisitor(
@@ -74,10 +48,6 @@ class Analyzerkit extends Plugin {
           methods: {.overrideHashCode, .overrideEquals},
         ),
       ),
-    );
-    registry.registerFixForRule(
-      DiagnosticLintCode.overrideEquality,
-      OverrideEqualityMethods.new,
-    );
+    )..registerFixForRule(LintCodes.overrideEquality, OverrideEqualityMethods.new);
   }
 }

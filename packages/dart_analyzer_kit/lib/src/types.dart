@@ -1,10 +1,10 @@
-import 'package:analyzer/dart/ast/ast.dart'
-    show VariableDeclarationList, FieldDeclaration;
+import 'package:analyzer/dart/ast/ast.dart' show FieldDeclaration;
 
+/// Represents a class field extracted from AST for code generation.
 final class ClassField {
   const ClassField({
     required this.name,
-    this.type = "dynamic",
+    this.type = 'dynamic',
     this.keyword,
     this.equals,
     this.initializer,
@@ -30,6 +30,11 @@ final class ClassField {
   final bool isPublic;
   final bool isPrivate;
 
+  /// Whether this field should be included in generated methods.
+  ///
+  /// Excludes static, synthetic, and late fields.
+  bool get isGeneratable => !isStatic && !isSynthetic && !isLate;
+
   static ClassField fromFieldDeclaration(FieldDeclaration fd) {
     final typeAnnotation = fd.fields.type;
     final variable = fd.fields.variables.single;
@@ -37,7 +42,7 @@ final class ClassField {
 
     return ClassField(
       keyword: fd.fields.keyword?.lexeme,
-      type: typeAnnotation?.toSource() ?? "dynamic",
+      type: typeAnnotation?.toSource() ?? 'dynamic',
       name: variable.name.lexeme,
       equals: variable.equals?.lexeme,
       initializer: variable.initializer?.toString(),
@@ -51,26 +56,10 @@ final class ClassField {
     );
   }
 
-  static ClassField fromVariableDeclarationList(VariableDeclarationList vdl) {
-    final variable = vdl.variables.single;
-    final isPrivate = variable.name.lexeme.startsWith('_');
-
-    return ClassField(
-      keyword: vdl.keyword?.lexeme,
-      type: vdl.type?.toSource() ?? "dynamic",
-      name: variable.name.lexeme,
-      equals: variable.equals?.lexeme,
-      initializer: variable.initializer?.toString(),
-      isConst: variable.isConst,
-      isLate: variable.isLate,
-      isFinal: variable.isFinal,
-      isSynthetic: variable.isSynthetic,
-      isPublic: !isPrivate,
-      isPrivate: isPrivate,
-    );
-  }
-
   @override
   String toString() =>
-      "ClassField(name: $name, type: $type, keyword: $keyword, equals: $equals, initializer: $initializer, isConst: $isConst, isLate: $isLate, isFinal: $isFinal, isStatic: $isStatic, isSynthetic: $isSynthetic, isPublic: $isPublic, isPrivate: $isPrivate)";
+      'ClassField(name: $name, type: $type, keyword: $keyword, equals: $equals, '
+      'initializer: $initializer, isConst: $isConst, isLate: $isLate, '
+      'isFinal: $isFinal, isStatic: $isStatic, isSynthetic: $isSynthetic, '
+      'isPublic: $isPublic, isPrivate: $isPrivate)';
 }
