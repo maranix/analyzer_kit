@@ -6,6 +6,7 @@ Annotations for use with [dart_analyzer_kit](https://pub.dev/packages/dart_analy
 
 | Annotation | Generated Code |
 |---|---|
+| `@DataClass()` / `@dataClass` | `copyWith`, `==`, `hashCode`, and `toString` |
 | `@CopyWith()` / `@copyWith` | `copyWith` method |
 | `@OverrideEquality()` / `@overrideEquality` | `==` operator and `hashCode` override |
 | `@OverrideToString()` / `@overrideToString` | `toString` override |
@@ -22,9 +23,7 @@ dependencies:
 ```dart
 import 'package:analyzer_kit_annotation/analyzer_kit_annotation.dart';
 
-@copyWith
-@overrideEquality
-@overrideToString
+@dataClass
 class User {
   final String name;
   final int age;

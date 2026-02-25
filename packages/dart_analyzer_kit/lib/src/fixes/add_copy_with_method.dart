@@ -30,22 +30,17 @@ final class AddCopyWithMethod extends ResolvedCorrectionProducer {
     final declaration = node.thisOrAncestorOfType<ClassDeclaration>();
     if (declaration == null) return;
 
-    for (final annotation in declaration.metadata) {
-      if (stringEqualsIgnoreCaseByAscii(
-        annotation.name.name,
-        FeatureAnnotation.copyWith.name,
-      )) {
-        final fields = extractGeneratableFields(declaration);
-        if (fields.isEmpty) return;
+    if (hasFeatureEnabled(declaration, FeatureAnnotation.copyWith)) {
+      final fields = extractGeneratableFields(declaration);
+      if (fields.isEmpty) return;
 
-        await builder.addDartFileEdit(file, (fileEditBuilder) {
-          fileEditBuilder.insertMethod(declaration, (editBuilder) {
-            editBuilder.write(
-              generateCopyWithMethod(declaration.name.lexeme, fields),
-            );
-          });
+      await builder.addDartFileEdit(file, (fileEditBuilder) {
+        fileEditBuilder.insertMethod(declaration, (editBuilder) {
+          editBuilder.write(
+            generateCopyWithMethod(declaration.name.lexeme, fields),
+          );
         });
-      }
+      });
     }
   }
 }

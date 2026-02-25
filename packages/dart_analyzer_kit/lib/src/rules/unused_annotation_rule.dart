@@ -49,22 +49,27 @@ final class UnusedAnnotationVisitor extends SimpleAstVisitor {
 
   @override
   void visitClassDeclaration(ClassDeclaration node) {
+    if (!hasFeatureEnabled(node, annotation)) return;
+
     final remainingMethods = Set.from(_methods);
+    for (var member in node.members) {
+      if (remainingMethods.isEmpty) break;
+      if (member is! MethodDeclaration) continue;
 
-    for (final metadata in node.metadata) {
-      if (stringEqualsIgnoreCaseByAscii(metadata.name.name, annotation.name)) {
-        for (var member in node.members) {
-          if (remainingMethods.isEmpty) break;
-          if (member is! MethodDeclaration) continue;
+      remainingMethods.remove(member.name.lexeme);
+    }
 
-          remainingMethods.remove(member.name.lexeme);
+    if (remainingMethods.isNotEmpty) {
+      // Find the annotation to report on: either the specific feature or DataClass
+      for (final meta in node.metadata) {
+        if (stringEqualsIgnoreCaseByAscii(meta.name.name, annotation.name) ||
+            stringEqualsIgnoreCaseByAscii(
+              meta.name.name,
+              FeatureAnnotation.dataClass.name,
+            )) {
+          _rule.reportAtNode(meta);
+          return;
         }
-
-        if (remainingMethods.isNotEmpty) {
-          _rule.reportAtNode(metadata);
-        }
-
-        return;
       }
     }
   }

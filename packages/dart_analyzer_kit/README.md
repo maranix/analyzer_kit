@@ -6,6 +6,7 @@ A Dart Analyzer plugin that provides custom lint rules and quick fixes for [anal
 
 | Annotation | Lint Rule | Quick Fix |
 |---|---|---|
+| `@DataClass` | Warns for any active shorthand features | Generates `copyWith`, `==`, `hashCode`, `toString` conditionally |
 | `@CopyWith` | Warns when `copyWith` method is missing | Generates `copyWith` method |
 | `@OverrideEquality` | Warns when `==` or `hashCode` is missing | Generates `==` and `hashCode` |
 | `@OverrideToString` | Warns when `toString` is missing | Generates `toString` override |
@@ -38,9 +39,7 @@ plugins:
 ```dart
 import 'package:analyzer_kit_annotation/analyzer_kit_annotation.dart';
 
-@copyWith
-@overrideEquality
-@overrideToString
+@dataClass
 class User {
   final String name;
   final int age;

@@ -28,14 +28,16 @@ final class OverrideToStringMethod extends ResolvedCorrectionProducer {
     final declaration = node.thisOrAncestorOfType<ClassDeclaration>();
     if (declaration == null) return;
 
-    final fields = extractGeneratableFields(declaration);
+    if (hasFeatureEnabled(declaration, .overrideToString)) {
+      final fields = extractGeneratableFields(declaration);
 
-    await builder.addDartFileEdit(file, (fileEditBuilder) {
-      fileEditBuilder.insertMethod(declaration, (editBuilder) {
-        editBuilder.write(
-          generateToStringMethod(declaration.name.lexeme, fields),
-        );
+      await builder.addDartFileEdit(file, (fileEditBuilder) {
+        fileEditBuilder.insertMethod(declaration, (editBuilder) {
+          editBuilder.write(
+            generateToStringMethod(declaration.name.lexeme, fields),
+          );
+        });
       });
-    });
+    }
   }
 }

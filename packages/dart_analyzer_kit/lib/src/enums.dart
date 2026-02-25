@@ -3,6 +3,7 @@ import 'package:dart_analyzer_kit/src/constants.dart';
 
 /// Annotation names recognized by the plugin.
 enum FeatureAnnotation {
+  dataClass('DataClass'),
   copyWith('CopyWith'),
   overrideToString('OverrideToString'),
   overrideEquality('OverrideEquality');

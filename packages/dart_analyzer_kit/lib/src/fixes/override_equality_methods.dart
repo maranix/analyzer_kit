@@ -30,61 +30,69 @@ final class OverrideEqualityMethods extends ResolvedCorrectionProducer {
     final declaration = node.thisOrAncestorOfType<ClassDeclaration>();
     if (declaration == null) return;
 
-    for (final annotation in declaration.metadata) {
-      if (stringEqualsIgnoreCaseByAscii(
-        annotation.name.name,
-        FeatureAnnotation.overrideEquality.name,
-      )) {
-        final arguments = annotation.arguments?.arguments;
-        bool? deepCollectionEquality;
+    if (hasFeatureEnabled(declaration, FeatureAnnotation.overrideEquality)) {
+      bool? deepCollectionEquality;
 
-        if (arguments != null) {
-          for (final arg in arguments) {
-            if (arg is NamedExpression &&
-                arg.name.label.name == 'deepCollectionEquality') {
-              final expression = arg.expression;
-              if (expression is BooleanLiteral) {
-                deepCollectionEquality = expression.value;
+      // Extract deepCollectionEquality from either @OverrideEquality or @DataClass
+      for (final annotation in declaration.metadata) {
+        final name = annotation.name.name;
+        if (stringEqualsIgnoreCaseByAscii(
+              name,
+              FeatureAnnotation.overrideEquality.name,
+            ) ||
+            stringEqualsIgnoreCaseByAscii(
+              name,
+              FeatureAnnotation.dataClass.name,
+            )) {
+          final arguments = annotation.arguments?.arguments;
+          if (arguments != null) {
+            for (final arg in arguments) {
+              if (arg is NamedExpression &&
+                  arg.name.label.name == 'deepCollectionEquality') {
+                final expression = arg.expression;
+                if (expression is BooleanLiteral) {
+                  deepCollectionEquality = expression.value;
+                }
               }
             }
           }
         }
-
-        final hasHashCodeOverride = declaration.members.any(
-          (m) =>
-              m is MethodDeclaration &&
-              m.name.lexeme == MethodNames.overrideHashCode,
-        );
-        final hasEqualityOperatorOverride = declaration.members.any(
-          (m) => m is MethodDeclaration && m.name.lexeme == MethodNames.equals,
-        );
-
-        final fields = extractGeneratableFields(declaration);
-        if (fields.isEmpty) return;
-
-        await builder.addDartFileEdit(file, (fileEditBuilder) {
-          fileEditBuilder.insertMethod(declaration, (editBuilder) {
-            if (!hasHashCodeOverride) {
-              editBuilder.writeln(
-                generateHashCodeOverride(
-                  fields,
-                  deepCollectionEquality: deepCollectionEquality,
-                ),
-              );
-            }
-
-            if (!hasEqualityOperatorOverride) {
-              editBuilder.writeln(
-                generateEqualityOperatorOverride(
-                  declaration.name.lexeme,
-                  fields,
-                  deepCollectionEquality: deepCollectionEquality,
-                ),
-              );
-            }
-          });
-        });
       }
+
+      final hasHashCodeOverride = declaration.members.any(
+        (m) =>
+            m is MethodDeclaration &&
+            m.name.lexeme == MethodNames.overrideHashCode,
+      );
+      final hasEqualityOperatorOverride = declaration.members.any(
+        (m) => m is MethodDeclaration && m.name.lexeme == MethodNames.equals,
+      );
+
+      final fields = extractGeneratableFields(declaration);
+      if (fields.isEmpty) return;
+
+      await builder.addDartFileEdit(file, (fileEditBuilder) {
+        fileEditBuilder.insertMethod(declaration, (editBuilder) {
+          if (!hasHashCodeOverride) {
+            editBuilder.writeln(
+              generateHashCodeOverride(
+                fields,
+                deepCollectionEquality: deepCollectionEquality,
+              ),
+            );
+          }
+
+          if (!hasEqualityOperatorOverride) {
+            editBuilder.writeln(
+              generateEqualityOperatorOverride(
+                declaration.name.lexeme,
+                fields,
+                deepCollectionEquality: deepCollectionEquality,
+              ),
+            );
+          }
+        });
+      });
     }
   }
 }

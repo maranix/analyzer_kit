@@ -13,7 +13,7 @@ abstract final class MethodNames {
 abstract final class LintCodes {
   static const LintCode copyWith = LintCode(
     'unused_copy_with_annotation',
-    'Classes annotated with @copyWith must have a `copyWith` method.',
+    'Classes annotated with @CopyWith or @DataClass must have a `copyWith` method.',
     severity: .ERROR,
     correctionMessage:
         'Either remove the annotation or add a `copyWith` method.',
@@ -21,7 +21,7 @@ abstract final class LintCodes {
 
   static const LintCode overrideEquality = LintCode(
     'unused_override_equality_annotation',
-    'Classes annotated with @overrideEquality must override both `==` and `hashCode`.',
+    'Classes annotated with @OverrideEquality or @DataClass must override both `==` and `hashCode`.',
     severity: .ERROR,
     correctionMessage:
         'Either remove the annotation or override both `==` and `hashCode`.',
@@ -29,7 +29,7 @@ abstract final class LintCodes {
 
   static const LintCode overrideToString = LintCode(
     'unused_override_to_string_annotation',
-    'Classes annotated with @overrideToString must override `toString`.',
+    'Classes annotated with @OverrideToString or @DataClass must override `toString`.',
     severity: .ERROR,
     correctionMessage: 'Either remove the annotation or override `toString`.',
   );
