@@ -10,6 +10,8 @@ Annotations for use with [dart_analyzer_kit](https://pub.dev/packages/dart_analy
 | `@CopyWith()` / `@copyWith` | `copyWith` method |
 | `@OverrideEquality()` / `@overrideEquality` | `==` operator and `hashCode` override |
 | `@OverrideToString()` / `@overrideToString` | `toString` override |
+| `@Serialize()` / `@serialize` | Map extraction method (`toMap()`, `toJson()`, or custom) |
+| `@Deserialize()` / `@deserialize` | Map factory constructor (`fromMap()`, `fromJson()`, or custom) |
 
 ## Installation
 

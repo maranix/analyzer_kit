@@ -77,3 +77,47 @@ bool hasFeatureEnabled(ClassDeclaration node, FeatureAnnotation feature) {
 bool _hasAnnotation(NodeList<Annotation> metadata, String name) {
   return metadata.any((a) => stringEqualsIgnoreCaseByAscii(a.name.name, name));
 }
+
+/// Retrieves the correctly configured method name for a given [feature] serialization/deserialization on [node].
+/// Returns null if the feature is not configured or disabled.
+String? extractFeatureMethodName(
+  ClassDeclaration node,
+  FeatureAnnotation feature,
+  String defaultName,
+) {
+  if (feature == FeatureAnnotation.dataClass) {
+    if (_hasAnnotation(node.metadata, feature.name)) return defaultName;
+    return null;
+  }
+
+  // Look for direct annotation first
+  for (final annotation in node.metadata) {
+    if (stringEqualsIgnoreCaseByAscii(annotation.name.name, feature.name)) {
+      final arguments = annotation.arguments?.arguments;
+      if (arguments == null || arguments.isEmpty) return defaultName;
+
+      // Extract custom configuration e.g., @Serialize(name: .custom('xyz'))
+      for (final arg in arguments) {
+        if (arg is NamedExpression && arg.name.label.name == 'name') {
+          final expression = arg.expression;
+          // Assuming a simple method invocation or custom string. Extract the method literal.
+          final source = expression.toSource();
+          // .toMap() -> toMap
+          // .custom('myMethod') -> myMethod
+          if (source.startsWith('.custom(')) {
+            return source.substring(9, source.length - 2);
+          } else if (source.startsWith('.')) {
+            return source.substring(1, source.length - 2); // .toMap() -> toMap
+          }
+        }
+      }
+      return defaultName;
+    }
+  }
+
+  // Fallback to @DataClass checking
+  if (_hasAnnotation(node.metadata, FeatureAnnotation.dataClass.name)) {
+    return defaultName;
+  }
+  return null;
+}

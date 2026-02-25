@@ -10,6 +10,8 @@ A Dart Analyzer plugin that provides custom lint rules and quick fixes for [anal
 | `@CopyWith` | Warns when `copyWith` method is missing | Generates `copyWith` method |
 | `@OverrideEquality` | Warns when `==` or `hashCode` is missing | Generates `==` and `hashCode` |
 | `@OverrideToString` | Warns when `toString` is missing | Generates `toString` override |
+| `@Serialize` | Warns when map extraction method is missing | Generates map extraction method |
+| `@Deserialize` | Warns when factory map constructor is missing | Generates map factory constructor |
 
 ## Installation
 
@@ -32,6 +34,8 @@ plugins:
       unused_copy_with_annotation: true
       unused_override_equality_annotation: true
       unused_override_to_string_annotation: true
+      unused_serialize_annotation: true
+      unused_deserialize_annotation: true
 ```
 
 ## Usage

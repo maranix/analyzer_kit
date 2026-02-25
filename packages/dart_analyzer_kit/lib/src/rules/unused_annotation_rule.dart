@@ -51,7 +51,31 @@ final class UnusedAnnotationVisitor extends SimpleAstVisitor {
   void visitClassDeclaration(ClassDeclaration node) {
     if (!hasFeatureEnabled(node, annotation)) return;
 
-    final remainingMethods = Set.from(_methods);
+    final remainingMethods = <String>{};
+    if (_methods.isNotEmpty) {
+      remainingMethods.addAll(_methods);
+    } else {
+      // Dynamic method name extraction for serialize/deserialize
+      final defaultMethod = annotation == FeatureAnnotation.serialize
+          ? 'toMap'
+          : annotation == FeatureAnnotation.deserialize
+          ? 'fromMap'
+          : null;
+
+      if (defaultMethod != null) {
+        final methodName = extractFeatureMethodName(
+          node,
+          annotation,
+          defaultMethod,
+        );
+        if (methodName != null) {
+          remainingMethods.add(methodName);
+        }
+      }
+    }
+
+    if (remainingMethods.isEmpty) return; // No methods to check
+
     for (var member in node.members) {
       if (remainingMethods.isEmpty) break;
       if (member is! MethodDeclaration) continue;

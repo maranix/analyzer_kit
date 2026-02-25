@@ -5,3 +5,6 @@
 - Added `unused_override_equality_annotation` lint rule with `==` and `hashCode` quick fix.
 - Added `unused_override_to_string_annotation` lint rule with `toString` quick fix.
 - Added support for the `@DataClass` annotation, triggering warnings and generating `copyWith`, `==`, `hashCode`, and `toString` conditionally based on the annotation's arguments.
+- Added `unused_serialize_annotation` lint rule with serialization map quick fix.
+- Added `unused_deserialize_annotation` lint rule with factory constructor map quick fix.
+- Refactored `UnusedAnnotationRule` into a scalable `BaseAnnotationRule` architecture.

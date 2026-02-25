@@ -188,3 +188,40 @@ String _equalityExpression(ClassField field, {bool? deepCollectionEquality}) {
 
   return 'other.$name == $name';
 }
+
+/// Generates a serialization method for the given [fields] and [methodName].
+String generateSerializeMethod(String methodName, Iterable<ClassField> fields) {
+  final entries = fields.map((f) => "'${f.name}': ${f.name}").join(', ');
+
+  final method = Method(
+    (b) => b
+      ..name = methodName
+      ..lambda = true
+      ..returns = refer('Map<String, dynamic>')
+      ..body = Code('{$entries};'),
+  );
+
+  return formatCode('${method.accept(_dartEmitter)}');
+}
+
+/// Generates a deserialization factory/method for the given [className], [fields], and [methodName].
+String generateDeserializeMethod(
+  String className,
+  String methodName,
+  Iterable<ClassField> fields,
+) {
+  final assignments = fields
+      .map((f) => '${f.name}: map[\'${f.name}\'] as ${f.type}')
+      .join(',\n');
+
+  final code =
+      '''
+factory $className.$methodName(Map<String, dynamic> map) {
+  return $className(
+    $assignments
+  );
+}
+''';
+
+  return formatConstructor(code);
+}

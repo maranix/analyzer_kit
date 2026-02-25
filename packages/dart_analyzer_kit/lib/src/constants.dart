@@ -33,4 +33,20 @@ abstract final class LintCodes {
     severity: .ERROR,
     correctionMessage: 'Either remove the annotation or override `toString`.',
   );
+
+  static const LintCode serialize = LintCode(
+    'unused_serialize_annotation',
+    'Classes annotated with @Serialize or @DataClass must have a serialization method.',
+    severity: .ERROR,
+    correctionMessage:
+        'Either remove the annotation or add a serialization method.',
+  );
+
+  static const LintCode deserialize = LintCode(
+    'unused_deserialize_annotation',
+    'Classes annotated with @Deserialize or @DataClass must have a deserialization factory/method.',
+    severity: .ERROR,
+    correctionMessage:
+        'Either remove the annotation or add a deserialization factory/method.',
+  );
 }

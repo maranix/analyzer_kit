@@ -7,3 +7,5 @@ plugins:
       unused_copy_with_annotation: true
       unused_override_to_string_annotation: true
       unused_override_equality_annotation: true
+      unused_serialize_annotation: true
+      unused_deserialize_annotation: true

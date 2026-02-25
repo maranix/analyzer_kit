@@ -43,4 +43,40 @@ void main() {
       expect(overrideToString, equals(const OverrideToString()));
     });
   });
+
+  group('Serialize', () {
+    test('instance can be created', () {
+      expect(const Serialize(), isA<Serialize>());
+    });
+
+    test('instance with custom name can be created', () {
+      expect(const Serialize(name: .custom('test')), isA<Serialize>());
+    });
+
+    test('constant is available', () {
+      expect(serialize, isA<Serialize>());
+    });
+
+    test('constant equals constructor', () {
+      expect(serialize, equals(const Serialize()));
+    });
+  });
+
+  group('Deserialize', () {
+    test('instance can be created', () {
+      expect(const Deserialize(), isA<Deserialize>());
+    });
+
+    test('instance with custom name can be created', () {
+      expect(const Deserialize(name: .custom('test')), isA<Deserialize>());
+    });
+
+    test('constant is available', () {
+      expect(deserialize, isA<Deserialize>());
+    });
+
+    test('constant equals constructor', () {
+      expect(deserialize, equals(const Deserialize()));
+    });
+  });
 }

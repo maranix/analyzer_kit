@@ -1,6 +1,7 @@
 import 'package:analyzer_kit_annotation/analyzer_kit_annotation.dart';
 
-@dataClass
+@serialize
+@deserialize
 final class User {
   User({
     required this.name,
@@ -43,4 +44,20 @@ final class User {
   @override
   String toString() =>
       'User(name: $name, age: $age, tags: $tags, scores: $scores)';
+
+  Map<String, dynamic> toMap() => {
+    'name': name,
+    'age': age,
+    'tags': tags,
+    'scores': scores,
+  };
+
+  factory User.fromMap(Map<String, dynamic> map) {
+    return User(
+      name: map['name'] as String,
+      age: map['age'] as int,
+      tags: map['tags'] as List<String>,
+      scores: map['scores'] as Map<String, int>,
+    );
+  }
 }

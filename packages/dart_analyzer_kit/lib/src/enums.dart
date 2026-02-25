@@ -6,7 +6,9 @@ enum FeatureAnnotation {
   dataClass('DataClass'),
   copyWith('CopyWith'),
   overrideToString('OverrideToString'),
-  overrideEquality('OverrideEquality');
+  overrideEquality('OverrideEquality'),
+  serialize('Serialize'),
+  deserialize('Deserialize');
 
   const FeatureAnnotation(this.name);
 
@@ -29,7 +31,9 @@ enum FeatureMethod {
 enum FeatureDiagnosticCode {
   copyWith(LintCodes.copyWith),
   overrideToString(LintCodes.overrideToString),
-  overrideEquality(LintCodes.overrideEquality);
+  overrideEquality(LintCodes.overrideEquality),
+  serialize(LintCodes.serialize),
+  deserialize(LintCodes.deserialize);
 
   const FeatureDiagnosticCode(this.diag);
 
