@@ -33,12 +33,8 @@ Iterable<ClassField> extractGeneratableFields(ClassDeclaration declaration) {
 /// (e.g., `@CopyWith`) or the composite `@DataClass` annotation where the
 /// feature is not explicitly disabled.
 bool hasFeatureEnabled(ClassDeclaration node, FeatureAnnotation feature) {
-  // If we're checking for the DataClass feature itself, it's just a presence check
-  if (feature == FeatureAnnotation.dataClass) {
-    return _hasAnnotation(node.metadata, feature.name);
-  }
-
-  // Check for direct annotation first (e.g., @CopyWith)
+  // Check for direct annotation first regardless ignoring letter casing
+  // (e.g., @CopyWith and @copyWith are treated as same)
   if (_hasAnnotation(node.metadata, feature.name)) {
     return true;
   }
