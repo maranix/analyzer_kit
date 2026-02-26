@@ -1,8 +1,4 @@
-import 'package:analyzer/dart/ast/ast.dart'
-    show ClassDeclaration, MethodDeclaration;
-import 'package:analyzer_kit/src/enums.dart';
-import 'package:analyzer_kit/src/rules/base_annotation_rule.dart';
-import 'package:analyzer_kit/src/utils/utils.dart';
+part of 'unused_annotation_rule.dart';
 
 final class UnusedSerializeRule extends BaseAnnotationRule {
   UnusedSerializeRule()
@@ -12,11 +8,11 @@ final class UnusedSerializeRule extends BaseAnnotationRule {
   FeatureAnnotation get annotation => FeatureAnnotation.serialize;
 
   @override
-  BaseAnnotationVisitor getVisitor() => _Visitor(this);
+  BaseAnnotationVisitor getVisitor() => _UnusedSerializeVisitor(this);
 }
 
-final class _Visitor extends BaseAnnotationVisitor {
-  _Visitor(super.rule);
+final class _UnusedSerializeVisitor extends BaseAnnotationVisitor {
+  _UnusedSerializeVisitor(super.rule);
 
   @override
   void visitClassDeclaration(ClassDeclaration node) {

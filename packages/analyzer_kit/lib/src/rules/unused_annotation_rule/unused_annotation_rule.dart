@@ -6,7 +6,14 @@ import 'package:analyzer/dart/ast/ast.dart'
 import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:analyzer/error/error.dart' show DiagnosticCode;
 import 'package:analyzer_kit/src/enums.dart';
+import 'package:analyzer_kit/src/rules/base_annotation_rule.dart';
 import 'package:analyzer_kit/src/utils/utils.dart';
+
+part 'unused_copy_with_rule.dart';
+part 'unused_deserialize_rule.dart';
+part 'unused_override_equality_rule.dart';
+part 'unused_override_to_string_rule.dart';
+part 'unused_serialize_rule.dart';
 
 /// Lint rule that reports annotations whose required methods are missing.
 final class UnusedAnnotationRule extends AnalysisRule {

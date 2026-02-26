@@ -1,8 +1,4 @@
-import 'package:analyzer/dart/ast/ast.dart'
-    show ClassDeclaration, MethodDeclaration;
-import 'package:analyzer_kit/src/enums.dart';
-import 'package:analyzer_kit/src/rules/base_annotation_rule.dart';
-import 'package:analyzer_kit/src/utils/utils.dart';
+part of 'unused_annotation_rule.dart';
 
 final class UnusedCopyWithRule extends BaseAnnotationRule {
   UnusedCopyWithRule()
@@ -12,11 +8,11 @@ final class UnusedCopyWithRule extends BaseAnnotationRule {
   FeatureAnnotation get annotation => FeatureAnnotation.copyWith;
 
   @override
-  BaseAnnotationVisitor getVisitor() => _Visitor(this);
+  BaseAnnotationVisitor getVisitor() => _UnusedCopyWithVisitor(this);
 }
 
-final class _Visitor extends BaseAnnotationVisitor {
-  _Visitor(super.rule);
+final class _UnusedCopyWithVisitor extends BaseAnnotationVisitor {
+  _UnusedCopyWithVisitor(super.rule);
 
   @override
   void visitClassDeclaration(ClassDeclaration node) {

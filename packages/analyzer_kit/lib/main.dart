@@ -6,11 +6,7 @@ import 'package:analyzer_kit/src/fixes/add_deserialize_method.dart';
 import 'package:analyzer_kit/src/fixes/add_serialize_method.dart';
 import 'package:analyzer_kit/src/fixes/override_equality_methods.dart';
 import 'package:analyzer_kit/src/fixes/override_to_string_method.dart';
-import 'package:analyzer_kit/src/rules/unused_copy_with_rule.dart';
-import 'package:analyzer_kit/src/rules/unused_deserialize_rule.dart';
-import 'package:analyzer_kit/src/rules/unused_override_equality_rule.dart';
-import 'package:analyzer_kit/src/rules/unused_override_to_string_rule.dart';
-import 'package:analyzer_kit/src/rules/unused_serialize_rule.dart';
+import 'package:analyzer_kit/src/rules/unused_annotation_rule/unused_annotation_rule.dart';
 
 final plugin = AnalyzerKit();
 
