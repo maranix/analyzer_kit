@@ -1,6 +1,6 @@
 part of 'unused_annotation_rule.dart';
 
-final class UnusedCopyWithRule extends BaseAnnotationRule {
+final class UnusedCopyWithRule extends UnusedAnnotationRule {
   UnusedCopyWithRule()
     : super(featureDiagnosticCode: FeatureDiagnosticCode.copyWith);
 
@@ -8,22 +8,14 @@ final class UnusedCopyWithRule extends BaseAnnotationRule {
   FeatureAnnotation get annotation => FeatureAnnotation.copyWith;
 
   @override
-  BaseAnnotationVisitor getVisitor() => _UnusedCopyWithVisitor(this);
+  UnusedAnnotationVisitor getVisitor() => _UnusedCopyWithVisitor(this);
 }
 
-final class _UnusedCopyWithVisitor extends BaseAnnotationVisitor {
+final class _UnusedCopyWithVisitor extends UnusedAnnotationVisitor {
   _UnusedCopyWithVisitor(super.rule);
 
   @override
-  void visitClassDeclaration(ClassDeclaration node) {
-    if (!hasFeatureEnabled(node, annotation)) return;
-
-    final hasMethod = node.members.any(
-      (m) =>
-          m is MethodDeclaration &&
-          m.name.lexeme == FeatureMethod.copyWith.name,
-    );
-
-    if (!hasMethod) reportError(node);
+  Iterable<String>? getExpectedMethodNames(ClassDeclaration node) {
+    return [FeatureMethod.copyWith.name];
   }
 }

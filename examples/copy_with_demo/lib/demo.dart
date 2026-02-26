@@ -1,7 +1,6 @@
 import 'package:analyzer_kit_annotation/analyzer_kit_annotation.dart';
 
-@serialize
-@deserialize
+@dataClass
 final class User {
   User({
     required this.name,
@@ -14,20 +13,6 @@ final class User {
   final int age;
   final List<String> tags;
   final Map<String, int> scores;
-
-  @override
-  int get hashCode =>
-      Object.hashAll([name, age, deepHash(tags), deepHash(scores)]);
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is User &&
-        other.name == name &&
-        other.age == age &&
-        deepEquals(other.tags, tags) &&
-        deepEquals(other.scores, scores);
-  }
 
   User copyWith({
     String? name,
@@ -44,6 +29,20 @@ final class User {
   @override
   String toString() =>
       'User(name: $name, age: $age, tags: $tags, scores: $scores)';
+
+  @override
+  int get hashCode =>
+      Object.hashAll([name, age, deepHash(tags), deepHash(scores)]);
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is User &&
+        other.name == name &&
+        other.age == age &&
+        deepEquals(other.tags, tags) &&
+        deepEquals(other.scores, scores);
+  }
 
   Map<String, dynamic> toMap() => {
     'name': name,

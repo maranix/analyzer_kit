@@ -1,6 +1,6 @@
 part of 'unused_annotation_rule.dart';
 
-final class UnusedSerializeRule extends BaseAnnotationRule {
+final class UnusedSerializeRule extends UnusedAnnotationRule {
   UnusedSerializeRule()
     : super(featureDiagnosticCode: FeatureDiagnosticCode.serialize);
 
@@ -8,23 +8,16 @@ final class UnusedSerializeRule extends BaseAnnotationRule {
   FeatureAnnotation get annotation => FeatureAnnotation.serialize;
 
   @override
-  BaseAnnotationVisitor getVisitor() => _UnusedSerializeVisitor(this);
+  UnusedAnnotationVisitor getVisitor() => _UnusedSerializeVisitor(this);
 }
 
-final class _UnusedSerializeVisitor extends BaseAnnotationVisitor {
+final class _UnusedSerializeVisitor extends UnusedAnnotationVisitor {
   _UnusedSerializeVisitor(super.rule);
 
   @override
-  void visitClassDeclaration(ClassDeclaration node) {
-    if (!hasFeatureEnabled(node, annotation)) return;
-
+  Iterable<String>? getExpectedMethodNames(ClassDeclaration node) {
     final expectedName = extractFeatureMethodName(node, annotation, 'toMap');
-    if (expectedName == null) return; // Feature disabled or unset
-
-    final hasMethod = node.members.any(
-      (m) => m is MethodDeclaration && m.name.lexeme == expectedName,
-    );
-
-    if (!hasMethod) reportError(node);
+    if (expectedName == null) return null;
+    return [expectedName];
   }
 }
