@@ -20,7 +20,11 @@ enum FeatureMethod {
   copyWith('copyWith'),
   overrideToString('toString'),
   overrideHashCode('hashCode'),
-  overrideEquals('==');
+  overrideEquals('=='),
+  operatorEquals('operator =='),
+  fromMap('fromMap'),
+  fromString('fromString'),
+  toMap('toMap');
 
   const FeatureMethod(this.name);
 

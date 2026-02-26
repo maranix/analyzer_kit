@@ -22,7 +22,7 @@ String generateCopyWithMethod(String className, Iterable<ClassField> fields) {
 
   final method = Method(
     (b) => b
-      ..name = MethodNames.copyWith
+      ..name = FeatureMethod.copyWith.name
       ..optionalParameters.addAll(functionParams)
       ..lambda = true
       ..body = refer(className).call(const [], namedArgs).statement
@@ -40,7 +40,7 @@ String generateToStringMethod(String className, Iterable<ClassField> fields) {
 
   final method = Method(
     (b) => b
-      ..name = MethodNames.overrideToString
+      ..name = FeatureMethod.overrideToString.name
       ..lambda = true
       ..annotations.add(refer('override'))
       ..body = body.statement
@@ -71,7 +71,7 @@ String generateHashCodeOverride(
       ..type = .getter
       ..annotations.add(refer('override'))
       ..returns = refer('int')
-      ..name = MethodNames.overrideHashCode
+      ..name = FeatureMethod.overrideHashCode.name
       ..lambda = true
       ..body = Code('Object.hashAll([$hashElements]);'),
   );
@@ -134,7 +134,7 @@ String generateEqualityOperatorOverride(
     (b) => b
       ..annotations.add(refer('override'))
       ..returns = refer('bool')
-      ..name = MethodNames.operatorEquals
+      ..name = FeatureMethod.operatorEquals.name
       ..requiredParameters.add(
         Parameter(
           (b) => b

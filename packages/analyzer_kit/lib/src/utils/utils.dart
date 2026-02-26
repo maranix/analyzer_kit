@@ -6,7 +6,6 @@ import 'package:analyzer/dart/ast/ast.dart'
         BooleanLiteral,
         Annotation,
         NodeList;
-import 'package:analyzer_kit/src/constants.dart';
 import 'package:analyzer_kit/src/enums.dart';
 import 'package:analyzer_kit/src/types.dart';
 import 'package:code_builder/code_builder.dart';

@@ -2,11 +2,10 @@ import 'package:analysis_server_plugin/edit/dart/correction_producer.dart';
 import 'package:analysis_server_plugin/edit/dart/dart_fix_kind_priority.dart'
     show DartFixKindPriority;
 import 'package:analyzer/dart/ast/ast.dart';
-import 'package:analyzer_plugin/utilities/change_builder/change_builder_core.dart';
-import 'package:analyzer_plugin/utilities/fixes/fixes.dart';
-import 'package:analyzer_kit/src/constants.dart';
 import 'package:analyzer_kit/src/enums.dart';
 import 'package:analyzer_kit/src/utils/utils.dart';
+import 'package:analyzer_plugin/utilities/change_builder/change_builder_core.dart';
+import 'package:analyzer_plugin/utilities/fixes/fixes.dart';
 
 /// Quick fix that generates `==` operator and `hashCode` overrides for
 /// classes annotated with `@OverrideEquality`.
@@ -62,10 +61,12 @@ final class OverrideEqualityMethods extends ResolvedCorrectionProducer {
       final hasHashCodeOverride = declaration.members.any(
         (m) =>
             m is MethodDeclaration &&
-            m.name.lexeme == MethodNames.overrideHashCode,
+            m.name.lexeme == FeatureMethod.overrideHashCode.name,
       );
       final hasEqualityOperatorOverride = declaration.members.any(
-        (m) => m is MethodDeclaration && m.name.lexeme == MethodNames.equals,
+        (m) =>
+            m is MethodDeclaration &&
+            m.name.lexeme == FeatureMethod.operatorEquals.name,
       );
 
       final fields = extractGeneratableFields(declaration);

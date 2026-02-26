@@ -1,14 +1,5 @@
 import 'package:analyzer/error/error.dart' show LintCode;
 
-/// Method name constants used across lint rules and fixes.
-abstract final class MethodNames {
-  static const String overrideToString = 'toString';
-  static const String overrideHashCode = 'hashCode';
-  static const String equals = '==';
-  static const String copyWith = 'copyWith';
-  static const String operatorEquals = 'operator ==';
-}
-
 /// Lint diagnostic codes for unused annotation rules.
 abstract final class LintCodes {
   static const LintCode copyWith = LintCode(
