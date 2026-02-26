@@ -45,9 +45,7 @@ abstract base class BaseAnnotationVisitor extends RecursiveAstVisitor<void> {
   /// Reports a lint error on the annotation Node if the condition fails.
   void reportError(ClassDeclaration node) {
     for (final meta in node.metadata) {
-      if (meta.name.name.toLowerCase() == annotation.name.toLowerCase() ||
-          meta.name.name.toLowerCase() ==
-              FeatureAnnotation.dataClass.name.toLowerCase()) {
+      if (meta.name.name.toLowerCase() == annotation.name.toLowerCase()) {
         rule.reportAtNode(meta);
         return;
       }

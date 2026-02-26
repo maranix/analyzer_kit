@@ -33,6 +33,7 @@ enum FeatureMethod {
 
 /// Maps each feature to its diagnostic code.
 enum FeatureDiagnosticCode {
+  dataClass(LintCodes.dataClass),
   copyWith(LintCodes.copyWith),
   overrideToString(LintCodes.overrideToString),
   overrideEquality(LintCodes.overrideEquality),

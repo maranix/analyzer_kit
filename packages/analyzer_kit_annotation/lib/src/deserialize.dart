@@ -11,6 +11,7 @@ sealed class DeserializeMethod {
       _CustomDeserializeMethod;
   const DeserializeMethod({required this.methodName});
 
+  /// The name of the deserialization method.
   final String methodName;
 }
 
@@ -30,7 +31,8 @@ final class _CustomDeserializeMethod extends DeserializeMethod {
 ///
 /// Use as `@Deserialize()` or `@deserialize` on a class declaration.
 final class Deserialize {
-  const Deserialize({this.name = const DeserializeMethod.fromMap()});
+  /// Creates a new instance of [Deserialize].
+  const Deserialize({this.name = const .fromMap()});
 
   /// The method name configuration for deserializing the class. Defaults to `.fromMap()`.
   final DeserializeMethod name;

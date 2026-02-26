@@ -2,9 +2,9 @@ import 'package:analysis_server_plugin/edit/dart/correction_producer.dart';
 import 'package:analysis_server_plugin/edit/dart/dart_fix_kind_priority.dart'
     show DartFixKindPriority;
 import 'package:analyzer/dart/ast/ast.dart';
+import 'package:analyzer_kit/src/utils/utils.dart';
 import 'package:analyzer_plugin/utilities/change_builder/change_builder_core.dart';
 import 'package:analyzer_plugin/utilities/fixes/fixes.dart';
-import 'package:analyzer_kit/src/utils/utils.dart';
 
 /// Quick fix that generates a `toString` override for classes annotated
 /// with `@OverrideToString`.

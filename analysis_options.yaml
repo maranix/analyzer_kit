@@ -9,3 +9,4 @@ plugins:
       unused_override_equality_annotation: true
       unused_serialize_annotation: true
       unused_deserialize_annotation: true
+      unused_data_class_annotation: true

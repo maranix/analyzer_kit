@@ -112,7 +112,10 @@ String? extractFeatureMethodName(
 
   // Fallback to @DataClass checking
   if (_hasAnnotation(node.metadata, FeatureAnnotation.dataClass.name)) {
-    return defaultName;
+    // We already know it has @DataClass. Now we need to check if the specific feature is enabled.
+    if (hasFeatureEnabled(node, feature)) {
+      return defaultName;
+    }
   }
   return null;
 }

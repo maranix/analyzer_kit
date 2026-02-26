@@ -3,7 +3,7 @@
 /// Use as `@OverrideEquality()` or `@overrideEquality` on a class declaration.
 final class OverrideEquality {
   /// Creates an [OverrideEquality] annotation.
-  /// 
+  ///
   /// If [deepCollectionEquality] is set, it overrides the global runtime fallback
   /// [AnalyzerKit.deepCollectionEquality] for this specific class.
   const OverrideEquality({this.deepCollectionEquality});

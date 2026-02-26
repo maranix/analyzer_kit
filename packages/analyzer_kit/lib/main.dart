@@ -2,6 +2,7 @@ import 'package:analysis_server_plugin/plugin.dart';
 import 'package:analysis_server_plugin/registry.dart';
 import 'package:analyzer_kit/src/constants.dart';
 import 'package:analyzer_kit/src/fixes/add_copy_with_method.dart';
+import 'package:analyzer_kit/src/fixes/add_data_class_methods.dart';
 import 'package:analyzer_kit/src/fixes/add_deserialize_method.dart';
 import 'package:analyzer_kit/src/fixes/add_serialize_method.dart';
 import 'package:analyzer_kit/src/fixes/override_equality_methods.dart';
@@ -18,6 +19,10 @@ class AnalyzerKit extends Plugin {
 
   @override
   void register(PluginRegistry registry) {
+    registry
+      ..registerLintRule(UnusedDataClassRule())
+      ..registerFixForRule(LintCodes.dataClass, AddDataClassMethods.new);
+
     registry
       ..registerLintRule(UnusedCopyWithRule())
       ..registerFixForRule(LintCodes.copyWith, AddCopyWithMethod.new);

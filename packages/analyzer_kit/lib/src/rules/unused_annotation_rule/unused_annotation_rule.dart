@@ -10,6 +10,7 @@ import 'package:analyzer_kit/src/rules/base_annotation_rule.dart';
 import 'package:analyzer_kit/src/utils/utils.dart';
 
 part 'unused_copy_with_rule.dart';
+part 'unused_data_class_rule.dart';
 part 'unused_deserialize_rule.dart';
 part 'unused_override_equality_rule.dart';
 part 'unused_override_to_string_rule.dart';
