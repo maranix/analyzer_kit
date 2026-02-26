@@ -4,7 +4,7 @@ This repository contains the source code for the `analyzer_kit` project, organiz
 
 ## Packages
 
-- [dart_analyzer_kit](packages/dart_analyzer_kit): A Dart Analyzer plugin providing various utilities, including lint rules and quick fixes.
+- [analyzer_kit](packages/analyzer_kit): A Dart Analyzer plugin providing various utilities, including lint rules and quick fixes.
 
 ## Development
 
@@ -23,6 +23,6 @@ This project is configured as a Dart workspace.
     Navigate to the specific package directory to run tests.
 
     ```bash
-    cd packages/dart_analyzer_kit
+    cd packages/analyzer_kit
     dart test
     ```

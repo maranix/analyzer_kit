@@ -5,8 +5,8 @@ import 'package:analyzer/dart/ast/ast.dart'
     show ClassDeclaration, MethodDeclaration;
 import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:analyzer/error/error.dart' show DiagnosticCode;
-import 'package:dart_analyzer_kit/src/enums.dart';
-import 'package:dart_analyzer_kit/src/utils/utils.dart';
+import 'package:analyzer_kit/src/enums.dart';
+import 'package:analyzer_kit/src/utils/utils.dart';
 
 /// Lint rule that reports annotations whose required methods are missing.
 final class UnusedAnnotationRule extends AnalysisRule {

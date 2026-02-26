@@ -1,4 +1,4 @@
-/// Annotations for use with [dart_analyzer_kit](https://pub.dev/packages/dart_analyzer_kit).
+/// Annotations for use with [analyzer_kit](https://pub.dev/packages/analyzer_kit).
 ///
 /// These annotations trigger lint rules and quick fixes in the analyzer plugin.
 library;

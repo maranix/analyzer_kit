@@ -1,5 +1,5 @@
 name: analyzer_kit_annotation
-description: Annotations for use with the dart_analyzer_kit analyzer plugin.
+description: Annotations for use with the analyzer_kit analyzer plugin.
 version: 1.0.0
 repository: https://github.com/maranix/analyzer_kit/tree/main/packages/analyzer_kit_annotation
 homepage: https://github.com/maranix/analyzer_kit/tree/main/packages/analyzer_kit_annotation

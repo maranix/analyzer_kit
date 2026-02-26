@@ -7,9 +7,9 @@ import 'package:analyzer/dart/ast/ast.dart'
         Annotation,
         NodeList;
 import 'package:code_builder/code_builder.dart';
-import 'package:dart_analyzer_kit/src/constants.dart';
-import 'package:dart_analyzer_kit/src/enums.dart';
-import 'package:dart_analyzer_kit/src/types.dart';
+import 'package:analyzer_kit/src/constants.dart';
+import 'package:analyzer_kit/src/enums.dart';
+import 'package:analyzer_kit/src/types.dart';
 import 'package:dart_style/dart_style.dart';
 
 part 'code_gen_utils.dart';

@@ -4,9 +4,9 @@ import 'package:analysis_server_plugin/edit/dart/dart_fix_kind_priority.dart'
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer_plugin/utilities/change_builder/change_builder_core.dart';
 import 'package:analyzer_plugin/utilities/fixes/fixes.dart';
-import 'package:dart_analyzer_kit/src/constants.dart';
-import 'package:dart_analyzer_kit/src/enums.dart';
-import 'package:dart_analyzer_kit/src/utils/utils.dart';
+import 'package:analyzer_kit/src/constants.dart';
+import 'package:analyzer_kit/src/enums.dart';
+import 'package:analyzer_kit/src/utils/utils.dart';
 
 /// Quick fix that generates `==` operator and `hashCode` overrides for
 /// classes annotated with `@OverrideEquality`.

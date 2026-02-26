@@ -1,5 +1,5 @@
 import 'package:analyzer/error/error.dart' show DiagnosticCode;
-import 'package:dart_analyzer_kit/src/constants.dart';
+import 'package:analyzer_kit/src/constants.dart';
 
 /// Annotation names recognized by the plugin.
 enum FeatureAnnotation {

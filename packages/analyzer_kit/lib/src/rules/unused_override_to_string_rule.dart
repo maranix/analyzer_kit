@@ -1,8 +1,8 @@
 import 'package:analyzer/dart/ast/ast.dart'
     show ClassDeclaration, MethodDeclaration;
-import 'package:dart_analyzer_kit/src/enums.dart';
-import 'package:dart_analyzer_kit/src/rules/base_annotation_rule.dart';
-import 'package:dart_analyzer_kit/src/utils/utils.dart';
+import 'package:analyzer_kit/src/enums.dart';
+import 'package:analyzer_kit/src/rules/base_annotation_rule.dart';
+import 'package:analyzer_kit/src/utils/utils.dart';
 
 final class UnusedOverrideToStringRule extends BaseAnnotationRule {
   UnusedOverrideToStringRule()

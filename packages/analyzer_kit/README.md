@@ -22,14 +22,14 @@ dependencies:
   analyzer_kit_annotation: ^1.0.0
 
 dev_dependencies:
-  dart_analyzer_kit: ^1.0.0
+  analyzer_kit: ^1.0.0
 ```
 
 Enable the plugin in your `analysis_options.yaml`:
 
 ```yaml
 plugins:
-  dart_analyzer_kit:
+  analyzer_kit:
     diagnostics:
       unused_copy_with_annotation: true
       unused_override_equality_annotation: true

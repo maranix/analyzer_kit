@@ -4,18 +4,18 @@ import 'package:analysis_server_plugin/edit/dart/dart_fix_kind_priority.dart'
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer_plugin/utilities/change_builder/change_builder_core.dart';
 import 'package:analyzer_plugin/utilities/fixes/fixes.dart';
-import 'package:dart_analyzer_kit/src/enums.dart';
-import 'package:dart_analyzer_kit/src/utils/utils.dart';
+import 'package:analyzer_kit/src/enums.dart';
+import 'package:analyzer_kit/src/utils/utils.dart';
 
-/// Quick fix that generates a `copyWith` method for classes annotated
-/// with `@CopyWith`.
-final class AddCopyWithMethod extends ResolvedCorrectionProducer {
-  AddCopyWithMethod({required super.context});
+/// Quick fix that generates a deserialization  method for classes annotated
+/// with `@Deserialize`.
+final class AddDeserializeMethod extends ResolvedCorrectionProducer {
+  AddDeserializeMethod({required super.context});
 
   static const _fix = FixKind(
-    'dart.fix.addCopyWithMethod',
+    'dart.fix.addDeserializeMethod',
     DartFixKindPriority.standard,
-    'Add `copyWith` method',
+    'Add deserialization factory/method',
   );
 
   @override
@@ -30,14 +30,23 @@ final class AddCopyWithMethod extends ResolvedCorrectionProducer {
     final declaration = node.thisOrAncestorOfType<ClassDeclaration>();
     if (declaration == null) return;
 
-    if (hasFeatureEnabled(declaration, FeatureAnnotation.copyWith)) {
+    final methodName = extractFeatureMethodName(
+      declaration,
+      FeatureAnnotation.deserialize,
+      'fromMap',
+    );
+
+    if (methodName != null) {
       final fields = extractGeneratableFields(declaration);
-      if (fields.isEmpty) return;
 
       await builder.addDartFileEdit(file, (fileEditBuilder) {
         fileEditBuilder.insertMethod(declaration, (editBuilder) {
           editBuilder.write(
-            generateCopyWithMethod(declaration.name.lexeme, fields),
+            generateDeserializeMethod(
+              declaration.name.lexeme,
+              methodName,
+              fields,
+            ),
           );
         });
       });

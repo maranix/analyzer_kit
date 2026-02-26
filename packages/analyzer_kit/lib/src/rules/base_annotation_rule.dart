@@ -4,7 +4,7 @@ import 'package:analyzer/analysis_rule/rule_visitor_registry.dart';
 import 'package:analyzer/dart/ast/ast.dart' show ClassDeclaration;
 import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:analyzer/error/error.dart' show DiagnosticCode;
-import 'package:dart_analyzer_kit/src/enums.dart';
+import 'package:analyzer_kit/src/enums.dart';
 
 /// Base class for all analyzer kit lint rules.
 abstract base class BaseAnnotationRule extends AnalysisRule {

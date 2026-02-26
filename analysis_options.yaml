@@ -1,8 +1,8 @@
 include: package:lints/recommended.yaml
 
 plugins:
-  dart_analyzer_kit:
-    path: packages/dart_analyzer_kit
+  analyzer_kit:
+    path: packages/analyzer_kit
     diagnostics:
       unused_copy_with_annotation: true
       unused_override_to_string_annotation: true

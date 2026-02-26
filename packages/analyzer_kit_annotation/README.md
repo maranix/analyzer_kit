@@ -1,6 +1,6 @@
 # Analyzer Kit Annotation
 
-Annotations for use with [dart_analyzer_kit](https://pub.dev/packages/dart_analyzer_kit).
+Annotations for use with [analyzer_kit](https://pub.dev/packages/analyzer_kit).
 
 ## Annotations
 
@@ -36,4 +36,4 @@ class User {
 }
 ```
 
-The annotations are picked up by `dart_analyzer_kit` which provides lint warnings and quick fixes to generate the corresponding methods.
+The annotations are picked up by `analyzer_kit` which provides lint warnings and quick fixes to generate the corresponding methods.
