@@ -3,7 +3,8 @@ import 'package:analyzer/dart/ast/ast.dart'
         ClassDeclaration,
         ConstructorDeclaration,
         MethodDeclaration,
-        ClassMember;
+        ClassMember,
+        NodeList;
 import 'package:analyzer_kit/src/enums.dart';
 import 'package:analyzer_kit/src/rules/base_annotation_rule.dart';
 import 'package:analyzer_kit/src/utils/utils.dart';
@@ -31,10 +32,21 @@ abstract base class UnusedAnnotationVisitor extends BaseAnnotationVisitor {
   /// (or the feature is effectively disabled).
   Iterable<String>? getExpectedMethodNames(ClassDeclaration node);
 
-  /// Checks whether a [member] satisfies the requirement for a given [methodName].
-  /// By default, it checks if it's a [MethodDeclaration] with the matching name.
-  bool hasExpectedMethod(ClassMember member, String methodName) {
-    return member is MethodDeclaration && member.name.lexeme == methodName;
+  /// Reduces the [expectedMethods] by checking if the [members] contain the expected methods.
+  /// Returns true if all expected methods are found, false otherwise.
+  bool reduceExpectedMethods(
+    NodeList<ClassMember> members,
+    Iterable<String> expectedMethods,
+  ) {
+    final Set<String> methods = .from(expectedMethods);
+
+    for (final member in members) {
+      if (member is! MethodDeclaration) continue;
+
+      methods.remove(member.name.lexeme);
+    }
+
+    return methods.isEmpty;
   }
 
   @override
@@ -44,18 +56,9 @@ abstract base class UnusedAnnotationVisitor extends BaseAnnotationVisitor {
     final methods = getExpectedMethodNames(node);
     if (methods == null || methods.isEmpty) return;
 
-    final remainingMethods = methods.toSet();
+    final success = reduceExpectedMethods(node.members, methods);
 
-    for (final member in node.members) {
-      if (remainingMethods.isEmpty) break;
-
-      final satisfiedMethods = remainingMethods
-          .where((m) => hasExpectedMethod(member, m))
-          .toList();
-      remainingMethods.removeAll(satisfiedMethods);
-    }
-
-    if (remainingMethods.isNotEmpty) {
+    if (!success) {
       reportError(node);
     }
   }

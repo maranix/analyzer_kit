@@ -22,14 +22,21 @@ final class _UnusedDeserializeVisitor extends UnusedAnnotationVisitor {
   }
 
   @override
-  bool hasExpectedMethod(ClassMember member, String methodName) {
+  bool reduceExpectedMethods(
+    NodeList<ClassMember> members,
+    Iterable<String> expectedMethods,
+  ) {
     // A deserialize function can be a factory constructor OR a static method.
-    if (member is ConstructorDeclaration && member.factoryKeyword != null) {
-      return member.name?.lexeme == methodName;
+    for (final member in members) {
+      if (member is ConstructorDeclaration && member.factoryKeyword != null) {
+        return expectedMethods.contains(member.name?.lexeme);
+      }
+
+      if (member is MethodDeclaration && member.isStatic) {
+        return expectedMethods.contains(member.name.lexeme);
+      }
     }
-    if (member is MethodDeclaration && member.isStatic) {
-      return member.name.lexeme == methodName;
-    }
+
     return false;
   }
 }
