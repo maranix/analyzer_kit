@@ -1,6 +1,6 @@
 part of 'unused_annotation_rule.dart';
 
-final class UnusedOverrideToStringRule extends BaseAnnotationRule {
+final class UnusedOverrideToStringRule extends UnusedAnnotationRule {
   UnusedOverrideToStringRule()
     : super(featureDiagnosticCode: FeatureDiagnosticCode.overrideToString);
 
@@ -8,22 +8,14 @@ final class UnusedOverrideToStringRule extends BaseAnnotationRule {
   FeatureAnnotation get annotation => FeatureAnnotation.overrideToString;
 
   @override
-  BaseAnnotationVisitor getVisitor() => _UnusedOverrideToStringVisitor(this);
+  UnusedAnnotationVisitor getVisitor() => _UnusedOverrideToStringVisitor(this);
 }
 
-final class _UnusedOverrideToStringVisitor extends BaseAnnotationVisitor {
+final class _UnusedOverrideToStringVisitor extends UnusedAnnotationVisitor {
   _UnusedOverrideToStringVisitor(super.rule);
 
   @override
-  void visitClassDeclaration(ClassDeclaration node) {
-    if (!hasFeatureEnabled(node, annotation)) return;
-
-    final hasMethod = node.members.any(
-      (m) =>
-          m is MethodDeclaration &&
-          m.name.lexeme == FeatureMethod.overrideToString.name,
-    );
-
-    if (!hasMethod) reportError(node);
+  Iterable<String>? getExpectedMethodNames(ClassDeclaration node) {
+    return [FeatureMethod.overrideToString.name];
   }
 }
