@@ -1,10 +1,48 @@
 # Analyzer Kit
 
-This repository contains the source code for the `analyzer_kit` project, organized as a Dart workspace.
+A Dart workspace containing packages for annotation-driven code generation through the Dart Analyzer plugin system — no build runners required.
 
 ## Packages
 
-- [analyzer_kit](packages/analyzer_kit): A Dart Analyzer plugin providing various utilities, including lint rules and quick fixes.
+| Package | Description | pub.dev |
+|---|---|---|
+| [analyzer_kit](packages/analyzer_kit) | Dart Analyzer plugin providing lint rules and quick fixes | [![pub](https://img.shields.io/pub/v/analyzer_kit.svg)](https://pub.dev/packages/analyzer_kit) |
+| [analyzer_kit_annotation](packages/analyzer_kit_annotation) | Annotations consumed by the plugin | [![pub](https://img.shields.io/pub/v/analyzer_kit_annotation.svg)](https://pub.dev/packages/analyzer_kit_annotation) |
+
+## Quick Start
+
+```yaml
+# pubspec.yaml
+dependencies:
+  analyzer_kit_annotation: ^1.0.0
+```
+
+```yaml
+# analysis_options.yaml
+plugins:
+  analyzer_kit: ^1.0.0
+    diagnostics:
+      data_class_annotation: true
+      copy_with_annotation: true
+      override_equality_annotation: true
+      override_to_string_annotation: true
+      serialize_annotation: true
+      deserialize_annotation: true
+```
+
+```dart
+import 'package:analyzer_kit_annotation/analyzer_kit_annotation.dart';
+
+@dataClass
+class User {
+  final String name;
+  final int age;
+
+  User({required this.name, required this.age});
+
+  // Apply IDE quick fix → generates copyWith, ==, hashCode, toString, toMap, fromMap
+}
+```
 
 ## Development
 
@@ -12,17 +50,17 @@ This project is configured as a Dart workspace.
 
 ### Getting Started
 
-1.  **Resolve Dependencies**:
-    Run `dart pub get` from the root directory to resolve dependencies for all packages in the workspace.
+```bash
+# Resolve dependencies for all packages
+dart pub get
 
-    ```bash
-    dart pub get
-    ```
+# Run analyzer_kit_annotation tests
+cd packages/analyzer_kit_annotation && dart test
 
-2.  **Running Tests**:
-    Navigate to the specific package directory to run tests.
+# Run analyzer_kit tests
+cd packages/analyzer_kit && dart test
+```
 
-    ```bash
-    cd packages/analyzer_kit
-    dart test
-    ```
+## License
+
+See [LICENSE](LICENSE) for details.

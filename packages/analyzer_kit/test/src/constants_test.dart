@@ -6,7 +6,7 @@ void main() {
   group('LintCodes', () {
     group('dataClass', () {
       test('has correct name', () {
-        expect(LintCodes.dataClass.name, 'unused_data_class_annotation');
+        expect(LintCodes.dataClass.name, 'data_class_annotation');
       });
 
       test('has correct problem message', () {
@@ -29,7 +29,7 @@ void main() {
 
     group('copyWith', () {
       test('has correct name', () {
-        expect(LintCodes.copyWith.name, 'unused_copy_with_annotation');
+        expect(LintCodes.copyWith.name, 'copy_with_annotation');
       });
 
       test('has correct problem message', () {
@@ -52,10 +52,7 @@ void main() {
 
     group('overrideEquality', () {
       test('has correct name', () {
-        expect(
-          LintCodes.overrideEquality.name,
-          'unused_override_equality_annotation',
-        );
+        expect(LintCodes.overrideEquality.name, 'override_equality_annotation');
       });
 
       test('has correct problem message', () {
@@ -79,7 +76,7 @@ void main() {
       test('has correct name', () {
         expect(
           LintCodes.overrideToString.name,
-          'unused_override_to_string_annotation',
+          'override_to_string_annotation',
         );
       });
 
@@ -102,7 +99,7 @@ void main() {
 
     group('serialize', () {
       test('has correct name', () {
-        expect(LintCodes.serialize.name, 'unused_serialize_annotation');
+        expect(LintCodes.serialize.name, 'serialize_annotation');
       });
 
       test('has correct problem message', () {
@@ -121,7 +118,7 @@ void main() {
 
     group('deserialize', () {
       test('has correct name', () {
-        expect(LintCodes.deserialize.name, 'unused_deserialize_annotation');
+        expect(LintCodes.deserialize.name, 'deserialize_annotation');
       });
 
       test('has correct problem message', () {

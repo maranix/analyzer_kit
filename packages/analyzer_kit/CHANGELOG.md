@@ -1,10 +1,21 @@
 ## 1.0.0
 
 - Initial release.
-- Added `unused_copy_with_annotation` lint rule with `copyWith` quick fix.
-- Added `unused_override_equality_annotation` lint rule with `==` and `hashCode` quick fix.
-- Added `unused_override_to_string_annotation` lint rule with `toString` quick fix.
-- Added support for the `@DataClass` annotation, triggering warnings and generating `copyWith`, `==`, `hashCode`, and `toString` conditionally based on the annotation's arguments.
-- Added `unused_serialize_annotation` lint rule with serialization map quick fix.
-- Added `unused_deserialize_annotation` lint rule with factory constructor map quick fix.
-- Refactored `UnusedAnnotationRule` into a scalable `BaseAnnotationRule` architecture.
+- **Lint rules** (all at `ERROR` severity):
+  - `data_class_annotation` — reports `@DataClass` when enabled methods are missing.
+  - `copy_with_annotation` — reports `@CopyWith` when `copyWith` is missing.
+  - `override_equality_annotation` — reports `@OverrideEquality` when `==` or `hashCode` is missing.
+  - `override_to_string_annotation` — reports `@OverrideToString` when `toString` is missing.
+  - `serialize_annotation` — reports `@Serialize` when the serialization method is missing.
+  - `deserialize_annotation` — reports `@Deserialize` when the deserialization factory/method is missing.
+- **Quick fixes** (all support Fix All via `CorrectionApplicability.automatically`):
+  - `AddDataClassMethods` — generates all enabled methods for `@DataClass` in one pass.
+  - `AddCopyWithMethod` — generates `copyWith` with named optional parameters.
+  - `OverrideEqualityMethods` — generates `==` and `hashCode` with `deepCollectionEquality` support.
+  - `OverrideToStringMethod` — generates `toString` listing all generatable fields.
+  - `AddSerializeMethod` — generates serialization method with configurable name.
+  - `AddDeserializeMethod` — generates deserialization factory with configurable name.
+- **Architecture:**
+  - Scalable `BaseAnnotationRule` / `AnnotationRule` hierarchy.
+  - Code generation via `code_builder` and `dart_style`.
+  - Case-insensitive annotation matching for both PascalCase and camelCase usage.

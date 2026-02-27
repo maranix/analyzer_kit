@@ -1,18 +1,18 @@
-part of 'unused_annotation_rule.dart';
+part of 'annotation_rule.dart';
 
-final class UnusedSerializeRule extends UnusedAnnotationRule {
-  UnusedSerializeRule()
+final class SerializeRule extends AnnotationRule {
+  SerializeRule()
     : super(featureDiagnosticCode: FeatureDiagnosticCode.serialize);
 
   @override
   FeatureAnnotation get annotation => FeatureAnnotation.serialize;
 
   @override
-  UnusedAnnotationVisitor getVisitor() => _UnusedSerializeVisitor(this);
+  AnnotationVisitor getVisitor() => _SerializeVisitor(this);
 }
 
-final class _UnusedSerializeVisitor extends UnusedAnnotationVisitor {
-  _UnusedSerializeVisitor(super.rule);
+final class _SerializeVisitor extends AnnotationVisitor {
+  _SerializeVisitor(super.rule);
 
   @override
   Iterable<String>? getExpectedMethodNames(ClassDeclaration node) {

@@ -9,24 +9,24 @@ import 'package:analyzer_kit/src/enums.dart';
 import 'package:analyzer_kit/src/rules/base_annotation_rule.dart';
 import 'package:analyzer_kit/src/utils/utils.dart';
 
-part 'unused_copy_with_rule.dart';
-part 'unused_data_class_rule.dart';
-part 'unused_deserialize_rule.dart';
-part 'unused_override_equality_rule.dart';
-part 'unused_override_to_string_rule.dart';
-part 'unused_serialize_rule.dart';
+part 'copy_with_rule.dart';
+part 'data_class_rule.dart';
+part 'deserialize_rule.dart';
+part 'override_equality_rule.dart';
+part 'override_to_string_rule.dart';
+part 'serialize_rule.dart';
 
 /// Base class for lint rules that report annotations whose required methods are missing.
-abstract base class UnusedAnnotationRule extends BaseAnnotationRule {
-  UnusedAnnotationRule({required super.featureDiagnosticCode});
+abstract base class AnnotationRule extends BaseAnnotationRule {
+  AnnotationRule({required super.featureDiagnosticCode});
 
   @override
-  UnusedAnnotationVisitor getVisitor();
+  AnnotationVisitor getVisitor();
 }
 
 /// Base visitor class that checks if annotated classes contain the expected methods.
-abstract base class UnusedAnnotationVisitor extends BaseAnnotationVisitor {
-  UnusedAnnotationVisitor(super.rule);
+abstract base class AnnotationVisitor extends BaseAnnotationVisitor {
+  AnnotationVisitor(super.rule);
 
   /// Returns the required method names for the feature, given the [node].
   /// If it returns null or an empty iterable, it means no specific methods are expected

@@ -1,18 +1,18 @@
-part of 'unused_annotation_rule.dart';
+part of 'annotation_rule.dart';
 
-final class UnusedDataClassRule extends UnusedAnnotationRule {
-  UnusedDataClassRule()
+final class DataClassRule extends AnnotationRule {
+  DataClassRule()
     : super(featureDiagnosticCode: FeatureDiagnosticCode.dataClass);
 
   @override
   FeatureAnnotation get annotation => FeatureAnnotation.dataClass;
 
   @override
-  UnusedAnnotationVisitor getVisitor() => _UnusedDataClassVisitor(this);
+  AnnotationVisitor getVisitor() => _DataClassVisitor(this);
 }
 
-final class _UnusedDataClassVisitor extends UnusedAnnotationVisitor {
-  _UnusedDataClassVisitor(super.rule);
+final class _DataClassVisitor extends AnnotationVisitor {
+  _DataClassVisitor(super.rule);
 
   @override
   Iterable<String>? getExpectedMethodNames(ClassDeclaration node) {
