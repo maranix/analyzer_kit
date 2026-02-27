@@ -1,4 +1,4 @@
-.PHONY: all format analyze test publish-dry-run publish clean
+.PHONY: all format analyze test publish-dry-run publish
 
 all: format analyze test
 
@@ -18,6 +18,3 @@ publish-dry-run:
 publish:
 	cd packages/analyzer_kit_annotation && dart pub publish
 	cd packages/analyzer_kit && dart pub publish
-
-clean:
-	dart clean
