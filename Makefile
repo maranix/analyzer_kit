@@ -10,6 +10,7 @@ analyze:
 
 test:
 	cd packages/analyzer_kit_annotation && dart test
+	cd packages/analyzer_kit && dart test
 
 publish-dry-run:
 	cd packages/analyzer_kit_annotation && dart pub publish --dry-run
