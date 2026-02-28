@@ -1,3 +1,7 @@
+## 1.0.0+1
+- Dependencies:
+  - update `analyzer`, `analyzer_plugin`, `dart_style`, `code_builder` and `analysis_server_plugin` dependencies
+
 ## 1.0.0
 
 - Initial release.

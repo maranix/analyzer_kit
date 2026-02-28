@@ -28,7 +28,7 @@ Enable the plugin in your `analysis_options.yaml`:
 
 ```yaml
 plugins:
-  analyzer_kit: ^1.0.0
+  analyzer_kit: ^1.0.0+1
     diagnostics:
       data_class_annotation: true
       copy_with_annotation: true
