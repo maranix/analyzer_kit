@@ -13,22 +13,21 @@ A Dart Analyzer plugin that provides lint rules and quick fixes for [analyzer_ki
 | `@Serialize` | `serialize_annotation` | Generates serialization method (`toMap`, `toJson`, or custom) |
 | `@Deserialize` | `deserialize_annotation` | Generates deserialization factory (`fromMap`, `fromJson`, or custom) |
 
-All rules report at `ERROR` severity and all fixes support `CorrectionApplicability.automatically` (Fix All).
-
 ## Installation
 
 Add annotation package to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  analyzer_kit_annotation: ^1.0.0
+  analyzer_kit_annotation: ^1.0.0+1
 ```
 
-Enable the plugin in your `analysis_options.yaml`:
+Enable the plugin and required features in your `analysis_options.yaml`:
 
 ```yaml
 plugins:
-  analyzer_kit: ^1.0.0+1
+  analyzer_kit:
+    version: ^1.0.0+2
     diagnostics:
       data_class_annotation: true
       copy_with_annotation: true
@@ -42,7 +41,7 @@ plugins:
 
 1. **Annotate** a class with any supported annotation.
 2. **See the lint** — the analyzer reports an error if the required methods are missing.
-3. **Apply the quick fix** — use your IDE's quick fix action (or "Fix All") to generate the methods.
+3. **Apply the quick fix** — use your IDE's quick fix action to generate the methods.
 
 ```dart
 import 'package:analyzer_kit_annotation/analyzer_kit_annotation.dart';

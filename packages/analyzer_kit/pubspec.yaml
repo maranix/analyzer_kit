@@ -1,6 +1,6 @@
 name: analyzer_kit
 description: A Dart Analyzer plugin providing lint rules and quick fixes for analyzer_kit annotations.
-version: 1.0.0+1
+version: 1.0.0+2
 homepage: https://github.com/maranix/analyzer_kit/tree/main/packages/analyzer_kit
 repository: https://github.com/maranix/analyzer_kit/tree/main/packages/analyzer_kit
 issues: https://github.com/maranix/analyzer_kit/issues

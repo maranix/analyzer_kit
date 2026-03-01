@@ -14,13 +14,14 @@ A Dart workspace containing packages for annotation-driven code generation throu
 ```yaml
 # pubspec.yaml
 dependencies:
-  analyzer_kit_annotation: ^1.0.0
+  analyzer_kit_annotation: ^1.0.0+1
 ```
 
 ```yaml
 # analysis_options.yaml
 plugins:
-  analyzer_kit: ^1.0.0
+  analyzer_kit: 
+    version: ^1.0.0+2
     diagnostics:
       data_class_annotation: true
       copy_with_annotation: true

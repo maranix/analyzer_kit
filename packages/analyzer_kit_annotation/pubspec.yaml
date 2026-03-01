@@ -1,6 +1,6 @@
 name: analyzer_kit_annotation
 description: Annotations for use with the analyzer_kit analyzer plugin.
-version: 1.0.0
+version: 1.0.0+1
 repository: https://github.com/maranix/analyzer_kit/tree/main/packages/analyzer_kit_annotation
 homepage: https://github.com/maranix/analyzer_kit/tree/main/packages/analyzer_kit_annotation
 issues: https://github.com/maranix/analyzer_kit/issues

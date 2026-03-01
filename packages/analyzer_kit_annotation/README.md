@@ -8,14 +8,15 @@ Add the annotation package to your `dependencies`:
 
 ```yaml
 dependencies:
-  analyzer_kit_annotation: ^1.0.0
+  analyzer_kit_annotation: ^1.0.0+1
 ```
 
 Then enable the plugin in your `analysis_options.yaml`:
 
 ```yaml
 plugins:
-  analyzer_kit: ^1.0.0
+  analyzer_kit: 
+    version: ^1.0.0+2
     diagnostics:
       data_class_annotation: true
       copy_with_annotation: true

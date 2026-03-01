@@ -1,3 +1,7 @@
+## 1.0.0+1
+- Documentation:
+    - Small documentation updates related to intializing and enabling the plugin
+
 ## 1.0.0
 
 - Initial release.
