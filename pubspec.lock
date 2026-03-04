@@ -33,6 +33,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.14.4"
+  analyzer_testing:
+    dependency: transitive
+    description:
+      name: analyzer_testing
+      sha256: f786e7168661a8e6488fc2c21caba42467dc0061a24e0225b6470216977b4550
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.2.1"
   args:
     dependency: transitive
     description:
