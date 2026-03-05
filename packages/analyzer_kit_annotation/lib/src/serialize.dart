@@ -16,11 +16,11 @@ sealed class SerializeMethod {
 }
 
 final class _ToMapMethod extends SerializeMethod {
-  const _ToMapMethod() : super(methodName: 'toMap');
+  const _ToMapMethod() : super(methodName: "toMap");
 }
 
 final class _ToJsonMethod extends SerializeMethod {
-  const _ToJsonMethod() : super(methodName: 'toJson');
+  const _ToJsonMethod() : super(methodName: "toJson");
 }
 
 final class _CustomSerializeMethod extends SerializeMethod {

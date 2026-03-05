@@ -1,51 +1,51 @@
-import 'package:analyzer/error/error.dart' show LintCode;
+import "package:analyzer/error/error.dart" show LintCode;
 
 /// Lint diagnostic codes for annotation rules.
 abstract final class LintCodes {
   static const LintCode dataClass = LintCode(
-    'data_class_annotation',
-    'Classes annotated with @DataClass must contain the required methods for enabled features.',
+    "data_class_annotation",
+    "Classes annotated with @DataClass must contain the required methods for enabled features.",
     severity: .ERROR,
     correctionMessage:
-        'Either remove the annotation or add the required methods.',
+        "Either remove the annotation or add the required methods.",
   );
 
   static const LintCode copyWith = LintCode(
-    'copy_with_annotation',
-    'Classes annotated with @CopyWith must have a `copyWith` method.',
+    "copy_with_annotation",
+    "Classes annotated with @CopyWith must have a `copyWith` method.",
     severity: .ERROR,
     correctionMessage:
-        'Either remove the annotation or add a `copyWith` method.',
+        "Either remove the annotation or add a `copyWith` method.",
   );
 
   static const LintCode overrideEquality = LintCode(
-    'override_equality_annotation',
-    'Classes annotated with @OverrideEquality must override both `==` and `hashCode`.',
+    "override_equality_annotation",
+    "Classes annotated with @OverrideEquality must override both `==` and `hashCode`.",
     severity: .ERROR,
     correctionMessage:
-        'Either remove the annotation or override both `==` and `hashCode`.',
+        "Either remove the annotation or override both `==` and `hashCode`.",
   );
 
   static const LintCode overrideToString = LintCode(
-    'override_to_string_annotation',
-    'Classes annotated with @OverrideToString must override `toString`.',
+    "override_to_string_annotation",
+    "Classes annotated with @OverrideToString must override `toString`.",
     severity: .ERROR,
-    correctionMessage: 'Either remove the annotation or override `toString`.',
+    correctionMessage: "Either remove the annotation or override `toString`.",
   );
 
   static const LintCode serialize = LintCode(
-    'serialize_annotation',
-    'Classes annotated with @Serialize must have a serialization method.',
+    "serialize_annotation",
+    "Classes annotated with @Serialize must have a serialization method.",
     severity: .ERROR,
     correctionMessage:
-        'Either remove the annotation or add a serialization method.',
+        "Either remove the annotation or add a serialization method.",
   );
 
   static const LintCode deserialize = LintCode(
-    'deserialize_annotation',
-    'Classes annotated with @Deserialize must have a deserialization factory/method.',
+    "deserialize_annotation",
+    "Classes annotated with @Deserialize must have a deserialization factory/method.",
     severity: .ERROR,
     correctionMessage:
-        'Either remove the annotation or add a deserialization factory/method.',
+        "Either remove the annotation or add a deserialization factory/method.",
   );
 }

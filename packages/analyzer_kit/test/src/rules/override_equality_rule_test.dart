@@ -1,6 +1,6 @@
-import 'package:analyzer_kit/src/rules/annotation_rule/annotation_rule.dart';
-import 'package:analyzer_testing/analysis_rule/analysis_rule.dart';
-import 'package:test/test.dart';
+import "package:analyzer_kit/src/rules/annotation_rule/annotation_rule.dart";
+import "package:analyzer_testing/analysis_rule/analysis_rule.dart";
+import "package:test/test.dart";
 
 class OverrideEqualityRuleTest extends AnalysisRuleTest {
   @override
@@ -20,12 +20,12 @@ void main() {
 
   tearDown(() => t.tearDown());
 
-  group('OverrideEqualityRule', () {
+  group("OverrideEqualityRule", () {
     test(
-      'reports lint when @OverrideEquality present but == and hashCode missing',
+      "reports lint when @OverrideEquality present but == and hashCode missing",
       () async {
         await t.assertDiagnostics(
-          r'''
+          r"""
 class OverrideEquality {
   const OverrideEquality({this.deepCollectionEquality});
   final bool? deepCollectionEquality;
@@ -36,14 +36,14 @@ class User {
   final String name;
   User({required this.name});
 }
-''',
+""",
           [t.lint(123, 19)],
         );
       },
     );
 
-    test('no lint when both == and hashCode are overridden', () async {
-      await t.assertNoDiagnostics(r'''
+    test("no lint when both == and hashCode are overridden", () async {
+      await t.assertNoDiagnostics(r"""
 class OverrideEquality {
   const OverrideEquality({this.deepCollectionEquality});
   final bool? deepCollectionEquality;
@@ -61,14 +61,14 @@ class User {
   bool operator ==(Object other) =>
       identical(this, other) || other is User && name == other.name;
 }
-''');
+""");
     });
 
     test(
-      'reports lint when only hashCode is overridden but == is missing',
+      "reports lint when only hashCode is overridden but == is missing",
       () async {
         await t.assertDiagnostics(
-          r'''
+          r"""
 class OverrideEquality {
   const OverrideEquality({this.deepCollectionEquality});
   final bool? deepCollectionEquality;
@@ -82,17 +82,17 @@ class User {
   @override
   int get hashCode => name.hashCode;
 }
-''',
+""",
           [t.lint(123, 19)],
         );
       },
     );
 
     test(
-      'reports lint when only == is overridden but hashCode is missing',
+      "reports lint when only == is overridden but hashCode is missing",
       () async {
         await t.assertDiagnostics(
-          r'''
+          r"""
 class OverrideEquality {
   const OverrideEquality({this.deepCollectionEquality});
   final bool? deepCollectionEquality;
@@ -107,24 +107,24 @@ class User {
   bool operator ==(Object other) =>
       identical(this, other) || other is User && name == other.name;
 }
-''',
+""",
           [t.lint(123, 19)],
         );
       },
     );
 
-    test('no lint on class without annotation', () async {
-      await t.assertNoDiagnostics(r'''
+    test("no lint on class without annotation", () async {
+      await t.assertNoDiagnostics(r"""
 class User {
   final String name;
   User({required this.name});
 }
-''');
+""");
     });
 
-    test('case-insensitive annotation matching', () async {
+    test("case-insensitive annotation matching", () async {
       await t.assertDiagnostics(
-        r'''
+        r"""
 class overrideequality {
   const overrideequality({this.deepCollectionEquality});
   final bool? deepCollectionEquality;
@@ -135,7 +135,7 @@ class User {
   final String name;
   User({required this.name});
 }
-''',
+""",
         [t.lint(123, 19)],
       );
     });

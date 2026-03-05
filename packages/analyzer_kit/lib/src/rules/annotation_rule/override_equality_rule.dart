@@ -1,4 +1,4 @@
-part of 'annotation_rule.dart';
+part of "annotation_rule.dart";
 
 final class OverrideEqualityRule extends AnnotationRule {
   OverrideEqualityRule()

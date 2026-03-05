@@ -1,16 +1,16 @@
-import 'package:analyzer/dart/ast/ast.dart'
+import "package:analyzer/dart/ast/ast.dart"
     show ClassDeclaration, ConstructorDeclaration, MethodDeclaration;
-import 'package:analyzer/dart/ast/syntactic_entity.dart';
-import 'package:analyzer_kit/src/enums.dart';
-import 'package:analyzer_kit/src/rules/base_annotation_rule.dart';
-import 'package:analyzer_kit/src/utils/utils.dart';
+import "package:analyzer/dart/ast/syntactic_entity.dart";
+import "package:analyzer_kit/src/enums.dart";
+import "package:analyzer_kit/src/rules/base_annotation_rule.dart";
+import "package:analyzer_kit/src/utils/utils.dart";
 
-part 'copy_with_rule.dart';
-part 'data_class_rule.dart';
-part 'deserialize_rule.dart';
-part 'override_equality_rule.dart';
-part 'override_to_string_rule.dart';
-part 'serialize_rule.dart';
+part "copy_with_rule.dart";
+part "data_class_rule.dart";
+part "deserialize_rule.dart";
+part "override_equality_rule.dart";
+part "override_to_string_rule.dart";
+part "serialize_rule.dart";
 
 /// Base class for lint rules that report annotations whose required methods are missing.
 abstract base class AnnotationRule extends BaseAnnotationRule {

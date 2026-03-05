@@ -1,4 +1,4 @@
-import 'package:collection/collection.dart';
+import "package:collection/collection.dart";
 
 const _equality = DeepCollectionEquality.unordered();
 

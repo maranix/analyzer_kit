@@ -16,11 +16,11 @@ sealed class DeserializeMethod {
 }
 
 final class _FromMapMethod extends DeserializeMethod {
-  const _FromMapMethod() : super(methodName: 'fromMap');
+  const _FromMapMethod() : super(methodName: "fromMap");
 }
 
 final class _FromJsonMethod extends DeserializeMethod {
-  const _FromJsonMethod() : super(methodName: 'fromJson');
+  const _FromJsonMethod() : super(methodName: "fromJson");
 }
 
 final class _CustomDeserializeMethod extends DeserializeMethod {

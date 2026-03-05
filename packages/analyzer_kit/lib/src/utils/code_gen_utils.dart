@@ -1,4 +1,4 @@
-part of 'utils.dart';
+part of "utils.dart";
 
 /// Generates a `copyWith` method for the given [className] and [fields].
 String generateCopyWithMethod(String className, Iterable<ClassField> fields) {
@@ -11,13 +11,13 @@ String generateCopyWithMethod(String className, Iterable<ClassField> fields) {
         (b) => b
           ..name = field.name
           ..named = true
-          ..type = refer('${field.type}?'),
+          ..type = refer("${field.type}?"),
       ),
     );
 
     namedArgs[field.name] = refer(
       field.name,
-    ).ifNullThen(refer('this.${field.name}'));
+    ).ifNullThen(refer("this.${field.name}"));
   }
 
   final method = Method(
@@ -29,7 +29,7 @@ String generateCopyWithMethod(String className, Iterable<ClassField> fields) {
       ..returns = refer(className),
   );
 
-  return formatCode('${method.accept(_dartEmitter)}');
+  return formatCode("${method.accept(_dartEmitter)}");
 }
 
 /// Generates a `toString` override for the given [className] and [fields].
@@ -42,12 +42,12 @@ String generateToStringMethod(String className, Iterable<ClassField> fields) {
     (b) => b
       ..name = FeatureMethod.overrideToString.name
       ..lambda = true
-      ..annotations.add(refer('override'))
+      ..annotations.add(refer("override"))
       ..body = body.statement
-      ..returns = refer('String'),
+      ..returns = refer("String"),
   );
 
-  return formatCode('${method.accept(_dartEmitter)}');
+  return formatCode("${method.accept(_dartEmitter)}");
 }
 
 /// Generates a `hashCode` getter override for the given [fields].
@@ -64,19 +64,19 @@ String generateHashCodeOverride(
         (f) =>
             _hashExpression(f, deepCollectionEquality: deepCollectionEquality),
       )
-      .join(', ');
+      .join(", ");
 
   final override = Method(
     (b) => b
       ..type = .getter
-      ..annotations.add(refer('override'))
-      ..returns = refer('int')
+      ..annotations.add(refer("override"))
+      ..returns = refer("int")
       ..name = FeatureMethod.overrideHashCode.name
       ..lambda = true
-      ..body = Code('Object.hashAll([$hashElements]);'),
+      ..body = Code("Object.hashAll([$hashElements]);"),
   );
 
-  return formatCode('${override.accept(_dartEmitter)}');
+  return formatCode("${override.accept(_dartEmitter)}");
 }
 
 /// Returns the hash expression for a single [field].
@@ -84,26 +84,26 @@ String _hashExpression(ClassField field, {bool? deepCollectionEquality}) {
   final name = field.name;
 
   if (field.isCollectionType && deepCollectionEquality != false) {
-    return 'deepHash($name)';
+    return "deepHash($name)";
   }
 
   final nullable = field.isNullableType;
-  final bang = nullable ? '!' : '';
+  final bang = nullable ? "!" : "";
 
   if (field.isListOrIterableType) {
-    final expr = 'Object.hashAll($name$bang)';
-    return nullable ? '$name == null ? null : $expr' : expr;
+    final expr = "Object.hashAll($name$bang)";
+    return nullable ? "$name == null ? null : $expr" : expr;
   }
 
   if (field.isSetType) {
-    final expr = 'Object.hashAllUnordered($name$bang)';
-    return nullable ? '$name == null ? null : $expr' : expr;
+    final expr = "Object.hashAllUnordered($name$bang)";
+    return nullable ? "$name == null ? null : $expr" : expr;
   }
 
   if (field.isMapType) {
     final expr =
-        'Object.hashAllUnordered($name$bang.entries.map((e) => Object.hash(e.key, e.value)))';
-    return nullable ? '$name == null ? null : $expr' : expr;
+        "Object.hashAllUnordered($name$bang.entries.map((e) => Object.hash(e.key, e.value)))";
+    return nullable ? "$name == null ? null : $expr" : expr;
   }
 
   return name;
@@ -120,32 +120,32 @@ String generateEqualityOperatorOverride(
   bool? deepCollectionEquality,
 }) {
   final comparisons = fields.isEmpty
-      ? ''
+      ? ""
       : '&& ${fields.map((f) => _equalityExpression(f, deepCollectionEquality: deepCollectionEquality)).join(' && ')}';
 
   final statements = <Code>[
-    Code(''),
-    Code('if (identical(this, other)) return true;'),
-    Code('return other is $className $comparisons;'),
-    Code(''),
+    Code(""),
+    Code("if (identical(this, other)) return true;"),
+    Code("return other is $className $comparisons;"),
+    Code(""),
   ];
 
   final override = Method(
     (b) => b
-      ..annotations.add(refer('override'))
-      ..returns = refer('bool')
+      ..annotations.add(refer("override"))
+      ..returns = refer("bool")
       ..name = FeatureMethod.operatorEquals.name
       ..requiredParameters.add(
         Parameter(
           (b) => b
-            ..name = 'other'
-            ..type = refer('Object'),
+            ..name = "other"
+            ..type = refer("Object"),
         ),
       )
       ..body = Block.of(statements),
   );
 
-  return '${override.accept(_dartEmitter)}';
+  return "${override.accept(_dartEmitter)}";
 }
 
 /// Returns the equality comparison expression for a single [field].
@@ -153,55 +153,55 @@ String _equalityExpression(ClassField field, {bool? deepCollectionEquality}) {
   final name = field.name;
 
   if (field.isCollectionType && deepCollectionEquality != false) {
-    return 'deepEquals(other.$name, $name)';
+    return "deepEquals(other.$name, $name)";
   }
 
   final nullable = field.isNullableType;
-  final bang = nullable ? '!' : '';
+  final bang = nullable ? "!" : "";
 
   if (field.isListOrIterableType) {
     final expr =
-        'other.$name$bang.length == $name$bang.length '
-        '&& $name$bang.indexed.every((e) => other.$name$bang[e.\$1] == e.\$2)';
+        "other.$name$bang.length == $name$bang.length "
+        "&& $name$bang.indexed.every((e) => other.$name$bang[e.\$1] == e.\$2)";
     return nullable
-        ? '(identical(other.$name, $name) || (other.$name != null && $name != null && $expr))'
+        ? "(identical(other.$name, $name) || (other.$name != null && $name != null && $expr))"
         : expr;
   }
 
   if (field.isSetType) {
     final expr =
-        'other.$name$bang.length == $name$bang.length '
-        '&& other.$name$bang.containsAll($name$bang)';
+        "other.$name$bang.length == $name$bang.length "
+        "&& other.$name$bang.containsAll($name$bang)";
     return nullable
-        ? '(identical(other.$name, $name) || (other.$name != null && $name != null && $expr))'
+        ? "(identical(other.$name, $name) || (other.$name != null && $name != null && $expr))"
         : expr;
   }
 
   if (field.isMapType) {
     final expr =
-        'other.$name$bang.length == $name$bang.length '
-        '&& $name$bang.entries.every((e) => other.$name$bang[e.key] == e.value)';
+        "other.$name$bang.length == $name$bang.length "
+        "&& $name$bang.entries.every((e) => other.$name$bang[e.key] == e.value)";
     return nullable
-        ? '(identical(other.$name, $name) || (other.$name != null && $name != null && $expr))'
+        ? "(identical(other.$name, $name) || (other.$name != null && $name != null && $expr))"
         : expr;
   }
 
-  return 'other.$name == $name';
+  return "other.$name == $name";
 }
 
 /// Generates a serialization method for the given [fields] and [methodName].
 String generateSerializeMethod(String methodName, Iterable<ClassField> fields) {
-  final entries = fields.map((f) => "'${f.name}': ${f.name}").join(', ');
+  final entries = fields.map((f) => "'${f.name}': ${f.name}").join(", ");
 
   final method = Method(
     (b) => b
       ..name = methodName
       ..lambda = true
-      ..returns = refer('Map<String, dynamic>')
-      ..body = Code('{$entries};'),
+      ..returns = refer("Map<String, dynamic>")
+      ..body = Code("{$entries};"),
   );
 
-  return formatCode('${method.accept(_dartEmitter)}');
+  return formatCode("${method.accept(_dartEmitter)}");
 }
 
 /// Generates a deserialization factory/method for the given [className], [fields], and [methodName].
@@ -211,17 +211,17 @@ String generateDeserializeMethod(
   Iterable<ClassField> fields,
 ) {
   final assignments = fields
-      .map((f) => '${f.name}: map[\'${f.name}\'] as ${f.type}')
-      .join(',\n');
+      .map((f) => "${f.name}: map['${f.name}'] as ${f.type}")
+      .join(",\n");
 
   final code =
-      '''
+      """
 factory $className.$methodName(Map<String, dynamic> map) {
   return $className(
     $assignments
   );
 }
-''';
+""";
 
   return formatConstructor(code);
 }

@@ -1,4 +1,4 @@
-part of 'annotation_rule.dart';
+part of "annotation_rule.dart";
 
 final class SerializeRule extends AnnotationRule {
   SerializeRule()
@@ -16,7 +16,7 @@ final class _SerializeVisitor extends AnnotationVisitor {
 
   @override
   Iterable<String>? getExpectedMethodNames(ClassDeclaration node) {
-    final expectedName = extractFeatureMethodName(node, annotation, 'toMap');
+    final expectedName = extractFeatureMethodName(node, annotation, "toMap");
     if (expectedName == null) return null;
     return [expectedName];
   }

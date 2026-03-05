@@ -1,14 +1,14 @@
-import 'package:analyzer/error/error.dart' show DiagnosticCode;
-import 'package:analyzer_kit/src/constants.dart';
+import "package:analyzer/error/error.dart" show DiagnosticCode;
+import "package:analyzer_kit/src/constants.dart";
 
 /// Annotation names recognized by the plugin.
 enum FeatureAnnotation {
-  dataClass('DataClass'),
-  copyWith('CopyWith'),
-  overrideToString('OverrideToString'),
-  overrideEquality('OverrideEquality'),
-  serialize('Serialize'),
-  deserialize('Deserialize');
+  dataClass("DataClass"),
+  copyWith("CopyWith"),
+  overrideToString("OverrideToString"),
+  overrideEquality("OverrideEquality"),
+  serialize("Serialize"),
+  deserialize("Deserialize");
 
   const FeatureAnnotation(this.name);
 
@@ -17,14 +17,14 @@ enum FeatureAnnotation {
 
 /// Method names that each annotation expects on the class.
 enum FeatureMethod {
-  copyWith('copyWith'),
-  overrideToString('toString'),
-  overrideHashCode('hashCode'),
-  overrideEquals('=='),
-  operatorEquals('operator =='),
-  fromMap('fromMap'),
-  fromString('fromString'),
-  toMap('toMap');
+  copyWith("copyWith"),
+  overrideToString("toString"),
+  overrideHashCode("hashCode"),
+  overrideEquals("=="),
+  operatorEquals("operator =="),
+  fromMap("fromMap"),
+  fromString("fromString"),
+  toMap("toMap");
 
   const FeatureMethod(this.name);
 

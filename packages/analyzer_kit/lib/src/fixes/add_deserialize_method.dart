@@ -1,11 +1,11 @@
-import 'package:analysis_server_plugin/edit/dart/correction_producer.dart';
-import 'package:analysis_server_plugin/edit/dart/dart_fix_kind_priority.dart'
+import "package:analysis_server_plugin/edit/dart/correction_producer.dart";
+import "package:analysis_server_plugin/edit/dart/dart_fix_kind_priority.dart"
     show DartFixKindPriority;
-import 'package:analyzer/dart/ast/ast.dart';
-import 'package:analyzer_kit/src/enums.dart';
-import 'package:analyzer_kit/src/utils/utils.dart';
-import 'package:analyzer_plugin/utilities/change_builder/change_builder_core.dart';
-import 'package:analyzer_plugin/utilities/fixes/fixes.dart';
+import "package:analyzer/dart/ast/ast.dart";
+import "package:analyzer_kit/src/enums.dart";
+import "package:analyzer_kit/src/utils/utils.dart";
+import "package:analyzer_plugin/utilities/change_builder/change_builder_core.dart";
+import "package:analyzer_plugin/utilities/fixes/fixes.dart";
 
 /// Quick fix that generates a deserialization  method for classes annotated
 /// with `@Deserialize`.
@@ -13,9 +13,9 @@ final class AddDeserializeMethod extends ResolvedCorrectionProducer {
   AddDeserializeMethod({required super.context});
 
   static const _fix = FixKind(
-    'dart.fix.addDeserializeMethod',
+    "dart.fix.addDeserializeMethod",
     DartFixKindPriority.standard,
-    'Add deserialization factory/method',
+    "Add deserialization factory/method",
   );
 
   @override
@@ -33,7 +33,7 @@ final class AddDeserializeMethod extends ResolvedCorrectionProducer {
     final methodName = extractFeatureMethodName(
       declaration,
       FeatureAnnotation.deserialize,
-      'fromMap',
+      "fromMap",
     );
 
     if (methodName != null) {

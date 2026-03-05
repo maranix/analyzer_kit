@@ -1,6 +1,6 @@
-import 'package:analyzer_kit/src/rules/annotation_rule/annotation_rule.dart';
-import 'package:analyzer_testing/analysis_rule/analysis_rule.dart';
-import 'package:test/test.dart';
+import "package:analyzer_kit/src/rules/annotation_rule/annotation_rule.dart";
+import "package:analyzer_testing/analysis_rule/analysis_rule.dart";
+import "package:test/test.dart";
 
 class SerializeRuleTest extends AnalysisRuleTest {
   @override
@@ -20,12 +20,12 @@ void main() {
 
   tearDown(() => t.tearDown());
 
-  group('SerializeRule', () {
+  group("SerializeRule", () {
     test(
-      'reports lint when @Serialize present but toMap method missing',
+      "reports lint when @Serialize present but toMap method missing",
       () async {
         await t.assertDiagnostics(
-          r'''
+          r"""
 class Serialize {
   const Serialize({this.name});
   final Object? name;
@@ -36,14 +36,14 @@ class User {
   final String name;
   User({required this.name});
 }
-''',
+""",
           [t.lint(75, 12)],
         );
       },
     );
 
-    test('no lint when toMap method is present', () async {
-      await t.assertNoDiagnostics(r'''
+    test("no lint when toMap method is present", () async {
+      await t.assertNoDiagnostics(r"""
 class Serialize {
   const Serialize({this.name});
   final Object? name;
@@ -56,21 +56,21 @@ class User {
 
   Map<String, dynamic> toMap() => {'name': name};
 }
-''');
+""");
     });
 
-    test('no lint on class without annotation', () async {
-      await t.assertNoDiagnostics(r'''
+    test("no lint on class without annotation", () async {
+      await t.assertNoDiagnostics(r"""
 class User {
   final String name;
   User({required this.name});
 }
-''');
+""");
     });
 
-    test('reports lint when class has multiple fields', () async {
+    test("reports lint when class has multiple fields", () async {
       await t.assertDiagnostics(
-        r'''
+        r"""
 class Serialize {
   const Serialize({this.name});
   final Object? name;
@@ -83,14 +83,14 @@ class User {
   final bool active;
   User({required this.name, required this.age, required this.active});
 }
-''',
+""",
         [t.lint(75, 12)],
       );
     });
 
-    test('reports lint with const convenience variable', () async {
+    test("reports lint with const convenience variable", () async {
       await t.assertDiagnostics(
-        r'''
+        r"""
 class Serialize {
   const Serialize({this.name});
   final Object? name;
@@ -102,14 +102,14 @@ class User {
   final String name;
   User({required this.name});
 }
-''',
+""",
         [t.lint(106, 10)],
       );
     });
 
-    test('case-insensitive annotation matching', () async {
+    test("case-insensitive annotation matching", () async {
       await t.assertDiagnostics(
-        r'''
+        r"""
 class serialize {
   const serialize({this.name});
   final Object? name;
@@ -120,7 +120,7 @@ class User {
   final String name;
   User({required this.name});
 }
-''',
+""",
         [t.lint(75, 12)],
       );
     });

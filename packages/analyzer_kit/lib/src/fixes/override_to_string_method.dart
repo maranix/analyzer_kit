@@ -1,10 +1,10 @@
-import 'package:analysis_server_plugin/edit/dart/correction_producer.dart';
-import 'package:analysis_server_plugin/edit/dart/dart_fix_kind_priority.dart'
+import "package:analysis_server_plugin/edit/dart/correction_producer.dart";
+import "package:analysis_server_plugin/edit/dart/dart_fix_kind_priority.dart"
     show DartFixKindPriority;
-import 'package:analyzer/dart/ast/ast.dart';
-import 'package:analyzer_kit/src/utils/utils.dart';
-import 'package:analyzer_plugin/utilities/change_builder/change_builder_core.dart';
-import 'package:analyzer_plugin/utilities/fixes/fixes.dart';
+import "package:analyzer/dart/ast/ast.dart";
+import "package:analyzer_kit/src/utils/utils.dart";
+import "package:analyzer_plugin/utilities/change_builder/change_builder_core.dart";
+import "package:analyzer_plugin/utilities/fixes/fixes.dart";
 
 /// Quick fix that generates a `toString` override for classes annotated
 /// with `@OverrideToString`.
@@ -12,9 +12,9 @@ final class OverrideToStringMethod extends ResolvedCorrectionProducer {
   OverrideToStringMethod({required super.context});
 
   static const _fix = FixKind(
-    'dart.fix.overrideToString',
+    "dart.fix.overrideToString",
     DartFixKindPriority.standard,
-    'Override `toString` method',
+    "Override `toString` method",
   );
 
   @override

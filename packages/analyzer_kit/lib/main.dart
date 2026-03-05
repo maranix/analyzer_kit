@@ -1,13 +1,13 @@
-import 'package:analysis_server_plugin/plugin.dart';
-import 'package:analysis_server_plugin/registry.dart';
-import 'package:analyzer_kit/src/constants.dart';
-import 'package:analyzer_kit/src/fixes/add_copy_with_method.dart';
-import 'package:analyzer_kit/src/fixes/add_data_class_methods.dart';
-import 'package:analyzer_kit/src/fixes/add_deserialize_method.dart';
-import 'package:analyzer_kit/src/fixes/add_serialize_method.dart';
-import 'package:analyzer_kit/src/fixes/override_equality_methods.dart';
-import 'package:analyzer_kit/src/fixes/override_to_string_method.dart';
-import 'package:analyzer_kit/src/rules/annotation_rule/annotation_rule.dart';
+import "package:analysis_server_plugin/plugin.dart";
+import "package:analysis_server_plugin/registry.dart";
+import "package:analyzer_kit/src/constants.dart";
+import "package:analyzer_kit/src/fixes/add_copy_with_method.dart";
+import "package:analyzer_kit/src/fixes/add_data_class_methods.dart";
+import "package:analyzer_kit/src/fixes/add_deserialize_method.dart";
+import "package:analyzer_kit/src/fixes/add_serialize_method.dart";
+import "package:analyzer_kit/src/fixes/override_equality_methods.dart";
+import "package:analyzer_kit/src/fixes/override_to_string_method.dart";
+import "package:analyzer_kit/src/rules/annotation_rule/annotation_rule.dart";
 
 /// The plugin singleton, instantiated by the Dart analysis server.
 ///
@@ -36,7 +36,7 @@ final plugin = AnalyzerKit();
 /// | [DeserializeRule] | [AddDeserializeMethod] |
 class AnalyzerKit extends Plugin {
   @override
-  String get name => 'Analyzer Kit';
+  String get name => "Analyzer Kit";
 
   @override
   void register(PluginRegistry registry) {

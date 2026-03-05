@@ -1,6 +1,6 @@
-import 'package:analyzer_kit/src/rules/annotation_rule/annotation_rule.dart';
-import 'package:analyzer_testing/analysis_rule/analysis_rule.dart';
-import 'package:test/test.dart';
+import "package:analyzer_kit/src/rules/annotation_rule/annotation_rule.dart";
+import "package:analyzer_testing/analysis_rule/analysis_rule.dart";
+import "package:test/test.dart";
 
 class CopyWithRuleTest extends AnalysisRuleTest {
   @override
@@ -20,12 +20,12 @@ void main() {
 
   tearDown(() => t.tearDown());
 
-  group('CopyWithRule', () {
+  group("CopyWithRule", () {
     test(
-      'reports lint when @CopyWith is present but copyWith method is missing',
+      "reports lint when @CopyWith is present but copyWith method is missing",
       () async {
         await t.assertDiagnostics(
-          r'''
+          r"""
 class CopyWith {
   const CopyWith();
 }
@@ -35,14 +35,14 @@ class User {
   final String name;
   User({required this.name});
 }
-''',
+""",
           [t.lint(40, 11)],
         );
       },
     );
 
-    test('no lint when copyWith method is present', () async {
-      await t.assertNoDiagnostics(r'''
+    test("no lint when copyWith method is present", () async {
+      await t.assertNoDiagnostics(r"""
 class CopyWith {
   const CopyWith();
 }
@@ -54,20 +54,20 @@ class User {
 
   User copyWith({String? name}) => User(name: name ?? this.name);
 }
-''');
+""");
     });
 
-    test('no lint on class without annotation', () async {
-      await t.assertNoDiagnostics(r'''
+    test("no lint on class without annotation", () async {
+      await t.assertNoDiagnostics(r"""
 class User {
   final String name;
   User({required this.name});
 }
-''');
+""");
     });
 
-    test('no lint when annotation is not CopyWith', () async {
-      await t.assertNoDiagnostics(r'''
+    test("no lint when annotation is not CopyWith", () async {
+      await t.assertNoDiagnostics(r"""
 class SomeOtherAnnotation {
   const SomeOtherAnnotation();
 }
@@ -77,12 +77,12 @@ class User {
   final String name;
   User({required this.name});
 }
-''');
+""");
     });
 
-    test('reports lint with const convenience variable annotation', () async {
+    test("reports lint with const convenience variable annotation", () async {
       await t.assertDiagnostics(
-        r'''
+        r"""
 class CopyWith {
   const CopyWith();
 }
@@ -93,14 +93,14 @@ class User {
   final String name;
   User({required this.name});
 }
-''',
+""",
         [t.lint(69, 9)],
       );
     });
 
-    test('reports lint when class has no fields but is annotated', () async {
+    test("reports lint when class has no fields but is annotated", () async {
       await t.assertDiagnostics(
-        r'''
+        r"""
 class CopyWith {
   const CopyWith();
 }
@@ -109,14 +109,14 @@ class CopyWith {
 class Empty {
   const Empty();
 }
-''',
+""",
         [t.lint(40, 11)],
       );
     });
 
-    test('case-insensitive annotation matching', () async {
+    test("case-insensitive annotation matching", () async {
       await t.assertDiagnostics(
-        r'''
+        r"""
 class copywith {
   const copywith();
 }
@@ -126,7 +126,7 @@ class User {
   final String name;
   User({required this.name});
 }
-''',
+""",
         [t.lint(40, 11)],
       );
     });

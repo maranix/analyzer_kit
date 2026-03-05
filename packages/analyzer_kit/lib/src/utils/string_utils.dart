@@ -1,7 +1,7 @@
-part of 'utils.dart';
+part of "utils.dart";
 
 /// Case-insensitive ASCII string equality comparison.
-@pragma('vm:prefer-inline')
+@pragma("vm:prefer-inline")
 bool stringEqualsIgnoreCaseByAscii(String a, String b) {
   final length = a.length;
   if (length != b.length) return false;

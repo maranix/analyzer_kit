@@ -1,8 +1,8 @@
-import 'package:analyzer/dart/analysis/utilities.dart' show parseString;
-import 'package:analyzer/dart/ast/ast.dart' show ClassDeclaration;
-import 'package:analyzer_kit/src/enums.dart';
-import 'package:analyzer_kit/src/utils/utils.dart';
-import 'package:test/test.dart';
+import "package:analyzer/dart/analysis/utilities.dart" show parseString;
+import "package:analyzer/dart/ast/ast.dart" show ClassDeclaration;
+import "package:analyzer_kit/src/enums.dart";
+import "package:analyzer_kit/src/utils/utils.dart";
+import "package:test/test.dart";
 
 /// Parses Dart [source] and returns the first [ClassDeclaration] found.
 ClassDeclaration _parseClass(String source) {
@@ -20,65 +20,65 @@ ClassDeclaration _parseClassByName(String source, String name) {
 }
 
 void main() {
-  group('extractGeneratableFields', () {
-    test('extracts basic final fields', () {
-      final node = _parseClass('''
+  group("extractGeneratableFields", () {
+    test("extracts basic final fields", () {
+      final node = _parseClass("""
 class User {
   final String name;
   final int age;
   User({required this.name, required this.age});
 }
-''');
+""");
 
       final fields = extractGeneratableFields(node).toList();
       expect(fields, hasLength(2));
-      expect(fields[0].name, 'name');
-      expect(fields[0].type, 'String');
-      expect(fields[1].name, 'age');
-      expect(fields[1].type, 'int');
+      expect(fields[0].name, "name");
+      expect(fields[0].type, "String");
+      expect(fields[1].name, "age");
+      expect(fields[1].type, "int");
     });
 
-    test('excludes static fields', () {
-      final node = _parseClass('''
+    test("excludes static fields", () {
+      final node = _parseClass("""
 class User {
   static const maxAge = 150;
   final String name;
   User({required this.name});
 }
-''');
+""");
 
       final fields = extractGeneratableFields(node).toList();
       expect(fields, hasLength(1));
-      expect(fields[0].name, 'name');
+      expect(fields[0].name, "name");
     });
 
-    test('excludes late fields', () {
-      final node = _parseClass('''
+    test("excludes late fields", () {
+      final node = _parseClass("""
 class User {
   late String name;
   final int age;
   User({required this.age});
 }
-''');
+""");
 
       final fields = extractGeneratableFields(node).toList();
       expect(fields, hasLength(1));
-      expect(fields[0].name, 'age');
+      expect(fields[0].name, "age");
     });
 
-    test('returns empty for class with no fields', () {
-      final node = _parseClass('''
+    test("returns empty for class with no fields", () {
+      final node = _parseClass("""
 class Empty {
   const Empty();
 }
-''');
+""");
 
       final fields = extractGeneratableFields(node).toList();
       expect(fields, isEmpty);
     });
 
-    test('handles multiple field types', () {
-      final node = _parseClass('''
+    test("handles multiple field types", () {
+      final node = _parseClass("""
 class Data {
   final String name;
   final int? age;
@@ -86,35 +86,35 @@ class Data {
   final Map<String, dynamic> meta;
   Data({required this.name, this.age, required this.tags, required this.meta});
 }
-''');
+""");
 
       final fields = extractGeneratableFields(node).toList();
       expect(fields, hasLength(4));
-      expect(fields[0].type, 'String');
-      expect(fields[1].type, 'int?');
-      expect(fields[2].type, 'List<String>');
-      expect(fields[3].type, 'Map<String, dynamic>');
+      expect(fields[0].type, "String");
+      expect(fields[1].type, "int?");
+      expect(fields[2].type, "List<String>");
+      expect(fields[3].type, "Map<String, dynamic>");
     });
 
-    test('excludes only non-generatable fields', () {
-      final node = _parseClass('''
+    test("excludes only non-generatable fields", () {
+      final node = _parseClass("""
 class Mixed {
   final String name;
   static final String label = 'mixed';
   late int count;
   final bool active;
 }
-''');
+""");
 
       final fields = extractGeneratableFields(node).toList();
       expect(fields, hasLength(2));
-      expect(fields.map((f) => f.name), containsAll(['name', 'active']));
+      expect(fields.map((f) => f.name), containsAll(["name", "active"]));
     });
   });
 
-  group('hasFeatureEnabled', () {
-    test('returns true when direct annotation is present', () {
-      final node = _parseClassByName('''
+  group("hasFeatureEnabled", () {
+    test("returns true when direct annotation is present", () {
+      final node = _parseClassByName("""
 class CopyWith { const CopyWith(); }
 
 @CopyWith()
@@ -122,26 +122,26 @@ class User {
   final String name;
   User({required this.name});
 }
-''', 'User');
+""", "User");
 
       expect(hasFeatureEnabled(node, FeatureAnnotation.copyWith), isTrue);
     });
 
-    test('returns false when no annotation present', () {
-      final node = _parseClass('''
+    test("returns false when no annotation present", () {
+      final node = _parseClass("""
 class User {
   final String name;
   User({required this.name});
 }
-''');
+""");
 
       expect(hasFeatureEnabled(node, FeatureAnnotation.copyWith), isFalse);
     });
 
     test(
-      'returns true when @DataClass is present and feature not disabled',
+      "returns true when @DataClass is present and feature not disabled",
       () {
-        final node = _parseClassByName('''
+        final node = _parseClassByName("""
 class DataClass {
   const DataClass({
     this.copyWith = true,
@@ -162,7 +162,7 @@ class User {
   final String name;
   User({required this.name});
 }
-''', 'User');
+""", "User");
 
         expect(hasFeatureEnabled(node, FeatureAnnotation.copyWith), isTrue);
         expect(
@@ -178,8 +178,8 @@ class User {
       },
     );
 
-    test('returns false when @DataClass explicitly disables feature', () {
-      final node = _parseClassByName('''
+    test("returns false when @DataClass explicitly disables feature", () {
+      final node = _parseClassByName("""
 class DataClass {
   const DataClass({
     this.copyWith = true,
@@ -200,7 +200,7 @@ class User {
   final String name;
   User({required this.name});
 }
-''', 'User');
+""", "User");
 
       expect(hasFeatureEnabled(node, FeatureAnnotation.copyWith), isFalse);
       // Others should still be enabled
@@ -210,8 +210,8 @@ class User {
       );
     });
 
-    test('returns true when @DataClass has no arguments (all defaults)', () {
-      final node = _parseClassByName('''
+    test("returns true when @DataClass has no arguments (all defaults)", () {
+      final node = _parseClassByName("""
 class DataClass {
   const DataClass();
 }
@@ -221,13 +221,13 @@ class User {
   final String name;
   User({required this.name});
 }
-''', 'User');
+""", "User");
 
       expect(hasFeatureEnabled(node, FeatureAnnotation.copyWith), isTrue);
     });
 
-    test('case-insensitive annotation matching', () {
-      final node = _parseClassByName('''
+    test("case-insensitive annotation matching", () {
+      final node = _parseClassByName("""
 class copywith { const copywith(); }
 
 @copywith()
@@ -235,13 +235,13 @@ class User {
   final String name;
   User({required this.name});
 }
-''', 'User');
+""", "User");
 
       expect(hasFeatureEnabled(node, FeatureAnnotation.copyWith), isTrue);
     });
 
-    test('returns false when different annotation is present', () {
-      final node = _parseClassByName('''
+    test("returns false when different annotation is present", () {
+      final node = _parseClassByName("""
 class Serialize { const Serialize(); }
 
 @Serialize()
@@ -249,15 +249,15 @@ class User {
   final String name;
   User({required this.name});
 }
-''', 'User');
+""", "User");
 
       expect(hasFeatureEnabled(node, FeatureAnnotation.copyWith), isFalse);
     });
 
     test(
-      'returns true when multiple features are disabled but queried one is not',
+      "returns true when multiple features are disabled but queried one is not",
       () {
-        final node = _parseClassByName('''
+        final node = _parseClassByName("""
 class DataClass {
   const DataClass({
     this.copyWith = true,
@@ -278,7 +278,7 @@ class User {
   final String name;
   User({required this.name});
 }
-''', 'User');
+""", "User");
 
         expect(hasFeatureEnabled(node, FeatureAnnotation.copyWith), isTrue);
         expect(
@@ -290,9 +290,9 @@ class User {
     );
   });
 
-  group('extractFeatureMethodName', () {
-    test('returns default name for direct annotation with no arguments', () {
-      final node = _parseClassByName('''
+  group("extractFeatureMethodName", () {
+    test("returns default name for direct annotation with no arguments", () {
+      final node = _parseClassByName("""
 class Serialize { const Serialize(); }
 
 @Serialize()
@@ -300,30 +300,30 @@ class User {
   final String name;
   User({required this.name});
 }
-''', 'User');
+""", "User");
 
       expect(
-        extractFeatureMethodName(node, FeatureAnnotation.serialize, 'toMap'),
-        'toMap',
+        extractFeatureMethodName(node, FeatureAnnotation.serialize, "toMap"),
+        "toMap",
       );
     });
 
-    test('returns null when no relevant annotation present', () {
-      final node = _parseClass('''
+    test("returns null when no relevant annotation present", () {
+      final node = _parseClass("""
 class User {
   final String name;
   User({required this.name});
 }
-''');
+""");
 
       expect(
-        extractFeatureMethodName(node, FeatureAnnotation.serialize, 'toMap'),
+        extractFeatureMethodName(node, FeatureAnnotation.serialize, "toMap"),
         isNull,
       );
     });
 
-    test('returns default name for @DataClass when feature is enabled', () {
-      final node = _parseClassByName('''
+    test("returns default name for @DataClass when feature is enabled", () {
+      final node = _parseClassByName("""
 class DataClass {
   const DataClass({
     this.copyWith = true,
@@ -344,16 +344,16 @@ class User {
   final String name;
   User({required this.name});
 }
-''', 'User');
+""", "User");
 
       expect(
-        extractFeatureMethodName(node, FeatureAnnotation.serialize, 'toMap'),
-        'toMap',
+        extractFeatureMethodName(node, FeatureAnnotation.serialize, "toMap"),
+        "toMap",
       );
     });
 
-    test('returns null for @DataClass when feature is disabled', () {
-      final node = _parseClassByName('''
+    test("returns null for @DataClass when feature is disabled", () {
+      final node = _parseClassByName("""
 class DataClass {
   const DataClass({
     this.copyWith = true,
@@ -374,18 +374,18 @@ class User {
   final String name;
   User({required this.name});
 }
-''', 'User');
+""", "User");
 
       expect(
-        extractFeatureMethodName(node, FeatureAnnotation.serialize, 'toMap'),
+        extractFeatureMethodName(node, FeatureAnnotation.serialize, "toMap"),
         isNull,
       );
     });
 
     test(
-      'returns default name for FeatureAnnotation.dataClass with annotation',
+      "returns default name for FeatureAnnotation.dataClass with annotation",
       () {
-        final node = _parseClassByName('''
+        final node = _parseClassByName("""
 class DataClass { const DataClass(); }
 
 @DataClass()
@@ -393,39 +393,39 @@ class User {
   final String name;
   User({required this.name});
 }
-''', 'User');
+""", "User");
 
         expect(
           extractFeatureMethodName(
             node,
             FeatureAnnotation.dataClass,
-            'defaultName',
+            "defaultName",
           ),
-          'defaultName',
+          "defaultName",
         );
       },
     );
 
-    test('returns null for FeatureAnnotation.dataClass without annotation', () {
-      final node = _parseClass('''
+    test("returns null for FeatureAnnotation.dataClass without annotation", () {
+      final node = _parseClass("""
 class User {
   final String name;
   User({required this.name});
 }
-''');
+""");
 
       expect(
         extractFeatureMethodName(
           node,
           FeatureAnnotation.dataClass,
-          'defaultName',
+          "defaultName",
         ),
         isNull,
       );
     });
 
-    test('extracts custom name from .custom() annotation argument', () {
-      final node = _parseClassByName('''
+    test("extracts custom name from .custom() annotation argument", () {
+      final node = _parseClassByName("""
 class Serialize {
   const Serialize({this.name});
   final Object? name;
@@ -436,16 +436,16 @@ class User {
   final String name;
   User({required this.name});
 }
-''', 'User');
+""", "User");
 
       expect(
-        extractFeatureMethodName(node, FeatureAnnotation.serialize, 'toMap'),
-        'toDto',
+        extractFeatureMethodName(node, FeatureAnnotation.serialize, "toMap"),
+        "toDto",
       );
     });
 
-    test('extracts method name from dot shorthand like .toMap()', () {
-      final node = _parseClassByName('''
+    test("extracts method name from dot shorthand like .toMap()", () {
+      final node = _parseClassByName("""
 class Serialize {
   const Serialize({this.name});
   final Object? name;
@@ -456,16 +456,16 @@ class User {
   final String name;
   User({required this.name});
 }
-''', 'User');
+""", "User");
 
       expect(
-        extractFeatureMethodName(node, FeatureAnnotation.serialize, 'toMap'),
-        'toMap',
+        extractFeatureMethodName(node, FeatureAnnotation.serialize, "toMap"),
+        "toMap",
       );
     });
 
-    test('returns default name when annotation has non-name arguments', () {
-      final node = _parseClassByName('''
+    test("returns default name when annotation has non-name arguments", () {
+      final node = _parseClassByName("""
 class Serialize {
   const Serialize({this.name, this.other});
   final Object? name;
@@ -477,16 +477,16 @@ class User {
   final String name;
   User({required this.name});
 }
-''', 'User');
+""", "User");
 
       expect(
-        extractFeatureMethodName(node, FeatureAnnotation.serialize, 'toMap'),
-        'toMap',
+        extractFeatureMethodName(node, FeatureAnnotation.serialize, "toMap"),
+        "toMap",
       );
     });
 
-    test('returns default for deserialization with no arguments', () {
-      final node = _parseClassByName('''
+    test("returns default for deserialization with no arguments", () {
+      final node = _parseClassByName("""
 class Deserialize { const Deserialize(); }
 
 @Deserialize()
@@ -494,20 +494,20 @@ class User {
   final String name;
   User({required this.name});
 }
-''', 'User');
+""", "User");
 
       expect(
         extractFeatureMethodName(
           node,
           FeatureAnnotation.deserialize,
-          'fromMap',
+          "fromMap",
         ),
-        'fromMap',
+        "fromMap",
       );
     });
 
-    test('extracts custom deserialization name from .custom()', () {
-      final node = _parseClassByName('''
+    test("extracts custom deserialization name from .custom()", () {
+      final node = _parseClassByName("""
 class Deserialize {
   const Deserialize({this.name});
   final Object? name;
@@ -518,15 +518,15 @@ class User {
   final String name;
   User({required this.name});
 }
-''', 'User');
+""", "User");
 
       expect(
         extractFeatureMethodName(
           node,
           FeatureAnnotation.deserialize,
-          'fromMap',
+          "fromMap",
         ),
-        'fromDto',
+        "fromDto",
       );
     });
   });

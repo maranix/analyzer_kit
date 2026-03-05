@@ -1,4 +1,4 @@
-import 'package:analyzer/dart/ast/ast.dart'
+import "package:analyzer/dart/ast/ast.dart"
     show
         ClassDeclaration,
         FieldDeclaration,
@@ -6,14 +6,14 @@ import 'package:analyzer/dart/ast/ast.dart'
         BooleanLiteral,
         Annotation,
         NodeList;
-import 'package:analyzer_kit/src/enums.dart';
-import 'package:analyzer_kit/src/types.dart';
-import 'package:code_builder/code_builder.dart';
-import 'package:dart_style/dart_style.dart';
+import "package:analyzer_kit/src/enums.dart";
+import "package:analyzer_kit/src/types.dart";
+import "package:code_builder/code_builder.dart";
+import "package:dart_style/dart_style.dart";
 
-part 'code_gen_utils.dart';
-part 'code_utils.dart';
-part 'string_utils.dart';
+part "code_gen_utils.dart";
+part "code_utils.dart";
+part "string_utils.dart";
 
 /// Extracts generatable fields from a [ClassDeclaration].
 Iterable<ClassField> extractGeneratableFields(ClassDeclaration declaration) {
@@ -90,15 +90,15 @@ String? extractFeatureMethodName(
 
       // Extract custom configuration e.g., @Serialize(name: .custom('xyz'))
       for (final arg in arguments) {
-        if (arg is NamedExpression && arg.name.label.name == 'name') {
+        if (arg is NamedExpression && arg.name.label.name == "name") {
           final expression = arg.expression;
           // Assuming a simple method invocation or custom string. Extract the method literal.
           final source = expression.toSource();
           // .toMap() -> toMap
           // .custom('myMethod') -> myMethod
-          if (source.startsWith('.custom(')) {
+          if (source.startsWith(".custom(")) {
             return source.substring(9, source.length - 2);
-          } else if (source.startsWith('.')) {
+          } else if (source.startsWith(".")) {
             return source.substring(1, source.length - 2); // .toMap() -> toMap
           }
         }
