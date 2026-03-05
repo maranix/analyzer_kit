@@ -43,7 +43,7 @@ final class AddDeserializeMethod extends ResolvedCorrectionProducer {
         fileEditBuilder.insertMethod(declaration, (editBuilder) {
           editBuilder.write(
             generateDeserializeMethod(
-              declaration.name.lexeme,
+              declaration.namePart.typeName.lexeme,
               methodName,
               fields,
             ),

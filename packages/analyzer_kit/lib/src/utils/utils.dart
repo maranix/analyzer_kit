@@ -17,12 +17,9 @@ part 'string_utils.dart';
 
 /// Extracts generatable fields from a [ClassDeclaration].
 Iterable<ClassField> extractGeneratableFields(ClassDeclaration declaration) {
-  return declaration.members
-      .map(
-        (m) =>
-            m is FieldDeclaration ? ClassField.fromFieldDeclaration(m) : null,
-      )
-      .nonNulls
+  return declaration.body.childEntities
+      .whereType<FieldDeclaration>()
+      .map(ClassField.fromFieldDeclaration)
       .where((f) => f.isGeneratable);
 }
 

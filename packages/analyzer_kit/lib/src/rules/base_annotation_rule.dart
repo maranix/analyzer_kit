@@ -10,7 +10,7 @@ import 'package:analyzer_kit/src/enums.dart';
 abstract base class BaseAnnotationRule extends AnalysisRule {
   BaseAnnotationRule({required this.featureDiagnosticCode})
     : super(
-        name: featureDiagnosticCode.diag.name,
+        name: featureDiagnosticCode.diag.lowerCaseName,
         description: featureDiagnosticCode.diag.problemMessage,
       );
 

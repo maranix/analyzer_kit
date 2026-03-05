@@ -1,5 +1,5 @@
-import 'package:analyzer/dart/ast/ast.dart' show ClassDeclaration;
 import 'package:analyzer/dart/analysis/utilities.dart' show parseString;
+import 'package:analyzer/dart/ast/ast.dart' show ClassDeclaration;
 import 'package:analyzer_kit/src/enums.dart';
 import 'package:analyzer_kit/src/utils/utils.dart';
 import 'package:test/test.dart';
@@ -15,7 +15,7 @@ ClassDeclaration _parseClass(String source) {
 ClassDeclaration _parseClassByName(String source, String name) {
   final unit = parseString(content: source).unit;
   return unit.declarations.whereType<ClassDeclaration>().firstWhere(
-    (c) => c.name.lexeme == name,
+    (c) => c.namePart.typeName.lexeme == name,
   );
 }
 

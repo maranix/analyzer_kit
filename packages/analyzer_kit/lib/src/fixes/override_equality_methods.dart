@@ -58,12 +58,12 @@ final class OverrideEqualityMethods extends ResolvedCorrectionProducer {
         }
       }
 
-      final hasHashCodeOverride = declaration.members.any(
+      final hasHashCodeOverride = declaration.body.childEntities.any(
         (m) =>
             m is MethodDeclaration &&
             m.name.lexeme == FeatureMethod.overrideHashCode.name,
       );
-      final hasEqualityOperatorOverride = declaration.members.any(
+      final hasEqualityOperatorOverride = declaration.body.childEntities.any(
         (m) =>
             m is MethodDeclaration &&
             m.name.lexeme == FeatureMethod.operatorEquals.name,
@@ -86,7 +86,7 @@ final class OverrideEqualityMethods extends ResolvedCorrectionProducer {
           if (!hasEqualityOperatorOverride) {
             editBuilder.writeln(
               generateEqualityOperatorOverride(
-                declaration.name.lexeme,
+                declaration.namePart.typeName.lexeme,
                 fields,
                 deepCollectionEquality: deepCollectionEquality,
               ),

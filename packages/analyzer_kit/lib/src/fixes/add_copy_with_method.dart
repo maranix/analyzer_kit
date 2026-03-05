@@ -37,7 +37,10 @@ final class AddCopyWithMethod extends ResolvedCorrectionProducer {
       await builder.addDartFileEdit(file, (fileEditBuilder) {
         fileEditBuilder.insertMethod(declaration, (editBuilder) {
           editBuilder.write(
-            generateCopyWithMethod(declaration.name.lexeme, fields),
+            generateCopyWithMethod(
+              declaration.namePart.typeName.lexeme,
+              fields,
+            ),
           );
         });
       });
