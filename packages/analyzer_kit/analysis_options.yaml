@@ -1,8 +1,11 @@
 include: package:lints/recommended.yaml
 
+formatter: 
+  trailing_commas: preserve
+
 linter:
   rules:
-    - prefer_single_quotes
+    - prefer_double_quotes
     - sort_constructors_first
     - prefer_final_locals
     - directives_ordering
