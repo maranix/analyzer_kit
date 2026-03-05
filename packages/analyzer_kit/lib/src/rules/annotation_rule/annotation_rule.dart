@@ -1,10 +1,6 @@
 import 'package:analyzer/dart/ast/ast.dart'
-    show
-        ClassDeclaration,
-        ConstructorDeclaration,
-        MethodDeclaration,
-        ClassMember,
-        NodeList;
+    show ClassDeclaration, ConstructorDeclaration, MethodDeclaration;
+import 'package:analyzer/dart/ast/syntactic_entity.dart';
 import 'package:analyzer_kit/src/enums.dart';
 import 'package:analyzer_kit/src/rules/base_annotation_rule.dart';
 import 'package:analyzer_kit/src/utils/utils.dart';
@@ -34,9 +30,10 @@ abstract base class AnnotationVisitor extends BaseAnnotationVisitor {
   Iterable<String>? getExpectedMethodNames(ClassDeclaration node);
 
   /// Reduces the [expectedMethods] by checking if the [members] contain the expected methods.
+  ///
   /// Returns true if all expected methods are found, false otherwise.
   bool reduceExpectedMethods(
-    NodeList<ClassMember> members,
+    Iterable<SyntacticEntity> members,
     Iterable<String> expectedMethods,
   ) {
     final Set<String> methods = .from(expectedMethods);
@@ -57,7 +54,7 @@ abstract base class AnnotationVisitor extends BaseAnnotationVisitor {
     final methods = getExpectedMethodNames(node);
     if (methods == null || methods.isEmpty) return;
 
-    final success = reduceExpectedMethods(node.members, methods);
+    final success = reduceExpectedMethods(node.body.childEntities, methods);
 
     if (!success) {
       reportError(node);

@@ -23,7 +23,7 @@ final class _DeserializeVisitor extends AnnotationVisitor {
 
   @override
   bool reduceExpectedMethods(
-    NodeList<ClassMember> members,
+    Iterable<SyntacticEntity> members,
     Iterable<String> expectedMethods,
   ) {
     bool found = false;

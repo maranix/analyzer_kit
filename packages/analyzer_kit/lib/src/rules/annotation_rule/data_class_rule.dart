@@ -58,7 +58,7 @@ final class _DataClassVisitor extends AnnotationVisitor {
 
   @override
   bool reduceExpectedMethods(
-    NodeList<ClassMember> members,
+    Iterable<SyntacticEntity> members,
     Iterable<String> expectedMethods,
   ) {
     final Set<String> methods = Set.from(expectedMethods);
