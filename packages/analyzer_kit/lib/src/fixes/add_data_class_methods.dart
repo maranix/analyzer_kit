@@ -30,7 +30,10 @@ final class AddDataClassMethods extends ResolvedCorrectionProducer {
     final declaration = node.thisOrAncestorOfType<ClassDeclaration>();
     if (declaration == null) return;
 
-    if (hasFeatureEnabled(declaration, FeatureAnnotation.dataClass)) {
+    final annotation = getAnnotation(declaration, .dataClass);
+    if (annotation == null) return;
+
+    if (isFeaturedEnabledInAnnotation(annotation, .dataClass)) {
       final fields = extractGeneratableFields(declaration);
       if (fields.isEmpty) return;
 
@@ -59,7 +62,7 @@ final class AddDataClassMethods extends ResolvedCorrectionProducer {
 
       final toMapName = extractFeatureMethodName(
         declaration,
-        FeatureAnnotation.serialize,
+        .serialize,
         FeatureMethod.toMap.name,
       );
       final hasSerialize =
@@ -70,7 +73,7 @@ final class AddDataClassMethods extends ResolvedCorrectionProducer {
 
       final fromMapName = extractFeatureMethodName(
         declaration,
-        FeatureAnnotation.deserialize,
+        .deserialize,
         FeatureMethod.fromMap.name,
       );
       final hasDeserialize =
@@ -83,7 +86,10 @@ final class AddDataClassMethods extends ResolvedCorrectionProducer {
 
       await builder.addDartFileEdit(file, (fileEditBuilder) {
         fileEditBuilder.insertMethod(declaration, (editBuilder) {
-          if (hasFeatureEnabled(declaration, FeatureAnnotation.copyWith) &&
+          if (isFeaturedEnabledInAnnotation(
+                annotation,
+                .copyWith,
+              ) &&
               !hasCopyWith) {
             editBuilder.writeln(
               generateCopyWithMethod(
@@ -93,9 +99,9 @@ final class AddDataClassMethods extends ResolvedCorrectionProducer {
             );
           }
 
-          if (hasFeatureEnabled(
-                declaration,
-                FeatureAnnotation.overrideToString,
+          if (isFeaturedEnabledInAnnotation(
+                annotation,
+                .overrideToString,
               ) &&
               !hasToString) {
             editBuilder.writeln(
@@ -106,9 +112,9 @@ final class AddDataClassMethods extends ResolvedCorrectionProducer {
             );
           }
 
-          if (hasFeatureEnabled(
-            declaration,
-            FeatureAnnotation.overrideEquality,
+          if (isFeaturedEnabledInAnnotation(
+            annotation,
+            .overrideEquality,
           )) {
             bool? deepCollectionEquality;
 
@@ -153,14 +159,20 @@ final class AddDataClassMethods extends ResolvedCorrectionProducer {
             }
           }
 
-          if (hasFeatureEnabled(declaration, FeatureAnnotation.serialize) &&
+          if (isFeaturedEnabledInAnnotation(
+                annotation,
+                .serialize,
+              ) &&
               !hasSerialize) {
             if (toMapName != null) {
               editBuilder.writeln(generateSerializeMethod(toMapName, fields));
             }
           }
 
-          if (hasFeatureEnabled(declaration, FeatureAnnotation.deserialize) &&
+          if (isFeaturedEnabledInAnnotation(
+                annotation,
+                .deserialize,
+              ) &&
               !hasDeserialize) {
             if (fromMapName != null) {
               editBuilder.writeln(

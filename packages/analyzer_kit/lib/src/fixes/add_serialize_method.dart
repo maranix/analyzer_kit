@@ -30,6 +30,9 @@ final class AddSerializeMethod extends ResolvedCorrectionProducer {
     final declaration = node.thisOrAncestorOfType<ClassDeclaration>();
     if (declaration == null) return;
 
+    final annotation = getAnnotation(declaration, .serialize);
+    if (annotation == null) return;
+
     final methodName = extractFeatureMethodName(
       declaration,
       FeatureAnnotation.serialize,

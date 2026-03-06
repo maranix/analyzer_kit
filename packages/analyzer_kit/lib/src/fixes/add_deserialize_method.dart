@@ -30,6 +30,9 @@ final class AddDeserializeMethod extends ResolvedCorrectionProducer {
     final declaration = node.thisOrAncestorOfType<ClassDeclaration>();
     if (declaration == null) return;
 
+    final annotation = getAnnotation(declaration, .deserialize);
+    if (annotation == null) return;
+
     final methodName = extractFeatureMethodName(
       declaration,
       FeatureAnnotation.deserialize,

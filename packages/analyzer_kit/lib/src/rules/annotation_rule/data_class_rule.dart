@@ -16,44 +16,29 @@ final class _DataClassVisitor extends AnnotationVisitor {
 
   @override
   Iterable<String>? getExpectedMethodNames(ClassDeclaration node) {
-    final expectedMethods = <String>[];
+    final expectedMethods = <FeatureMethod>[];
 
-    if (hasFeatureEnabled(node, FeatureAnnotation.copyWith)) {
-      expectedMethods.add(FeatureMethod.copyWith.name);
-    }
+    final dataClassAnnotation = node.metadata.firstWhere(
+      (a) => stringEqualsIgnoreCaseByAscii(
+        a.name.name,
+        FeatureAnnotation.dataClass.name,
+      ),
+    );
 
-    if (hasFeatureEnabled(node, FeatureAnnotation.overrideToString)) {
-      expectedMethods.add(FeatureMethod.overrideToString.name);
-    }
+    for (final feature in CompositeFeatureAnnotation.dataClass.features) {
+      // print(
+      //   dataClassAnnotation.elementAnnotation?.element?.children
+      //       .cast<FieldFormalParameterElement>()
+      //       .where((f) => f.hasDefaultValue)
+      //       .map((f) => (f.displayName, f.defaultValueCode)),
+      // );
 
-    if (hasFeatureEnabled(node, FeatureAnnotation.overrideEquality)) {
-      expectedMethods.add(FeatureMethod.overrideEquals.name);
-      expectedMethods.add(FeatureMethod.overrideHashCode.name);
-    }
-
-    if (hasFeatureEnabled(node, FeatureAnnotation.serialize)) {
-      final methodName = extractFeatureMethodName(
-        node,
-        FeatureAnnotation.serialize,
-        FeatureMethod.toMap.name,
-      );
-      if (methodName != null) {
-        expectedMethods.add(methodName);
+      if (isFeaturedEnabledInAnnotation(dataClassAnnotation, feature)) {
+        expectedMethods.addAll(feature.expectedMethods);
       }
     }
 
-    if (hasFeatureEnabled(node, FeatureAnnotation.deserialize)) {
-      final methodName = extractFeatureMethodName(
-        node,
-        FeatureAnnotation.deserialize,
-        FeatureMethod.fromMap.name,
-      );
-      if (methodName != null) {
-        expectedMethods.add(methodName);
-      }
-    }
-
-    return expectedMethods.isEmpty ? null : expectedMethods;
+    return expectedMethods.isEmpty ? null : expectedMethods.map((e) => e.name);
   }
 
   @override
@@ -64,7 +49,9 @@ final class _DataClassVisitor extends AnnotationVisitor {
     final Set<String> methods = Set.from(expectedMethods);
 
     for (final member in members) {
-      if (member is ConstructorDeclaration && member.factoryKeyword != null) {
+      if (member is ConstructorDeclaration) {
+        if (member.factoryKeyword == null) continue;
+
         methods.remove(member.name?.lexeme);
       } else if (member is MethodDeclaration) {
         methods.remove(member.name.lexeme);

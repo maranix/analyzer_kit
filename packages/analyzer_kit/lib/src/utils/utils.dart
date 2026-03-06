@@ -1,11 +1,12 @@
 import "package:analyzer/dart/ast/ast.dart"
     show
+        AnnotatedNode,
+        BooleanLiteral,
         ClassDeclaration,
         FieldDeclaration,
         NamedExpression,
-        BooleanLiteral,
-        Annotation,
-        NodeList;
+        Annotation;
+import "package:analyzer/dart/constant/value.dart";
 import "package:analyzer_kit/src/enums.dart";
 import "package:analyzer_kit/src/types.dart";
 import "package:code_builder/code_builder.dart";
@@ -13,61 +14,104 @@ import "package:dart_style/dart_style.dart";
 
 part "code_gen_utils.dart";
 part "code_utils.dart";
+part "exceptions.dart";
 part "string_utils.dart";
 
 /// Extracts generatable fields from a [ClassDeclaration].
-Iterable<ClassField> extractGeneratableFields(ClassDeclaration declaration) {
-  return declaration.body.childEntities
-      .whereType<FieldDeclaration>()
-      .map(ClassField.fromFieldDeclaration)
-      .where((f) => f.isGeneratable);
+Iterable<ClassField> extractGeneratableFields(ClassDeclaration declaration) =>
+    declaration.body.childEntities
+        .whereType<FieldDeclaration>()
+        .map(ClassField.fromFieldDeclaration)
+        .where((f) => f.isGeneratable);
+
+/// Checks whether a [node] has an annotation with the given [name] (case-insensitive).
+bool nodeHasAnnotation(AnnotatedNode node, String name) =>
+    node.metadata.any((a) => stringEqualsIgnoreCaseByAscii(a.name.name, name));
+
+/// Retrieves the computed value of a field in an annotation.
+///
+/// Returns null if the annotation has no computed values or the field is not found.
+DartObject? getComputedAnnotationFieldValue(
+  Annotation annotation,
+  String fieldName,
+) {
+  final computedAnnotationValues = annotation.elementAnnotation
+      ?.computeConstantValue();
+
+  return computedAnnotationValues?.getField(fieldName);
 }
 
-/// Checks whether a specific code generation [feature] is enabled for a [node].
+/// Checks whether a [feature] is enabled in the given [annotation].
 ///
-/// This checks if the class is annotated with the direct feature annotation
-/// (e.g., `@CopyWith`) or the composite `@DataClass` annotation where the
-/// feature is not explicitly disabled.
-bool hasFeatureEnabled(ClassDeclaration node, FeatureAnnotation feature) {
-  // Check for direct annotation first regardless ignoring letter casing
-  // (e.g., @CopyWith and @copyWith are treated as same)
-  if (_hasAnnotation(node.metadata, feature.name)) {
-    return true;
+/// If [annotation] has no arguments, an [AnnotationFeatureNotFoundException] is thrown.
+///
+/// If [annotation] has multiple boolean expressions for the same feature, an [AnnotationException] is thrown.
+bool isFeaturedEnabledInAnnotation(
+  Annotation annotation,
+  FeatureAnnotation feature,
+) {
+  final arguments = annotation.arguments;
+  // TODO: This is a temporary solution, until we have a better way to handle this.
+  final computedFieldName = feature.toString().split(".").last;
+
+  if (arguments == null) {
+    final featureEnabled = getComputedAnnotationFieldValue(
+      annotation,
+      computedFieldName,
+    )?.toBoolValue();
+
+    if (featureEnabled == null) {
+      throw AnnotationFeatureNotFoundException(
+        feature.name,
+        annotation.name.name,
+      );
+    }
+
+    return featureEnabled;
   }
 
-  // Check for @DataClass and its arguments
-  for (final annotation in node.metadata) {
-    if (stringEqualsIgnoreCaseByAscii(
+  final expressions = arguments.arguments
+      .whereType<NamedExpression>()
+      .where(
+        (e) => stringEqualsIgnoreCaseByAscii(e.name.label.name, feature.name),
+      )
+      .map((e) => e.expression)
+      .whereType<BooleanLiteral>();
+
+  if (expressions.isEmpty) {
+    final featureEnabled = getComputedAnnotationFieldValue(
+      annotation,
+      computedFieldName,
+    )?.toBoolValue();
+
+    if (featureEnabled == null) {
+      throw AnnotationFeatureNotFoundException(
+        feature.name,
+        annotation.name.name,
+      );
+    }
+
+    return featureEnabled;
+  }
+
+  return switch (expressions.length) {
+    // We have already covered the case where there are no arguments.
+    1 => expressions.first.value,
+    _ => throw AnnotationMultipleFeatureExpressionsException(
+      feature.name,
       annotation.name.name,
-      FeatureAnnotation.dataClass.name,
-    )) {
-      // If arguments are missing, all features are enabled by default
-      final arguments = annotation.arguments?.arguments;
-      if (arguments == null) return true;
+    ),
+  };
+}
 
-      // Look for the specific argument corresponding to the feature
-      // The argument name uses camelCase matching the enum name (e.g., 'copyWith')
-      for (final arg in arguments) {
-        if (arg is NamedExpression &&
-            stringEqualsIgnoreCaseByAscii(arg.name.label.name, feature.name)) {
-          final expression = arg.expression;
-          if (expression is BooleanLiteral) {
-            return expression.value;
-          }
-          break;
-        }
-      }
-
-      // If the argument is missing, it defaults to true
-      return true;
+Annotation? getAnnotation(AnnotatedNode node, FeatureAnnotation feature) {
+  for (final annotation in node.metadata) {
+    if (stringEqualsIgnoreCaseByAscii(annotation.name.name, feature.name)) {
+      return annotation;
     }
   }
 
-  return false;
-}
-
-bool _hasAnnotation(NodeList<Annotation> metadata, String name) {
-  return metadata.any((a) => stringEqualsIgnoreCaseByAscii(a.name.name, name));
+  return null;
 }
 
 /// Retrieves the correctly configured method name for a given [feature] serialization/deserialization on [node].
@@ -77,11 +121,6 @@ String? extractFeatureMethodName(
   FeatureAnnotation feature,
   String defaultName,
 ) {
-  if (feature == FeatureAnnotation.dataClass) {
-    if (_hasAnnotation(node.metadata, feature.name)) return defaultName;
-    return null;
-  }
-
   // Look for direct annotation first
   for (final annotation in node.metadata) {
     if (stringEqualsIgnoreCaseByAscii(annotation.name.name, feature.name)) {
@@ -107,12 +146,5 @@ String? extractFeatureMethodName(
     }
   }
 
-  // Fallback to @DataClass checking
-  if (_hasAnnotation(node.metadata, FeatureAnnotation.dataClass.name)) {
-    // We already know it has @DataClass. Now we need to check if the specific feature is enabled.
-    if (hasFeatureEnabled(node, feature)) {
-      return defaultName;
-    }
-  }
   return null;
 }

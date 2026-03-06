@@ -49,7 +49,7 @@ abstract base class AnnotationVisitor extends BaseAnnotationVisitor {
 
   @override
   void visitClassDeclaration(ClassDeclaration node) {
-    if (!hasFeatureEnabled(node, annotation)) return;
+    if (!nodeHasAnnotation(node, annotation.name)) return;
 
     final methods = getExpectedMethodNames(node);
     if (methods == null || methods.isEmpty) return;

@@ -8,11 +8,39 @@ enum FeatureAnnotation {
   overrideToString("OverrideToString"),
   overrideEquality("OverrideEquality"),
   serialize("Serialize"),
-  deserialize("Deserialize");
+  deserialize("Deserialize")
+  ;
 
   const FeatureAnnotation(this.name);
 
   final String name;
+
+  Iterable<FeatureMethod> get expectedMethods => switch (this) {
+    FeatureAnnotation.copyWith => [
+      FeatureMethod.copyWith,
+    ],
+    FeatureAnnotation.overrideToString => [
+      FeatureMethod.overrideToString,
+    ],
+    FeatureAnnotation.serialize => [
+      FeatureMethod.toMap,
+    ],
+    FeatureAnnotation.deserialize => [
+      FeatureMethod.fromMap,
+    ],
+    FeatureAnnotation.overrideEquality => [
+      FeatureMethod.overrideEquals,
+      FeatureMethod.overrideHashCode,
+    ],
+    FeatureAnnotation.dataClass => [
+      FeatureMethod.copyWith,
+      FeatureMethod.overrideToString,
+      FeatureMethod.overrideEquals,
+      FeatureMethod.overrideHashCode,
+      FeatureMethod.toMap,
+      FeatureMethod.fromMap,
+    ],
+  };
 }
 
 /// Method names that each annotation expects on the class.
@@ -24,7 +52,8 @@ enum FeatureMethod {
   operatorEquals("operator =="),
   fromMap("fromMap"),
   fromString("fromString"),
-  toMap("toMap");
+  toMap("toMap")
+  ;
 
   const FeatureMethod(this.name);
 
@@ -38,9 +67,26 @@ enum FeatureDiagnosticCode {
   overrideToString(LintCodes.overrideToString),
   overrideEquality(LintCodes.overrideEquality),
   serialize(LintCodes.serialize),
-  deserialize(LintCodes.deserialize);
+  deserialize(LintCodes.deserialize)
+  ;
 
   const FeatureDiagnosticCode(this.diag);
 
   final DiagnosticCode diag;
+}
+
+/// Composite annotations that group related features.
+enum CompositeFeatureAnnotation {
+  dataClass([
+    FeatureAnnotation.copyWith,
+    FeatureAnnotation.overrideToString,
+    FeatureAnnotation.overrideEquality,
+    FeatureAnnotation.serialize,
+    FeatureAnnotation.deserialize,
+  ])
+  ;
+
+  const CompositeFeatureAnnotation(this.features);
+
+  final Iterable<FeatureAnnotation> features;
 }

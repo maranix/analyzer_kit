@@ -29,7 +29,10 @@ final class OverrideEqualityMethods extends ResolvedCorrectionProducer {
     final declaration = node.thisOrAncestorOfType<ClassDeclaration>();
     if (declaration == null) return;
 
-    if (hasFeatureEnabled(declaration, FeatureAnnotation.overrideEquality)) {
+    final annotation = getAnnotation(declaration, .overrideEquality);
+    if (annotation == null) return;
+
+    if (isFeaturedEnabledInAnnotation(annotation, .overrideEquality)) {
       bool? deepCollectionEquality;
 
       // Extract deepCollectionEquality from either @OverrideEquality or @DataClass

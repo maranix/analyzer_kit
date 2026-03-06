@@ -28,7 +28,10 @@ final class OverrideToStringMethod extends ResolvedCorrectionProducer {
     final declaration = node.thisOrAncestorOfType<ClassDeclaration>();
     if (declaration == null) return;
 
-    if (hasFeatureEnabled(declaration, .overrideToString)) {
+    final annotation = getAnnotation(declaration, .overrideToString);
+    if (annotation == null) return;
+
+    if (isFeaturedEnabledInAnnotation(annotation, .overrideToString)) {
       final fields = extractGeneratableFields(declaration);
 
       await builder.addDartFileEdit(file, (fileEditBuilder) {

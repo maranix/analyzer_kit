@@ -2,7 +2,6 @@ import "package:analysis_server_plugin/edit/dart/correction_producer.dart";
 import "package:analysis_server_plugin/edit/dart/dart_fix_kind_priority.dart"
     show DartFixKindPriority;
 import "package:analyzer/dart/ast/ast.dart";
-import "package:analyzer_kit/src/enums.dart";
 import "package:analyzer_kit/src/utils/utils.dart";
 import "package:analyzer_plugin/utilities/change_builder/change_builder_core.dart";
 import "package:analyzer_plugin/utilities/fixes/fixes.dart";
@@ -30,7 +29,10 @@ final class AddCopyWithMethod extends ResolvedCorrectionProducer {
     final declaration = node.thisOrAncestorOfType<ClassDeclaration>();
     if (declaration == null) return;
 
-    if (hasFeatureEnabled(declaration, FeatureAnnotation.copyWith)) {
+    final annotation = getAnnotation(declaration, .copyWith);
+    if (annotation == null) return;
+
+    if (isFeaturedEnabledInAnnotation(annotation, .copyWith)) {
       final fields = extractGeneratableFields(declaration);
       if (fields.isEmpty) return;
 
