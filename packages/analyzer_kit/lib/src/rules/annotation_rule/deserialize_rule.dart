@@ -16,9 +16,23 @@ final class _DeserializeVisitor extends AnnotationVisitor {
 
   @override
   Iterable<String>? getExpectedMethodNames(ClassDeclaration node) {
-    final expectedName = extractFeatureMethodName(node, annotation, "fromMap");
-    if (expectedName == null) return null;
-    return [expectedName];
+    final nodeAnnotation = getAnnotation(node, annotation)!;
+
+    final expectedName = getComputedAnnotationFieldValue(
+      nodeAnnotation,
+      "name",
+    )?.toStringValue();
+
+    final name = switch (expectedName) {
+      null => "fromMap",
+      final String n when n.contains("(") => n.substring(
+        n.lastIndexOf("("),
+        n.lastIndexOf(")"),
+      ),
+      _ => expectedName,
+    };
+
+    return [name];
   }
 
   @override

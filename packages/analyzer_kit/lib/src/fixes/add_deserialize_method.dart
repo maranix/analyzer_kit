@@ -2,7 +2,6 @@ import "package:analysis_server_plugin/edit/dart/correction_producer.dart";
 import "package:analysis_server_plugin/edit/dart/dart_fix_kind_priority.dart"
     show DartFixKindPriority;
 import "package:analyzer/dart/ast/ast.dart";
-import "package:analyzer_kit/src/enums.dart";
 import "package:analyzer_kit/src/utils/utils.dart";
 import "package:analyzer_plugin/utilities/change_builder/change_builder_core.dart";
 import "package:analyzer_plugin/utilities/fixes/fixes.dart";
@@ -33,26 +32,32 @@ final class AddDeserializeMethod extends ResolvedCorrectionProducer {
     final annotation = getAnnotation(declaration, .deserialize);
     if (annotation == null) return;
 
-    final methodName = extractFeatureMethodName(
-      declaration,
-      FeatureAnnotation.deserialize,
-      "fromMap",
-    );
+    final expectedName = getComputedAnnotationFieldValue(
+      annotation,
+      "name",
+    )?.toStringValue();
 
-    if (methodName != null) {
-      final fields = extractGeneratableFields(declaration);
+    final name = switch (expectedName) {
+      null => "fromMap",
+      final String n when n.contains("(") => n.substring(
+        n.lastIndexOf("("),
+        n.lastIndexOf(")"),
+      ),
+      _ => expectedName,
+    };
 
-      await builder.addDartFileEdit(file, (fileEditBuilder) {
-        fileEditBuilder.insertMethod(declaration, (editBuilder) {
-          editBuilder.write(
-            generateDeserializeMethod(
-              declaration.namePart.typeName.lexeme,
-              methodName,
-              fields,
-            ),
-          );
-        });
+    final fields = extractGeneratableFields(declaration);
+
+    await builder.addDartFileEdit(file, (fileEditBuilder) {
+      fileEditBuilder.insertMethod(declaration, (editBuilder) {
+        editBuilder.write(
+          generateDeserializeMethod(
+            declaration.namePart.typeName.lexeme,
+            name,
+            fields,
+          ),
+        );
       });
-    }
+    });
   }
 }

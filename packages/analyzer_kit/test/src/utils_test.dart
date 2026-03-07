@@ -4,7 +4,6 @@ import "package:analyzer/dart/analysis/analysis_context_collection.dart";
 import "package:analyzer/dart/analysis/results.dart";
 import "package:analyzer/dart/ast/ast.dart" show ClassDeclaration, Declaration;
 import "package:analyzer/dart/constant/value.dart" show DartObject;
-import "package:analyzer_kit/src/enums.dart";
 import "package:analyzer_kit/src/utils/utils.dart";
 // ignore: depend_on_referenced_packages
 import "package:path/path.dart" as p;
@@ -126,13 +125,13 @@ const _classesWithAnnotations = """
     UserDataClassDefault({required this.name});
   }
 
-  @Serialize(name: .custom('toDto'))
+  @Serialize(name: 'toDto')
   class UserSerializeCustom {
     final String name;
     UserSerializeCustom({required this.name});
   }
 
-  @Serialize(name: .toMap())
+  @Serialize(name: "toMap")
   class UserSerializeDotShorthand {
     final String name;
     UserSerializeDotShorthand({required this.name});
@@ -150,7 +149,7 @@ const _classesWithAnnotations = """
     UserDeserializeDefault({required this.name});
   }
 
-  @Deserialize(name: .custom('fromDto'))
+  @Deserialize(name: 'fromDto')
   class UserDeserializeCustom {
     final String name;
     UserDeserializeCustom({required this.name});
@@ -666,168 +665,44 @@ void main() async {
 
       expect(value, isNull);
     });
-  });
-
-  group("extractFeatureMethodName", () {
-    late final ResolvedUnitResult unit;
-    late final int dt;
-    late final Directory tempDir;
-    late final AnalysisContextCollection acc;
-
-    setUpAll(() async {
-      dt = DateTime.now().millisecondsSinceEpoch;
-      tempDir = Directory.systemTemp.createTempSync("analyzer_kit_test_$dt");
-      acc = AnalysisContextCollection(includedPaths: [tempDir.path]);
-
-      unit = await _resolveStringToUnit(
-        acc,
-        tempDir.path,
-        _classesWithAnnotations,
-      );
-    });
-
-    tearDownAll(() async {
-      tempDir.deleteSync(recursive: true);
-      await acc.dispose();
-    });
-
-    test("returns default name for direct annotation with no arguments", () {
-      final node = _findDeclarations<ClassDeclaration>(
-        unit,
-        "UserSerializeDefault",
-      ).first;
-
-      expect(
-        extractFeatureMethodName(node, FeatureAnnotation.serialize, "toMap"),
-        "toMap",
-      );
-    });
-
-    test("returns null when no relevant annotation present", () {
-      final node = _findDeclarations<ClassDeclaration>(
-        unit,
-        "UserNoAnnotation",
-      ).first;
-
-      expect(
-        extractFeatureMethodName(node, FeatureAnnotation.serialize, "toMap"),
-        isNull,
-      );
-    });
-
-    test("returns null for @DataClass when feature is disabled", () {
-      final node = _findDeclarations<ClassDeclaration>(
-        unit,
-        "UserDataClassSerializeDisabled",
-      ).first;
-
-      expect(
-        extractFeatureMethodName(node, FeatureAnnotation.serialize, "toMap"),
-        isNull,
-      );
-    });
 
     test(
-      "returns default name for FeatureAnnotation.dataClass with annotation",
+      "extracts custom name from `name` property of Serialize annotation",
       () {
         final node = _findDeclarations<ClassDeclaration>(
           unit,
-          "UserDataClassDefault",
+          "UserSerializeCustom",
         ).first;
 
-        expect(
-          extractFeatureMethodName(
-            node,
-            FeatureAnnotation.dataClass,
-            "defaultName",
-          ),
-          "defaultName",
-        );
+        final annotation = getAnnotation(node, .serialize)!;
+        final value = getComputedAnnotationFieldValue(
+          annotation,
+          "name",
+        )?.toStringValue();
+
+        expect(value, equals("toDto"));
       },
     );
 
-    test("returns null for FeatureAnnotation.dataClass without annotation", () {
-      final node = _findDeclarations<ClassDeclaration>(
-        unit,
-        "UserNoAnnotation",
-      ).first;
+    test(
+      "extracts custom deserialization name from `name` property of Deserialize annotation",
+      () {
+        final node = _findDeclarations<ClassDeclaration>(
+          unit,
+          "UserDeserializeCustom",
+        ).first;
 
-      expect(
-        extractFeatureMethodName(
-          node,
-          FeatureAnnotation.dataClass,
-          "defaultName",
-        ),
-        isNull,
-      );
-    });
+        final annotation = getAnnotation(node, .deserialize)!;
+        final value = getComputedAnnotationFieldValue(
+          annotation,
+          "name",
+        )?.toStringValue();
 
-    test("extracts custom name from .custom() annotation argument", () {
-      final node = _findDeclarations<ClassDeclaration>(
-        unit,
-        "UserSerializeCustom",
-      ).first;
-
-      expect(
-        extractFeatureMethodName(node, FeatureAnnotation.serialize, "toMap"),
-        "toDto",
-      );
-    });
-
-    test("extracts method name from dot shorthand like .toMap()", () {
-      final node = _findDeclarations<ClassDeclaration>(
-        unit,
-        "UserSerializeDotShorthand",
-      ).first;
-
-      expect(
-        extractFeatureMethodName(node, FeatureAnnotation.serialize, "toMap"),
-        "toMap",
-      );
-    });
-
-    test("returns default name when annotation has non-name arguments", () {
-      final node = _findDeclarations<ClassDeclaration>(
-        unit,
-        "UserSerializeNonNameArg",
-      ).first;
-
-      expect(
-        extractFeatureMethodName(node, FeatureAnnotation.serialize, "toMap"),
-        "toMap",
-      );
-    });
-
-    test("returns default for deserialization with no arguments", () {
-      final node = _findDeclarations<ClassDeclaration>(
-        unit,
-        "UserDeserializeDefault",
-      ).first;
-
-      expect(
-        extractFeatureMethodName(
-          node,
-          FeatureAnnotation.deserialize,
-          "fromMap",
-        ),
-        "fromMap",
-      );
-    });
-
-    test("extracts custom deserialization name from .custom()", () {
-      final node = _findDeclarations<ClassDeclaration>(
-        unit,
-        "UserDeserializeCustom",
-      ).first;
-
-      expect(
-        extractFeatureMethodName(
-          node,
-          FeatureAnnotation.deserialize,
-          "fromMap",
-        ),
-        "fromDto",
-      );
-    });
+        expect(
+          value,
+          equals("fromDto"),
+        );
+      },
+    );
   });
 }

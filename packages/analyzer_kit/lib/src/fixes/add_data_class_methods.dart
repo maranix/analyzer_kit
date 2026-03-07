@@ -60,29 +60,23 @@ final class AddDataClassMethods extends ResolvedCorrectionProducer {
             m.name.lexeme == FeatureMethod.overrideEquals.name,
       );
 
-      final toMapName = extractFeatureMethodName(
-        declaration,
-        .serialize,
-        FeatureMethod.toMap.name,
-      );
-      final hasSerialize =
-          toMapName != null &&
-          members.any(
-            (m) => m is MethodDeclaration && m.name.lexeme == toMapName,
-          );
+      ////////////////////////////////////////////
 
-      final fromMapName = extractFeatureMethodName(
-        declaration,
-        .deserialize,
-        FeatureMethod.fromMap.name,
+      final toMapMethod = FeatureMethod.toMap.name;
+
+      final hasSerialize = members.any(
+        (m) => m is MethodDeclaration && m.name.lexeme == toMapMethod,
       );
-      final hasDeserialize =
-          fromMapName != null &&
-          members.any(
-            (m) =>
-                m is ConstructorDeclaration && m.name?.lexeme == fromMapName ||
-                m is MethodDeclaration && m.name.lexeme == fromMapName,
-          );
+
+      final fromMapMethod = FeatureMethod.fromMap.name;
+
+      final hasDeserialize = members.any(
+        (m) =>
+            m is ConstructorDeclaration && m.name?.lexeme == fromMapMethod ||
+            m is MethodDeclaration && m.name.lexeme == fromMapMethod,
+      );
+
+      ////////////////////////////////////////////
 
       await builder.addDartFileEdit(file, (fileEditBuilder) {
         fileEditBuilder.insertMethod(declaration, (editBuilder) {
@@ -164,9 +158,7 @@ final class AddDataClassMethods extends ResolvedCorrectionProducer {
                 .serialize,
               ) &&
               !hasSerialize) {
-            if (toMapName != null) {
-              editBuilder.writeln(generateSerializeMethod(toMapName, fields));
-            }
+            editBuilder.writeln(generateSerializeMethod(toMapMethod, fields));
           }
 
           if (isFeaturedEnabledInAnnotation(
@@ -174,15 +166,13 @@ final class AddDataClassMethods extends ResolvedCorrectionProducer {
                 .deserialize,
               ) &&
               !hasDeserialize) {
-            if (fromMapName != null) {
-              editBuilder.writeln(
-                generateDeserializeMethod(
-                  declaration.namePart.typeName.lexeme,
-                  fromMapName,
-                  fields,
-                ),
-              );
-            }
+            editBuilder.writeln(
+              generateDeserializeMethod(
+                declaration.namePart.typeName.lexeme,
+                fromMapMethod,
+                fields,
+              ),
+            );
           }
         });
       });
