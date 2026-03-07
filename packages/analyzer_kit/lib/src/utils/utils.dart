@@ -43,33 +43,39 @@ DartObject? getComputedAnnotationFieldValue(
 
 /// Checks whether a [feature] is enabled in the given [annotation].
 ///
-/// If [annotation] has no arguments, an [AnnotationFeatureNotFoundException] is thrown.
+/// Resolution order:
+/// 1. Explicit boolean argument in the annotation source (e.g. `@DataClass(copyWith: false)`)
+/// 2. Computed constant value from the resolved annotation element
 ///
-/// If [annotation] has multiple boolean expressions for the same feature, an [AnnotationException] is thrown.
+/// Throws [AnnotationFeatureNotFoundException] if the feature cannot be resolved.
+///
+/// Throws [AnnotationMultipleFeatureExpressionsException] if more than one
+/// boolean expression matches the same feature.
 bool isFeaturedEnabledInAnnotation(
   Annotation annotation,
   FeatureAnnotation feature,
 ) {
-  final arguments = annotation.arguments;
-  // TODO: This is a temporary solution, until we have a better way to handle this.
-  final computedFieldName = feature.toString().split(".").last;
-
-  if (arguments == null) {
-    final featureEnabled = getComputedAnnotationFieldValue(
+  bool resolveFromComputed() {
+    final value = getComputedAnnotationFieldValue(
       annotation,
-      computedFieldName,
+      feature.name[0].toLowerCase() + feature.name.substring(1),
     )?.toBoolValue();
 
-    if (featureEnabled == null) {
+    if (value == null) {
       throw AnnotationFeatureNotFoundException(
         feature.name,
         annotation.name.name,
       );
     }
 
-    return featureEnabled;
+    return value;
   }
 
+  // If annotation has no argument list, fall back to computed values.
+  final arguments = annotation.arguments;
+  if (arguments == null) return resolveFromComputed();
+
+  // Look for an explicit boolean argument matching the feature name.
   final expressions = arguments.arguments
       .whereType<NamedExpression>()
       .where(
@@ -78,24 +84,8 @@ bool isFeaturedEnabledInAnnotation(
       .map((e) => e.expression)
       .whereType<BooleanLiteral>();
 
-  if (expressions.isEmpty) {
-    final featureEnabled = getComputedAnnotationFieldValue(
-      annotation,
-      computedFieldName,
-    )?.toBoolValue();
-
-    if (featureEnabled == null) {
-      throw AnnotationFeatureNotFoundException(
-        feature.name,
-        annotation.name.name,
-      );
-    }
-
-    return featureEnabled;
-  }
-
   return switch (expressions.length) {
-    // We have already covered the case where there are no arguments.
+    0 => resolveFromComputed(),
     1 => expressions.first.value,
     _ => throw AnnotationMultipleFeatureExpressionsException(
       feature.name,
