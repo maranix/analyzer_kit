@@ -94,6 +94,9 @@ bool isFeaturedEnabledInAnnotation(
   };
 }
 
+/// Retrieves the [Annotation] with the given [name] from the [node].
+///
+/// Returns null if the annotation is not found.
 Annotation? getAnnotation(AnnotatedNode node, FeatureAnnotation feature) {
   for (final annotation in node.metadata) {
     if (stringEqualsIgnoreCaseByAscii(annotation.name.name, feature.name)) {
