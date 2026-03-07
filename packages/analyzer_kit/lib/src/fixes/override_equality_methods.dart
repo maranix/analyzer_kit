@@ -32,71 +32,69 @@ final class OverrideEqualityMethods extends ResolvedCorrectionProducer {
     final annotation = getAnnotation(declaration, .overrideEquality);
     if (annotation == null) return;
 
-    if (isFeaturedEnabledInAnnotation(annotation, .overrideEquality)) {
-      bool? deepCollectionEquality;
+    bool? deepCollectionEquality;
 
-      // Extract deepCollectionEquality from either @OverrideEquality or @DataClass
-      for (final annotation in declaration.metadata) {
-        final name = annotation.name.name;
-        if (stringEqualsIgnoreCaseByAscii(
-              name,
-              FeatureAnnotation.overrideEquality.name,
-            ) ||
-            stringEqualsIgnoreCaseByAscii(
-              name,
-              FeatureAnnotation.dataClass.name,
-            )) {
-          final arguments = annotation.arguments?.arguments;
-          if (arguments != null) {
-            for (final arg in arguments) {
-              if (arg is NamedExpression &&
-                  arg.name.label.name == "deepCollectionEquality") {
-                final expression = arg.expression;
-                if (expression is BooleanLiteral) {
-                  deepCollectionEquality = expression.value;
-                }
+    // Extract deepCollectionEquality from either @OverrideEquality or @DataClass
+    for (final annotation in declaration.metadata) {
+      final name = annotation.name.name;
+      if (stringEqualsIgnoreCaseByAscii(
+            name,
+            FeatureAnnotation.overrideEquality.name,
+          ) ||
+          stringEqualsIgnoreCaseByAscii(
+            name,
+            FeatureAnnotation.dataClass.name,
+          )) {
+        final arguments = annotation.arguments?.arguments;
+        if (arguments != null) {
+          for (final arg in arguments) {
+            if (arg is NamedExpression &&
+                arg.name.label.name == "deepCollectionEquality") {
+              final expression = arg.expression;
+              if (expression is BooleanLiteral) {
+                deepCollectionEquality = expression.value;
               }
             }
           }
         }
       }
-
-      final hasHashCodeOverride = declaration.body.childEntities.any(
-        (m) =>
-            m is MethodDeclaration &&
-            m.name.lexeme == FeatureMethod.overrideHashCode.name,
-      );
-      final hasEqualityOperatorOverride = declaration.body.childEntities.any(
-        (m) =>
-            m is MethodDeclaration &&
-            m.name.lexeme == FeatureMethod.operatorEquals.name,
-      );
-
-      final fields = extractGeneratableFields(declaration);
-      if (fields.isEmpty) return;
-
-      await builder.addDartFileEdit(file, (fileEditBuilder) {
-        fileEditBuilder.insertMethod(declaration, (editBuilder) {
-          if (!hasHashCodeOverride) {
-            editBuilder.writeln(
-              generateHashCodeOverride(
-                fields,
-                deepCollectionEquality: deepCollectionEquality,
-              ),
-            );
-          }
-
-          if (!hasEqualityOperatorOverride) {
-            editBuilder.writeln(
-              generateEqualityOperatorOverride(
-                declaration.namePart.typeName.lexeme,
-                fields,
-                deepCollectionEquality: deepCollectionEquality,
-              ),
-            );
-          }
-        });
-      });
     }
+
+    final hasHashCodeOverride = declaration.body.childEntities.any(
+      (m) =>
+          m is MethodDeclaration &&
+          m.name.lexeme == FeatureMethod.overrideHashCode.name,
+    );
+    final hasEqualityOperatorOverride = declaration.body.childEntities.any(
+      (m) =>
+          m is MethodDeclaration &&
+          m.name.lexeme == FeatureMethod.operatorEquals.name,
+    );
+
+    final fields = extractGeneratableFields(declaration);
+    if (fields.isEmpty) return;
+
+    await builder.addDartFileEdit(file, (fileEditBuilder) {
+      fileEditBuilder.insertMethod(declaration, (editBuilder) {
+        if (!hasHashCodeOverride) {
+          editBuilder.writeln(
+            generateHashCodeOverride(
+              fields,
+              deepCollectionEquality: deepCollectionEquality,
+            ),
+          );
+        }
+
+        if (!hasEqualityOperatorOverride) {
+          editBuilder.writeln(
+            generateEqualityOperatorOverride(
+              declaration.namePart.typeName.lexeme,
+              fields,
+              deepCollectionEquality: deepCollectionEquality,
+            ),
+          );
+        }
+      });
+    });
   }
 }

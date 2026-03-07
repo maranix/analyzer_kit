@@ -26,13 +26,6 @@ final class _DataClassVisitor extends AnnotationVisitor {
     );
 
     for (final feature in CompositeFeatureAnnotation.dataClass.features) {
-      // print(
-      //   dataClassAnnotation.elementAnnotation?.element?.children
-      //       .cast<FieldFormalParameterElement>()
-      //       .where((f) => f.hasDefaultValue)
-      //       .map((f) => (f.displayName, f.defaultValueCode)),
-      // );
-
       if (isFeaturedEnabledInAnnotation(dataClassAnnotation, feature)) {
         expectedMethods.addAll(feature.expectedMethods);
       }

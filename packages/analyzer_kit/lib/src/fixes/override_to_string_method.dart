@@ -31,19 +31,17 @@ final class OverrideToStringMethod extends ResolvedCorrectionProducer {
     final annotation = getAnnotation(declaration, .overrideToString);
     if (annotation == null) return;
 
-    if (isFeaturedEnabledInAnnotation(annotation, .overrideToString)) {
-      final fields = extractGeneratableFields(declaration);
+    final fields = extractGeneratableFields(declaration);
 
-      await builder.addDartFileEdit(file, (fileEditBuilder) {
-        fileEditBuilder.insertMethod(declaration, (editBuilder) {
-          editBuilder.write(
-            generateToStringMethod(
-              declaration.namePart.typeName.lexeme,
-              fields,
-            ),
-          );
-        });
+    await builder.addDartFileEdit(file, (fileEditBuilder) {
+      fileEditBuilder.insertMethod(declaration, (editBuilder) {
+        editBuilder.write(
+          generateToStringMethod(
+            declaration.namePart.typeName.lexeme,
+            fields,
+          ),
+        );
       });
-    }
+    });
   }
 }
