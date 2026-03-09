@@ -3,6 +3,8 @@ import "package:analysis_server_plugin/edit/dart/dart_fix_kind_priority.dart"
     show DartFixKindPriority;
 import "package:analyzer/dart/ast/ast.dart";
 import "package:analyzer_kit/src/enums.dart";
+import "package:analyzer_kit/src/utils/code_gen_utils.dart";
+import "package:analyzer_kit/src/utils/string_utils.dart";
 import "package:analyzer_kit/src/utils/utils.dart";
 import "package:analyzer_plugin/utilities/change_builder/change_builder_core.dart";
 import "package:analyzer_plugin/utilities/fixes/fixes.dart";
@@ -37,6 +39,23 @@ final class AddDataClassMethods extends ResolvedCorrectionProducer {
     if (fields.isEmpty) return;
 
     final members = declaration.body.childEntities;
+
+    final enabledFeatures = CompositeFeatureAnnotation.dataClass.features
+        .map(
+          (f) => isFeaturedEnabledInAnnotation(annotation, f),
+        )
+        .where((e) => e == true)
+        .toSet();
+
+    final List<({FeatureAnnotation feature, bool enabled})> methodsToGenerate =
+        [];
+
+    for (final member in members) {
+      final isMethod = member is MethodDeclaration;
+      final isConstructor = member is ConstructorDeclaration;
+
+      if (!isMethod || !isConstructor) continue;
+    }
 
     final hasCopyWith = members.any(
       (m) =>

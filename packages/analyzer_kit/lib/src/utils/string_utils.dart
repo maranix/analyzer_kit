@@ -1,5 +1,3 @@
-part of "utils.dart";
-
 /// Case-insensitive ASCII string equality comparison.
 @pragma("vm:prefer-inline")
 bool stringEqualsIgnoreCaseByAscii(String a, String b) {

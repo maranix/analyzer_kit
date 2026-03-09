@@ -3,6 +3,8 @@ import "package:analysis_server_plugin/edit/dart/dart_fix_kind_priority.dart"
     show DartFixKindPriority;
 import "package:analyzer/dart/ast/ast.dart";
 import "package:analyzer_kit/src/enums.dart";
+import "package:analyzer_kit/src/utils/code_gen_utils.dart";
+import "package:analyzer_kit/src/utils/string_utils.dart";
 import "package:analyzer_kit/src/utils/utils.dart";
 import "package:analyzer_plugin/utilities/change_builder/change_builder_core.dart";
 import "package:analyzer_plugin/utilities/fixes/fixes.dart";

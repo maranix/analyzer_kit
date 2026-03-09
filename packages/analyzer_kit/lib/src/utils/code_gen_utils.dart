@@ -1,4 +1,9 @@
-part of "utils.dart";
+import "package:analyzer_kit/src/enums.dart";
+import "package:analyzer_kit/src/types.dart";
+import "package:analyzer_kit/src/utils/code_utils.dart";
+import "package:code_builder/code_builder.dart";
+
+final _dartEmitter = DartEmitter();
 
 /// Generates a `copyWith` method for the given [className] and [fields].
 String generateCopyWithMethod(String className, Iterable<ClassField> fields) {

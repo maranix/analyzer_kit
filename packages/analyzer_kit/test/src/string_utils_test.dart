@@ -1,4 +1,4 @@
-import "package:analyzer_kit/src/utils/utils.dart";
+import "package:analyzer_kit/src/utils/string_utils.dart";
 import "package:test/test.dart";
 
 void main() {
@@ -95,14 +95,12 @@ void main() {
       });
 
       test("boundary ASCII characters for uppercase range", () {
-        // 0x40 is '@' (just before 'A' = 0x41)
-        // 0x5B is '[' (just after 'Z' = 0x5A)
         expect(stringEqualsIgnoreCaseByAscii("@", "@"), isTrue);
         expect(stringEqualsIgnoreCaseByAscii("[", "["), isTrue);
         expect(
           stringEqualsIgnoreCaseByAscii("@", "`"),
           isFalse,
-        ); // @ should not become `
+        );
       });
     });
   });

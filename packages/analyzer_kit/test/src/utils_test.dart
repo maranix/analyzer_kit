@@ -2,7 +2,8 @@ import "dart:io";
 
 import "package:analyzer/dart/analysis/analysis_context_collection.dart";
 import "package:analyzer/dart/analysis/results.dart";
-import "package:analyzer/dart/ast/ast.dart" show ClassDeclaration, Declaration;
+import "package:analyzer/dart/ast/ast.dart"
+    show ClassDeclaration, Declaration, NamedExpression;
 import "package:analyzer/dart/constant/value.dart" show DartObject;
 import "package:analyzer_kit/src/utils/utils.dart";
 // ignore: depend_on_referenced_packages
@@ -704,5 +705,54 @@ void main() async {
         );
       },
     );
+  });
+
+  group("getAnnotationProps", () {
+    late final ResolvedUnitResult unit;
+    late final int dt;
+    late final Directory tempDir;
+    late final AnalysisContextCollection acc;
+
+    setUpAll(() async {
+      dt = DateTime.now().millisecondsSinceEpoch;
+      tempDir = Directory.systemTemp.createTempSync("analyzer_kit_test_$dt");
+      acc = AnalysisContextCollection(includedPaths: [tempDir.path]);
+
+      unit = await _resolveStringToUnit(
+        acc,
+        tempDir.path,
+        _classesWithAnnotations,
+      );
+    });
+
+    tearDownAll(() async {
+      tempDir.deleteSync(recursive: true);
+      await acc.dispose();
+    });
+
+    test("returns empty list for annotation without arguments", () {
+      final node = _findDeclarations<ClassDeclaration>(
+        unit,
+        "UserCopyWith",
+      ).first;
+
+      final annotation = getAnnotation(node, .copyWith)!;
+      final props = getAnnotationProps<NamedExpression>(annotation);
+
+      expect(props, isEmpty);
+    });
+
+    test("returns named expressions for annotation with arguments", () {
+      final node = _findDeclarations<ClassDeclaration>(
+        unit,
+        "UserSerializeCustom",
+      ).first;
+
+      final annotation = getAnnotation(node, .serialize)!;
+      final props = getAnnotationProps<NamedExpression>(annotation);
+
+      expect(props, hasLength(1));
+      expect(props.first.name.label.name, "name");
+    });
   });
 }

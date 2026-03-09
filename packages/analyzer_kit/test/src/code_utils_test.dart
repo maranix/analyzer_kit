@@ -1,4 +1,4 @@
-import "package:analyzer_kit/src/utils/utils.dart";
+import "package:analyzer_kit/src/utils/code_utils.dart";
 import "package:test/test.dart";
 
 void main() {

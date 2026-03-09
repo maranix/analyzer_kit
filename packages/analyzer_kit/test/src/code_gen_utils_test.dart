@@ -1,5 +1,5 @@
 import "package:analyzer_kit/src/types.dart";
-import "package:analyzer_kit/src/utils/utils.dart";
+import "package:analyzer_kit/src/utils/code_gen_utils.dart";
 import "package:dart_style/dart_style.dart";
 import "package:test/test.dart";
 

@@ -4,25 +4,24 @@ import "package:analyzer/dart/ast/ast.dart"
         BooleanLiteral,
         ClassDeclaration,
         FieldDeclaration,
+        Expression,
         NamedExpression,
         Annotation;
 import "package:analyzer/dart/constant/value.dart";
 import "package:analyzer_kit/src/enums.dart";
 import "package:analyzer_kit/src/types.dart";
-import "package:code_builder/code_builder.dart";
-import "package:dart_style/dart_style.dart";
+import "package:analyzer_kit/src/utils/exceptions.dart";
+import "package:analyzer_kit/src/utils/string_utils.dart";
 
-part "code_gen_utils.dart";
-part "code_utils.dart";
-part "exceptions.dart";
-part "string_utils.dart";
+export "package:analyzer_kit/src/utils/exceptions.dart";
 
 /// Extracts generatable fields from a [ClassDeclaration].
-Iterable<ClassField> extractGeneratableFields(ClassDeclaration declaration) =>
-    declaration.body.childEntities
-        .whereType<FieldDeclaration>()
-        .map(ClassField.fromFieldDeclaration)
-        .where((f) => f.isGeneratable);
+Iterable<ClassField> extractGeneratableFields(
+  ClassDeclaration declaration,
+) => declaration.body.childEntities
+    .whereType<FieldDeclaration>()
+    .map(ClassField.fromFieldDeclaration)
+    .where((f) => f.isGeneratable);
 
 /// Checks whether a [node] has an annotation with the given [name] (case-insensitive).
 bool nodeHasAnnotation(AnnotatedNode node, String name) =>
@@ -39,6 +38,20 @@ DartObject? getComputedAnnotationFieldValue(
       ?.computeConstantValue();
 
   return computedAnnotationValues?.getField(fieldName);
+}
+
+/// Retrieves the arguments of a [annotation].
+///
+/// Returns an empty list if the annotation has no arguments.
+///
+/// Throws [ArgumentError] if the type [T] is not a subtype of [Expression].
+Iterable<T> getAnnotationProps<T extends Expression>(
+  Annotation annotation,
+) {
+  final arguments = annotation.arguments?.arguments;
+  if (arguments == null) return [];
+
+  return arguments.whereType<T>();
 }
 
 /// Checks whether a [feature] is enabled in the given [annotation].

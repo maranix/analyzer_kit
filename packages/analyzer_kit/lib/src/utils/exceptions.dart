@@ -1,5 +1,3 @@
-part of "utils.dart";
-
 sealed class AnnotationException implements Exception {
   const AnnotationException(this.message);
 
