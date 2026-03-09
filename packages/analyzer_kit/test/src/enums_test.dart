@@ -67,10 +67,6 @@ void main() {
       expect(FeatureMethod.fromMap.name, "fromMap");
     });
 
-    test('fromString has name "fromString"', () {
-      expect(FeatureMethod.fromString.name, "fromString");
-    });
-
     test('toMap has name "toMap"', () {
       expect(FeatureMethod.toMap.name, "toMap");
     });

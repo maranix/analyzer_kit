@@ -33,6 +33,10 @@ final class AddDeserializeMethod extends ResolvedCorrectionProducer {
     final annotation = getAnnotation(declaration, .deserialize);
     if (annotation == null) return;
 
+    // TODO: `name` doesn't recognize provided props
+    //
+    // `.fromJson()` -> inserts `fromMap`
+    // `.custom()` -> inserts `fromMap`
     final expectedName = getComputedAnnotationFieldValue(
       annotation,
       "name",

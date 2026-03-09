@@ -15,6 +15,20 @@ enum FeatureAnnotation {
 
   final String name;
 
+  static FeatureAnnotation? fromString(String name) {
+    final iter = values.iterator;
+    FeatureAnnotation? result;
+
+    while (iter.moveNext()) {
+      final curr = iter.current;
+      if (curr.name == name) {
+        result = curr;
+      }
+    }
+
+    return result;
+  }
+
   Iterable<FeatureMethod> get expectedMethods => switch (this) {
     FeatureAnnotation.copyWith => [
       FeatureMethod.copyWith,
@@ -51,13 +65,27 @@ enum FeatureMethod {
   overrideEquals("=="),
   operatorEquals("operator =="),
   fromMap("fromMap"),
-  fromString("fromString"),
+  fromJson("fromJson"),
   toMap("toMap")
   ;
 
   const FeatureMethod(this.name);
 
   final String name;
+
+  static FeatureMethod? fromString(String name) {
+    final iter = values.iterator;
+    FeatureMethod? result;
+
+    while (iter.moveNext()) {
+      final curr = iter.current;
+      if (curr.name == name) {
+        result = curr;
+      }
+    }
+
+    return result;
+  }
 }
 
 /// Maps each feature to its diagnostic code.
