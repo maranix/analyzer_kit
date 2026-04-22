@@ -1,5 +1,8 @@
 # Analyzer Kit
 
+> [!WARNING]
+> The development of this package is currently on hold until support for `augmented class` lands. Until then consider using [build_runner_hook](https://pub.dev/packages/build_runner_hook) for a more seamless code-gen experience.
+
 A Dart workspace containing packages for annotation-driven code generation through the Dart Analyzer plugin system — no build runners required.
 
 ## Packages
