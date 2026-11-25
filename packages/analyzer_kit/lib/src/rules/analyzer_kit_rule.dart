@@ -30,16 +30,15 @@ typedef DiagnosticReporter = void Function(
   List<Object> arguments,
 );
 
-const _validCompositeEntryTypes = {
-  'CopyWith',
-  'OverrideEquality',
-  'OverrideToString',
-  'Serialize',
-  'Deserialize',
-  'CompositeAnnotation',
-};
+bool _isClassAnnotationName(String name) =>
+    FeatureAnnotation.values.any(
+      (f) => stringEqualsIgnoreCaseByAscii(name, f.name),
+    ) ||
+    stringEqualsIgnoreCaseByAscii(name, 'CompositeAnnotation');
 
-const _fieldAnnotationTypes = {'Ignore', 'Redact'};
+bool _isFieldAnnotationName(String name) => FieldAnnotation.values.any(
+  (f) => stringEqualsIgnoreCaseByAscii(name, f.name),
+);
 
 /// Single-pass warning rule that checks all `analyzer_kit` annotations on each
 /// [ClassDeclaration] in one AST visit, avoiding redundant metadata and field
@@ -288,7 +287,7 @@ void validateClassMetadata(
   DiagnosticReporter report,
 ) => _validateMetadataTargets(
   metadata,
-  _fieldAnnotationTypes,
+  _isFieldAnnotationName,
   LintCodes.misplacedFieldAnnotation,
   report,
 );
@@ -301,14 +300,14 @@ void validateFieldOrParamMetadata(
   DiagnosticReporter report,
 ) => _validateMetadataTargets(
   metadata,
-  _validCompositeEntryTypes,
+  _isClassAnnotationName,
   LintCodes.misplacedClassAnnotation,
   report,
 );
 
 void _validateMetadataTargets(
   NodeList<Annotation> metadata,
-  Set<String> disallowedTypes,
+  bool Function(String name) matches,
   DiagnosticCode code,
   DiagnosticReporter report,
 ) {
@@ -319,10 +318,7 @@ void _validateMetadataTargets(
         ?.element
         ?.name;
     final rawName = _annotationName(annotation);
-    final isMatch = constantTypeName != null
-        ? disallowedTypes.contains(constantTypeName)
-        : disallowedTypes.any((t) => stringEqualsIgnoreCaseByAscii(rawName, t));
-    if (isMatch) {
+    if (matches(constantTypeName ?? rawName)) {
       report(annotation, code, [rawName]);
     }
   }
@@ -343,7 +339,7 @@ void validateCompositeAnnotationArgs(
 
     final resolvedTypeName = element.staticType?.element?.name;
     if (resolvedTypeName != null) {
-      if (!_validCompositeEntryTypes.contains(resolvedTypeName)) {
+      if (!_isClassAnnotationName(resolvedTypeName)) {
         report(element, LintCodes.invalidCompositeAnnotationEntry, [
           resolvedTypeName,
         ]);
@@ -352,12 +348,7 @@ void validateCompositeAnnotationArgs(
     }
 
     final unresolvedName = _unresolvedExpressionName(element);
-    final isValidUnresolved =
-        unresolvedName != null &&
-        _validCompositeEntryTypes.any(
-          (t) => stringEqualsIgnoreCaseByAscii(unresolvedName, t),
-        );
-    if (!isValidUnresolved) {
+    if (unresolvedName == null || !_isClassAnnotationName(unresolvedName)) {
       report(element, LintCodes.invalidCompositeAnnotationEntry, [
         unresolvedName ?? element.toSource(),
       ]);

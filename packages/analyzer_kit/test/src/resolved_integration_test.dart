@@ -723,7 +723,8 @@ const nestedBundle = CompositeAnnotation([CopyWith()]);
 
 const validBundle = CompositeAnnotation([
   nestedBundle,
-  OverrideEquality(),
+  copyWith,
+  overrideEquality,
   OverrideToString(),
   Serialize(),
   Deserialize(),

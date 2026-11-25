@@ -34,6 +34,17 @@ void main() {
     });
   });
 
+  group('FieldAnnotation', () {
+    test('has ignore and redact values', () {
+      expect(FieldAnnotation.values, [
+        FieldAnnotation.ignore,
+        FieldAnnotation.redact,
+      ]);
+      expect(FieldAnnotation.ignore.name, 'Ignore');
+      expect(FieldAnnotation.redact.name, 'Redact');
+    });
+  });
+
   group('FeatureMethod', () {
     test('has exactly 7 values', () {
       expect(FeatureMethod.values.length, 7);
