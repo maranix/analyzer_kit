@@ -62,13 +62,15 @@ String generateCopyWithMethod(
   return format ? formatCode(raw) : raw;
 }
 
-String _escapeSingleQuotedString(String value) => value
-    .replaceAll(r'\', r'\\')
-    .replaceAll("'", r"\'")
-    .replaceAll(r'$', r'\$')
-    .replaceAll('\n', r'\n')
-    .replaceAll('\r', r'\r')
-    .replaceAll('\t', r'\t');
+/// Renders a single `name: value` segment for a generated `toString` override,
+/// substituting the escaped redact placeholder when [field] is redacted for
+/// [FeatureAnnotation.overrideToString].
+String renderToStringField(ClassField field) {
+  final value = field.redactedFor.contains(FeatureAnnotation.overrideToString)
+      ? escapeSingleQuotedString(field.redactPlaceholder)
+      : '\$${field.name}';
+  return '${field.name}: $value';
+}
 
 /// Generates a `toString` override for the given [className] and [fields].
 String generateToStringMethod(
@@ -78,19 +80,14 @@ String generateToStringMethod(
   bool format = true,
 }) {
   final fieldList = fields is List<ClassField> ? fields : fields.toList();
-  String renderField(ClassField f) {
-    final value = f.redactedFor.contains(FeatureAnnotation.overrideToString)
-        ? _escapeSingleQuotedString(f.redactPlaceholder)
-        : '\$${f.name}';
-    return '${f.name}: $value';
-  }
-
   final String content;
   if (multiline && fieldList.isNotEmpty) {
-    final lines = fieldList.map((f) => '  ${renderField(f)},').join('\\n');
+    final lines = fieldList
+        .map((f) => '  ${renderToStringField(f)},')
+        .join('\\n');
     content = '$className(\\n$lines\\n)';
   } else {
-    content = '$className(${fieldList.map(renderField).join(', ')})';
+    content = '$className(${fieldList.map(renderToStringField).join(', ')})';
   }
   final body = Code("'$content';");
 
@@ -290,7 +287,7 @@ String generateSerializeMethod(
   final entries = fields
       .map((f) {
         final valueExpr = f.redactedFor.contains(FeatureAnnotation.serialize)
-            ? "'${_escapeSingleQuotedString(f.redactPlaceholder)}'"
+            ? "'${escapeSingleQuotedString(f.redactPlaceholder)}'"
             : _serializeExpression(f, f.name);
         return "'${f.name}': $valueExpr";
       })

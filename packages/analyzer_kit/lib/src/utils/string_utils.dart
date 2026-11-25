@@ -17,3 +17,13 @@ bool stringEqualsIgnoreCaseByAscii(String a, String b) {
   }
   return true;
 }
+
+/// Escapes special characters in [value] for inclusion inside a single-quoted
+/// Dart string literal.
+String escapeSingleQuotedString(String value) => value
+    .replaceAll(r'\', r'\\')
+    .replaceAll("'", r"\'")
+    .replaceAll(r'$', r'\$')
+    .replaceAll('\n', r'\n')
+    .replaceAll('\r', r'\r')
+    .replaceAll('\t', r'\t');
