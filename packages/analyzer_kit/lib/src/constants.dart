@@ -77,4 +77,26 @@ abstract final class LintCodes {
     correctionMessage:
         'Update the deserialization factory/method to match the class fields.',
   );
+
+  static const LintCode invalidCompositeAnnotationEntry = LintCode(
+    'invalid_composite_annotation_entry',
+    'Invalid CompositeAnnotation entry: `{0}` is not a class-level analyzer_kit annotation.',
+    severity: .WARNING,
+    correctionMessage: 'Use only CopyWith, OverrideEquality, OverrideToString, Serialize, Deserialize, or another CompositeAnnotation.',
+  );
+
+  static const LintCode misplacedFieldAnnotation = LintCode(
+    'misplaced_field_annotation',
+    '`@{0}` is a field-level annotation and cannot be applied to a class.',
+    severity: .WARNING,
+    correctionMessage:
+        'Move this annotation to a field or constructor parameter.',
+  );
+
+  static const LintCode misplacedClassAnnotation = LintCode(
+    'misplaced_class_annotation',
+    '`@{0}` is a class-level annotation and cannot be applied to a field or parameter.',
+    severity: .WARNING,
+    correctionMessage: 'Move this annotation to the class declaration.',
+  );
 }

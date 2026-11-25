@@ -4,11 +4,20 @@ import 'package:analysis_server_plugin/edit/dart/correction_producer.dart'
     show CorrectionProducerContext;
 import 'package:analyzer/dart/analysis/analysis_context_collection.dart';
 import 'package:analyzer/dart/analysis/results.dart';
-import 'package:analyzer/dart/ast/ast.dart' show ClassDeclaration;
+import 'package:analyzer/dart/ast/ast.dart'
+    show
+        ClassDeclaration,
+        FieldDeclaration,
+        FormalParameter,
+        InstanceCreationExpression,
+        TopLevelVariableDeclaration;
+import 'package:analyzer/error/error.dart' show DiagnosticCode;
+import 'package:analyzer_kit/src/constants.dart';
 import 'package:analyzer_kit/src/enums.dart';
 import 'package:analyzer_kit/src/fixes/add_composite_methods.dart';
 import 'package:analyzer_kit/src/fixes/add_serialize_method.dart';
 import 'package:analyzer_kit/src/fixes/override_to_string_method.dart';
+import 'package:analyzer_kit/src/rules/analyzer_kit_rule.dart';
 import 'package:analyzer_kit/src/utils/utils.dart';
 import 'package:analyzer_plugin/utilities/change_builder/change_builder_core.dart';
 import 'package:test/test.dart';
@@ -704,5 +713,114 @@ class Credentials {
       contains("toString() => 'Credentials(user: \$user, secret: [REDACTED])'"),
     );
     expect(updated, contains("'secret': '[REDACTED]'"));
+  });
+
+  test('validates CompositeAnnotation entries and annotation targets on resolved AST', () async {
+    final unitResult = await resolveCode('annotation_validation.dart', '''
+import 'package:analyzer_kit_annotation/analyzer_kit_annotation.dart';
+
+const nestedBundle = CompositeAnnotation([CopyWith()]);
+
+const validBundle = CompositeAnnotation([
+  nestedBundle,
+  OverrideEquality(),
+  OverrideToString(),
+  Serialize(),
+  Deserialize(),
+]);
+
+const invalidBundle = CompositeAnnotation([
+  CopyWith(),
+  Ignore(),
+  redact,
+  'not_an_annotation',
+]);
+
+@ignore
+@Redact()
+class MisplacedOnClass {
+  @copyWith
+  @validBundle
+  final String name;
+
+  const MisplacedOnClass({@Serialize() required this.name});
+}
+
+class PrimaryParamTest({@OverrideToString() required final String id});
+''');
+
+    final reported = <(DiagnosticCode, List<Object>)>[];
+    void capture(node, DiagnosticCode code, List<Object> args) {
+      reported.add((code, args));
+    }
+
+    // Check CompositeAnnotation entries
+    final topVars = unitResult.unit.declarations
+        .whereType<TopLevelVariableDeclaration>()
+        .toList();
+    for (final decl in topVars) {
+      final init = decl.variables.variables.single.initializer;
+      if (init is InstanceCreationExpression) {
+        validateCompositeAnnotationArgs(init.argumentList, capture);
+      }
+    }
+
+    expect(
+      reported
+          .where((r) => r.$1 == LintCodes.invalidCompositeAnnotationEntry)
+          .map((r) => r.$2.single)
+          .toList(),
+      ['Ignore', 'Redact', 'String'],
+    );
+
+    reported.clear();
+
+    // Check class, field, and parameter metadata
+    final classes = unitResult.unit.declarations
+        .whereType<ClassDeclaration>()
+        .toList();
+    for (final cls in classes) {
+      validateClassMetadata(cls.metadata, capture);
+      for (final member in cls.body.members) {
+        if (member is FieldDeclaration) {
+          validateFieldOrParamMetadata(member.metadata, capture);
+        }
+      }
+    }
+    // Also check formal parameters across all declarations
+    final params = <FormalParameter>[];
+    void collectParams(node) {
+      for (final child in node.childEntities) {
+        if (child is FormalParameter) params.add(child);
+        if (child is ClassDeclaration ||
+            child.runtimeType.toString().contains('Body') ||
+            child.runtimeType.toString().contains('Constructor') ||
+            child.runtimeType.toString().contains('FormalParameterList')) {
+          collectParams(child);
+        }
+      }
+    }
+
+    for (final cls in classes) {
+      collectParams(cls);
+    }
+    for (final param in params) {
+      validateFieldOrParamMetadata(param.metadata, capture);
+    }
+
+    expect(
+      reported
+          .where((r) => r.$1 == LintCodes.misplacedFieldAnnotation)
+          .map((r) => r.$2.single)
+          .toList(),
+      ['ignore', 'Redact'],
+    );
+    expect(
+      reported
+          .where((r) => r.$1 == LintCodes.misplacedClassAnnotation)
+          .map((r) => r.$2.single)
+          .toList(),
+      ['copyWith', 'validBundle', 'Serialize', 'OverrideToString'],
+    );
   });
 }
