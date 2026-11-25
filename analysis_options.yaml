@@ -4,9 +4,9 @@ plugins:
   analyzer_kit:
     path: packages/analyzer_kit
     diagnostics:
-      unused_copy_with_annotation: true
-      unused_override_to_string_annotation: true
-      unused_override_equality_annotation: true
-      unused_serialize_annotation: true
-      unused_deserialize_annotation: true
-      unused_data_class_annotation: true
+      copy_with_annotation: true
+      override_to_string_annotation: true
+      override_equality_annotation: true
+      serialize_annotation: true
+      deserialize_annotation: true
+      data_class_annotation: true

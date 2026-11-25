@@ -1,4 +1,5 @@
-import 'package:analyzer/dart/ast/ast.dart' show FieldDeclaration;
+import 'package:analyzer/dart/ast/ast.dart'
+    show FieldDeclaration, VariableDeclaration;
 
 /// Represents a class field extracted from AST for code generation.
 final class ClassField {
@@ -38,8 +39,14 @@ final class ClassField {
   /// Whether this field's type is nullable (ends with `?`).
   bool get isNullableType => type.endsWith('?');
 
+  /// Whether this field's type is a `List`.
+  bool get isListType => _isType('List');
+
+  /// Whether this field's type is an `Iterable`.
+  bool get isIterableType => _isType('Iterable');
+
   /// Whether this field's type is a `List` or `Iterable` (ordered collection).
-  bool get isListOrIterableType => _isType('List') || _isType('Iterable');
+  bool get isListOrIterableType => isListType || isIterableType;
 
   /// Whether this field's type is a `Set` (unordered collection).
   bool get isSetType => _isType('Set');
@@ -57,21 +64,47 @@ final class ClassField {
       type.startsWith('$typeName<') ||
       type.startsWith('$typeName?');
 
-  static ClassField fromFieldDeclaration(FieldDeclaration fd) {
-    final typeAnnotation = fd.fields.type;
-    final variable = fd.fields.variables.single;
-    final isPrivate = variable.name.lexeme.startsWith('_');
+  static ClassField fromFieldDeclaration(FieldDeclaration fd) =>
+      _fromVariable(fd, fd.fields.variables.single);
+
+  /// Extracts all [ClassField] entries from a [FieldDeclaration], supporting
+  /// multi-variable declarations (e.g. `final int a, b;`).
+  static Iterable<ClassField> fromFieldDeclarationAll(FieldDeclaration fd) {
+    final type = fd.fields.type?.toSource() ?? 'dynamic';
+    final keyword = fd.fields.keyword?.lexeme;
+    final isStatic = fd.isStatic;
+
+    return fd.fields.variables.map(
+      (v) => _fromVariable(
+        fd,
+        v,
+        type: type,
+        keyword: keyword,
+        isStatic: isStatic,
+      ),
+    );
+  }
+
+  static ClassField _fromVariable(
+    FieldDeclaration fd,
+    VariableDeclaration variable, {
+    String? type,
+    String? keyword,
+    bool? isStatic,
+  }) {
+    final name = variable.name.lexeme;
+    final isPrivate = name.startsWith('_');
 
     return ClassField(
-      keyword: fd.fields.keyword?.lexeme,
-      type: typeAnnotation?.toSource() ?? 'dynamic',
-      name: variable.name.lexeme,
+      keyword: keyword ?? fd.fields.keyword?.lexeme,
+      type: type ?? fd.fields.type?.toSource() ?? 'dynamic',
+      name: name,
       equals: variable.equals?.lexeme,
       initializer: variable.initializer?.toString(),
       isConst: variable.isConst,
       isLate: variable.isLate,
       isFinal: variable.isFinal,
-      isStatic: fd.isStatic,
+      isStatic: isStatic ?? fd.isStatic,
       isSynthetic: variable.isSynthetic,
       isPublic: !isPrivate,
       isPrivate: isPrivate,

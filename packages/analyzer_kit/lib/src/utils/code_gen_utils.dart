@@ -6,12 +6,13 @@ String generateCopyWithMethod(String className, Iterable<ClassField> fields) {
   final functionParams = <Parameter>[];
 
   for (final field in fields) {
+    final paramType = field.isNullableType ? field.type : '${field.type}?';
     functionParams.add(
       Parameter(
         (b) => b
           ..name = field.name
           ..named = true
-          ..type = refer('${field.type}?'),
+          ..type = refer(paramType),
       ),
     );
 
@@ -159,10 +160,24 @@ String _equalityExpression(ClassField field, {bool? deepCollectionEquality}) {
   final nullable = field.isNullableType;
   final bang = nullable ? '!' : '';
 
-  if (field.isListOrIterableType) {
+  if (field.isListType) {
     final expr =
         'other.$name$bang.length == $name$bang.length '
-        '&& $name$bang.indexed.every((e) => other.$name$bang[e.\$1] == e.\$2)';
+        '&& () { for (var i = 0; i < $name$bang.length; i++) { '
+        'if (other.$name$bang[i] != $name$bang[i]) return false; } '
+        'return true; }()';
+    return nullable
+        ? '(identical(other.$name, $name) || (other.$name != null && $name != null && $expr))'
+        : expr;
+  }
+
+  if (field.isIterableType) {
+    final expr =
+        '() { final it1 = other.$name$bang.iterator; '
+        'final it2 = $name$bang.iterator; '
+        'while (it1.moveNext()) { '
+        'if (!it2.moveNext() || it1.current != it2.current) return false; } '
+        'return !it2.moveNext(); }()';
     return nullable
         ? '(identical(other.$name, $name) || (other.$name != null && $name != null && $expr))'
         : expr;
