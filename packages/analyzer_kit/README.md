@@ -68,17 +68,17 @@ Primary constructors (both positional and named parameters, including empty `;` 
 final class Point(final int x, final int y);
 ```
 
-### Custom Serialization Names
+### Custom Serialization Names & Field Casing
 
 ```dart
-@Serialize(name: .toJson())
-@Deserialize(name: .fromJson())
+@Serialize(name: .toJson(), fieldRename: .snake)
+@Deserialize(name: .fromJson(), fieldRename: .snake)
 class ApiModel {
-  final String id;
+  final String userId;
 
-  ApiModel({required this.id});
+  ApiModel({required this.userId});
 
-  // Generates: toJson() and factory ApiModel.fromJson(...)
+  // Generates: toJson() with 'user_id' and factory ApiModel.fromJson(...)
 }
 ```
 

@@ -24,6 +24,9 @@ enum FieldAnnotation {
   final String name;
 }
 
+/// Naming strategy applied to map keys in `@Serialize` and `@Deserialize`.
+enum FieldRename { none, snake, kebab, pascal, screamingSnake }
+
 /// Method names that each annotation expects on the class.
 enum FeatureMethod {
   copyWith('copyWith'),

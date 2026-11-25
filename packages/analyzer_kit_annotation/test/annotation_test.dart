@@ -302,4 +302,19 @@ void main() {
       expect(annotation.placeholder, '***');
     });
   });
+
+  group('FieldRename', () {
+    test('defaults to FieldRename.none on Serialize and Deserialize', () {
+      expect(const Serialize().fieldRename, FieldRename.none);
+      expect(const Deserialize().fieldRename, FieldRename.none);
+    });
+
+    test('can configure fieldRename on Serialize and Deserialize', () {
+      const s = Serialize(name: .toJson(), fieldRename: .snake);
+      const d = Deserialize(name: .fromJson(), fieldRename: .screamingSnake);
+      expect(s.fieldRename, FieldRename.snake);
+      expect(d.fieldRename, FieldRename.screamingSnake);
+      expect(FieldRename.values, hasLength(5));
+    });
+  });
 }

@@ -31,13 +31,10 @@ base class AddDeserializeMethod extends ResolvedCorrectionProducer {
     final declaration = node.thisOrAncestorOfType<ClassDeclaration>();
     if (declaration == null) return;
 
-    final methodName = extractFeatureMethodName(
-      declaration,
-      FeatureAnnotation.deserialize,
-      'fromMap',
-    );
+    final config = extractAnnotationConfig(declaration);
+    final methodName = config.deserializeMethodName;
 
-    if (methodName != null) {
+    if (config.deserialize && methodName != null) {
       final fields = fieldsForFeature(
         extractGeneratableFields(declaration),
         FeatureAnnotation.deserialize,
@@ -50,6 +47,7 @@ base class AddDeserializeMethod extends ResolvedCorrectionProducer {
         fields,
         constructorName: extractPrimaryConstructorName(declaration),
         typeArguments: extractTypeArguments(declaration),
+        fieldRename: config.deserializeFieldRename,
       );
 
       await builder.addDartFileEdit(file, (fileEditBuilder) {

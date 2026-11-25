@@ -282,14 +282,16 @@ String _equalityExpression(ClassField field, {bool? deepCollectionEquality}) {
 String generateSerializeMethod(
   String methodName,
   Iterable<ClassField> fields, {
+  FieldRename fieldRename = .none,
   bool format = true,
 }) {
   final entries = fields
       .map((f) {
+        final key = renameField(f.name, fieldRename);
         final valueExpr = f.redactedFor.contains(FeatureAnnotation.serialize)
             ? "'${escapeSingleQuotedString(f.redactPlaceholder)}'"
             : _serializeExpression(f, f.name);
-        return "'${f.name}': $valueExpr";
+        return "'$key': $valueExpr";
       })
       .join(', ');
 
@@ -312,12 +314,14 @@ String generateDeserializeMethod(
   Iterable<ClassField> fields, {
   String? constructorName,
   String typeArguments = '',
+  FieldRename fieldRename = .none,
   bool format = true,
 }) {
   final assignments = fields
       .where((f) => f.isConstructorParam)
       .map((f) {
-        final expr = _deserializeExpression(f, "map['${f.name}']");
+        final key = renameField(f.name, fieldRename);
+        final expr = _deserializeExpression(f, "map['$key']");
         return f.isPositional ? expr : '${f.name}: $expr';
       })
       .join(',\n');

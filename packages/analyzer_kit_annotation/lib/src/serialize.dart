@@ -1,3 +1,5 @@
+import 'field_rename.dart';
+
 /// Method configuration used for the `@Serialize()` annotation.
 sealed class SerializeMethod {
   const SerializeMethod({required this.methodName});
@@ -33,6 +35,9 @@ final class _CustomSerializeMethod extends SerializeMethod {
 final class const Serialize({
   /// The method name configuration for serializing the class. Defaults to `.toMap()`.
   final SerializeMethod name = const .toMap(),
+
+  /// The naming strategy applied to serialized map keys. Defaults to `.none`.
+  final FieldRename fieldRename = .none,
 }) {
   /// Creates a new instance of [Serialize].
   this;

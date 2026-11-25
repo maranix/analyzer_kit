@@ -8,6 +8,7 @@ import 'package:analyzer/dart/ast/ast.dart'
         ConstructorDeclaration,
         DotShorthandConstructorInvocation,
         DotShorthandInvocation,
+        DotShorthandPropertyAccess,
         FieldDeclaration,
         FormalParameter,
         FunctionBody,
@@ -232,6 +233,8 @@ final class const AnnotationConfig({
   final bool deserialize = false,
   final String? serializeMethodName,
   final String? deserializeMethodName,
+  final FieldRename serializeFieldRename = .none,
+  final FieldRename deserializeFieldRename = .none,
   final bool? deepCollectionEquality,
 
   /// First metadata [Annotation] node enabling each [FeatureAnnotation] on the
@@ -259,8 +262,10 @@ AnnotationConfig extractAnnotationConfig(ClassDeclaration node) {
   bool? deepCollectionEquality;
   var serialize = false;
   String? serializeMethodName;
+  FieldRename? serializeFieldRename;
   var deserialize = false;
   String? deserializeMethodName;
+  FieldRename? deserializeFieldRename;
   final annotationNodes = <FeatureAnnotation, Annotation>{};
 
   for (final annotation in node.metadata) {
@@ -324,10 +329,16 @@ AnnotationConfig extractAnnotationConfig(ClassDeclaration node) {
       annotationNodes.putIfAbsent(.serialize, () => annotation);
       if (arguments != null) {
         for (final arg in arguments) {
-          if (arg is NamedArgument && arg.name.lexeme == 'name') {
-            serializeMethodName = _extractMethodNameFromExpression(
-              arg.argumentExpression,
-            );
+          if (arg is NamedArgument) {
+            if (arg.name.lexeme == 'name') {
+              serializeMethodName = _extractMethodNameFromExpression(
+                arg.argumentExpression,
+              );
+            } else if (arg.name.lexeme == 'fieldRename') {
+              serializeFieldRename = _extractFieldRenameFromExpression(
+                arg.argumentExpression,
+              );
+            }
           }
         }
       }
@@ -341,10 +352,16 @@ AnnotationConfig extractAnnotationConfig(ClassDeclaration node) {
       annotationNodes.putIfAbsent(.deserialize, () => annotation);
       if (arguments != null) {
         for (final arg in arguments) {
-          if (arg is NamedArgument && arg.name.lexeme == 'name') {
-            deserializeMethodName = _extractMethodNameFromExpression(
-              arg.argumentExpression,
-            );
+          if (arg is NamedArgument) {
+            if (arg.name.lexeme == 'name') {
+              deserializeMethodName = _extractMethodNameFromExpression(
+                arg.argumentExpression,
+              );
+            } else if (arg.name.lexeme == 'fieldRename') {
+              deserializeFieldRename = _extractFieldRenameFromExpression(
+                arg.argumentExpression,
+              );
+            }
           }
         }
       }
@@ -400,6 +417,7 @@ AnnotationConfig extractAnnotationConfig(ClassDeclaration node) {
         serialize = true;
         annotationNodes.putIfAbsent(.serialize, () => annotation);
         serializeMethodName ??= extractConstantMethodName(item);
+        serializeFieldRename ??= _extractConstantFieldRename(item);
       } else if (stringEqualsIgnoreCaseByAscii(
         typeName,
         FeatureAnnotation.deserialize.name,
@@ -407,6 +425,7 @@ AnnotationConfig extractAnnotationConfig(ClassDeclaration node) {
         deserialize = true;
         annotationNodes.putIfAbsent(.deserialize, () => annotation);
         deserializeMethodName ??= extractConstantMethodName(item);
+        deserializeFieldRename ??= _extractConstantFieldRename(item);
       }
     }
   }
@@ -426,9 +445,38 @@ AnnotationConfig extractAnnotationConfig(ClassDeclaration node) {
     deserializeMethodName: deserialize
         ? (deserializeMethodName ?? FeatureMethod.fromMap.name)
         : null,
+    serializeFieldRename: serializeFieldRename ?? .none,
+    deserializeFieldRename: deserializeFieldRename ?? .none,
     deepCollectionEquality: deepCollectionEquality,
     annotationNodes: annotationNodes,
   );
+}
+
+FieldRename? _fieldRenameFromEnumName(String? name) => switch (name) {
+  'none' => .none,
+  'snake' => .snake,
+  'kebab' => .kebab,
+  'pascal' => .pascal,
+  'screamingSnake' => .screamingSnake,
+  _ => null,
+};
+
+FieldRename? _extractConstantFieldRename(DartObject obj) {
+  final frObj = obj.getField('fieldRename');
+  if (frObj == null) return null;
+  final name = frObj.variable?.name ?? frObj.getField('_name')?.toStringValue();
+  final parsed = _fieldRenameFromEnumName(name);
+  return parsed == .none ? null : parsed;
+}
+
+FieldRename? _extractFieldRenameFromExpression(Object expression) {
+  final enumName = switch (expression) {
+    DotShorthandPropertyAccess(:final propertyName) => propertyName.name,
+    PrefixedIdentifier(:final identifier) => identifier.name,
+    SimpleIdentifier(:final name) => name,
+    _ => null,
+  };
+  return _fieldRenameFromEnumName(enumName);
 }
 
 String _annotationSimpleName(Annotation annotation) =>
