@@ -4,29 +4,6 @@ import 'package:test/test.dart';
 
 void main() {
   group('LintCodes', () {
-    group('dataClass', () {
-      test('has correct name', () {
-        expect(LintCodes.dataClass.lowerCaseName, 'data_class_annotation');
-      });
-
-      test('has correct problem message', () {
-        expect(LintCodes.dataClass.problemMessage, contains('@DataClass'));
-      });
-
-      test('has ERROR severity', () {
-        expect(LintCodes.dataClass.severity.name, 'ERROR');
-      });
-
-      test('has a correction message', () {
-        expect(LintCodes.dataClass.correctionMessage, isNotNull);
-        expect(LintCodes.dataClass.correctionMessage, isNotEmpty);
-      });
-
-      test('is a LintCode', () {
-        expect(LintCodes.dataClass, isA<LintCode>());
-      });
-    });
-
     group('copyWith', () {
       test('has correct name', () {
         expect(LintCodes.copyWith.lowerCaseName, 'copy_with_annotation');
@@ -140,7 +117,6 @@ void main() {
 
     test('all codes have unique names', () {
       final names = [
-        LintCodes.dataClass.lowerCaseName,
         LintCodes.copyWith.lowerCaseName,
         LintCodes.overrideEquality.lowerCaseName,
         LintCodes.overrideToString.lowerCaseName,

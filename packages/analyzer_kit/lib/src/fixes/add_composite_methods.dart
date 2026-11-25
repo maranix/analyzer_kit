@@ -7,15 +7,15 @@ import 'package:analyzer_kit/src/utils/utils.dart';
 import 'package:analyzer_plugin/utilities/change_builder/change_builder_core.dart';
 import 'package:analyzer_plugin/utilities/fixes/fixes.dart';
 
-/// Quick fix that generates missing methods for classes annotated
-/// with `@DataClass`.
-final class AddDataClassMethods extends ResolvedCorrectionProducer {
-  AddDataClassMethods({required super.context});
+/// Quick fix that generates all missing methods for classes annotated with a
+/// `CompositeAnnotation`.
+final class AddCompositeMethods extends ResolvedCorrectionProducer {
+  AddCompositeMethods({required super.context});
 
   static const _fix = FixKind(
-    'dart.fix.addDataClassMethods',
-    DartFixKindPriority.standard,
-    'Add missing DataClass methods',
+    'dart.fix.addCompositeMethods',
+    DartFixKindPriority.standard + 1,
+    'Add missing composite annotation methods',
   );
 
   @override
@@ -30,7 +30,7 @@ final class AddDataClassMethods extends ResolvedCorrectionProducer {
     if (declaration == null) return;
 
     final config = extractAnnotationConfig(declaration);
-    if (!config.hasDataClass) return;
+    if (!config.hasCompositeAnnotation) return;
 
     final fields = extractGeneratableFields(declaration);
     if (fields.isEmpty) return;

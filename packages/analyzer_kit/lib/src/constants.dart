@@ -2,14 +2,6 @@ import 'package:analyzer/error/error.dart' show LintCode;
 
 /// Lint diagnostic codes for annotation rules.
 abstract final class LintCodes {
-  static const LintCode dataClass = LintCode(
-    'data_class_annotation',
-    'Classes annotated with @DataClass must contain the required methods for enabled features.',
-    severity: .ERROR,
-    correctionMessage:
-        'Either remove the annotation or add the required methods.',
-  );
-
   static const LintCode copyWith = LintCode(
     'copy_with_annotation',
     'Classes annotated with @CopyWith must have a `copyWith` method.',

@@ -4,12 +4,8 @@ import 'package:test/test.dart';
 
 void main() {
   group('FeatureAnnotation', () {
-    test('has exactly 6 values', () {
-      expect(FeatureAnnotation.values.length, 6);
-    });
-
-    test('dataClass has name "DataClass"', () {
-      expect(FeatureAnnotation.dataClass.name, 'DataClass');
+    test('has exactly 5 values', () {
+      expect(FeatureAnnotation.values.length, 5);
     });
 
     test('copyWith has name "CopyWith"', () {
@@ -78,12 +74,8 @@ void main() {
   });
 
   group('FeatureDiagnosticCode', () {
-    test('has exactly 6 values', () {
-      expect(FeatureDiagnosticCode.values.length, 6);
-    });
-
-    test('dataClass maps to LintCodes.dataClass', () {
-      expect(FeatureDiagnosticCode.dataClass.diag, same(LintCodes.dataClass));
+    test('has exactly 5 values', () {
+      expect(FeatureDiagnosticCode.values.length, 5);
     });
 
     test('copyWith maps to LintCodes.copyWith', () {

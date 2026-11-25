@@ -5,6 +5,8 @@ import 'package:analyzer/dart/ast/ast.dart' show ClassDeclaration;
 import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:analyzer/error/error.dart' show DiagnosticCode;
 import 'package:analyzer_kit/src/enums.dart';
+import 'package:analyzer_kit/src/utils/utils.dart'
+    show annotationEnablesFeature;
 
 /// Base class for all analyzer kit lint rules.
 abstract base class BaseAnnotationRule extends AnalysisRule {
@@ -45,7 +47,7 @@ abstract base class BaseAnnotationVisitor extends RecursiveAstVisitor<void> {
   /// Reports a lint error on the annotation Node if the condition fails.
   void reportError(ClassDeclaration node) {
     for (final meta in node.metadata) {
-      if (meta.name.name.toLowerCase() == annotation.name.toLowerCase()) {
+      if (annotationEnablesFeature(meta, annotation)) {
         rule.reportAtNode(meta);
         return;
       }

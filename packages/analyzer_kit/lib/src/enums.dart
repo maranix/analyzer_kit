@@ -3,7 +3,6 @@ import 'package:analyzer_kit/src/constants.dart';
 
 /// Annotation names recognized by the plugin.
 enum FeatureAnnotation {
-  dataClass('DataClass'),
   copyWith('CopyWith'),
   overrideToString('OverrideToString'),
   overrideEquality('OverrideEquality'),
@@ -32,7 +31,6 @@ enum FeatureMethod {
 
 /// Maps each feature to its diagnostic code.
 enum FeatureDiagnosticCode {
-  dataClass(LintCodes.dataClass),
   copyWith(LintCodes.copyWith),
   overrideToString(LintCodes.overrideToString),
   overrideEquality(LintCodes.overrideEquality),

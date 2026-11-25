@@ -9,7 +9,7 @@
 ///
 /// | Annotation | Convenience Constant | Generated Code |
 /// |---|---|---|
-/// | [DataClass] | [dataClass] | `copyWith`, `==`, `hashCode`, `toString`, `toMap`, `fromMap` |
+/// | [CompositeAnnotation] | — | Bundles any combination of the annotations below |
 /// | [CopyWith] | [copyWith] | `copyWith` method |
 /// | [OverrideEquality] | [overrideEquality] | `==` operator and `hashCode` getter |
 /// | [OverrideToString] | [overrideToString] | `toString` method |
@@ -20,6 +20,14 @@
 ///
 /// ```dart
 /// import 'package:analyzer_kit_annotation/analyzer_kit_annotation.dart';
+///
+/// const dataClass = CompositeAnnotation([
+///   CopyWith(),
+///   OverrideEquality(),
+///   OverrideToString(),
+///   Serialize(),
+///   Deserialize(),
+/// ]);
 ///
 /// @dataClass
 /// class User {
@@ -37,8 +45,8 @@
 library;
 
 export 'src/analyzer_kit.dart';
+export 'src/composite_annotation.dart';
 export 'src/copy_with.dart';
-export 'src/data_class.dart';
 export 'src/deserialize.dart';
 export 'src/override_equality.dart';
 export 'src/override_to_string.dart';

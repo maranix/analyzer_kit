@@ -10,8 +10,8 @@ import 'package:analyzer/dart/ast/ast.dart'
         InstanceCreationExpression,
         MethodInvocation,
         NamedArgument,
-        NodeList,
         SimpleStringLiteral;
+import 'package:analyzer/dart/constant/value.dart' show DartObject;
 import 'package:analyzer_kit/src/enums.dart';
 import 'package:analyzer_kit/src/types.dart';
 import 'package:code_builder/code_builder.dart';
@@ -36,125 +36,68 @@ List<ClassField> extractGeneratableFields(ClassDeclaration declaration) {
   return fields;
 }
 
-/// Checks whether a specific code generation [feature] is enabled for a [node].
-///
-/// This checks if the class is annotated with the direct feature annotation
-/// (e.g., `@CopyWith`) or the composite `@DataClass` annotation where the
-/// feature is not explicitly disabled.
+/// Checks whether a specific code generation [feature] is enabled for [node],
+/// either via a direct annotation or via a `CompositeAnnotation` bundle.
 bool hasFeatureEnabled(ClassDeclaration node, FeatureAnnotation feature) {
-  // Check for direct annotation first regardless ignoring letter casing
-  // (e.g., @CopyWith and @copyWith are treated as same)
-  if (_hasAnnotation(node.metadata, feature.name)) {
+  final config = extractAnnotationConfig(node);
+  return switch (feature) {
+    .copyWith => config.copyWith,
+    .overrideToString => config.overrideToString,
+    .overrideEquality => config.overrideEquality,
+    .serialize => config.serialize,
+    .deserialize => config.deserialize,
+  };
+}
+
+/// Returns whether the single metadata [annotation] enables [feature]
+/// (either directly or by expanding a `CompositeAnnotation`).
+bool annotationEnablesFeature(
+  Annotation annotation,
+  FeatureAnnotation feature,
+) {
+  if (stringEqualsIgnoreCaseByAscii(annotation.name.name, feature.name)) {
     return true;
   }
 
-  // Check for @DataClass and its arguments
-  for (final annotation in node.metadata) {
-    if (stringEqualsIgnoreCaseByAscii(
-      annotation.name.name,
-      FeatureAnnotation.dataClass.name,
-    )) {
-      // If arguments are missing, all features are enabled by default
-      final arguments = annotation.arguments?.arguments;
-      if (arguments == null) return true;
+  final constant = annotation.elementAnnotation?.computeConstantValue();
+  if (constant == null) return false;
 
-      // Look for the specific argument corresponding to the feature
-      // The argument name uses camelCase matching the enum name (e.g., 'copyWith')
-      for (final arg in arguments) {
-        if (arg is NamedArgument &&
-            stringEqualsIgnoreCaseByAscii(arg.name.lexeme, feature.name)) {
-          final expression = arg.argumentExpression;
-          if (expression is BooleanLiteral) {
-            return expression.value;
-          }
-          break;
-        }
-      }
-
-      // If the argument is missing, it defaults to true
+  for (final item in _expandAnnotationConstant(constant)) {
+    final typeName = item.type?.element?.name;
+    if (typeName != null &&
+        stringEqualsIgnoreCaseByAscii(typeName, feature.name)) {
       return true;
     }
   }
-
   return false;
 }
 
-bool _hasAnnotation(NodeList<Annotation> metadata, String name) {
-  return metadata.any((a) => stringEqualsIgnoreCaseByAscii(a.name.name, name));
-}
-
-/// Retrieves the correctly configured method name for a given [feature] serialization/deserialization on [node].
-/// Returns null if the feature is not configured or disabled.
+/// Retrieves the configured method name for a given [feature] on [node].
+/// Returns null if the feature is not enabled.
 String? extractFeatureMethodName(
   ClassDeclaration node,
   FeatureAnnotation feature,
   String defaultName,
 ) {
-  if (feature == FeatureAnnotation.dataClass) {
-    if (_hasAnnotation(node.metadata, feature.name)) return defaultName;
-    return null;
-  }
-
-  // Look for direct annotation first
-  for (final annotation in node.metadata) {
-    if (stringEqualsIgnoreCaseByAscii(annotation.name.name, feature.name)) {
-      final arguments = annotation.arguments?.arguments;
-      if (arguments == null || arguments.isEmpty) return defaultName;
-
-      // Extract custom configuration e.g., @Serialize(name: .custom('xyz'))
-      for (final arg in arguments) {
-        if (arg is NamedArgument && arg.name.lexeme == 'name') {
-          final methodName = _extractMethodNameFromExpression(
-            arg.argumentExpression,
-          );
-          if (methodName != null) return methodName;
-        }
-      }
-      return defaultName;
-    }
-  }
-
-  // Fallback to @DataClass checking
-  if (_hasAnnotation(node.metadata, FeatureAnnotation.dataClass.name)) {
-    // We already know it has @DataClass. Now we need to check if the specific feature is enabled.
-    if (hasFeatureEnabled(node, feature)) {
-      return defaultName;
-    }
-  }
-  return null;
+  final config = extractAnnotationConfig(node);
+  return switch (feature) {
+    .serialize =>
+      config.serialize ? (config.serializeMethodName ?? defaultName) : null,
+    .deserialize =>
+      config.deserialize ? (config.deserializeMethodName ?? defaultName) : null,
+    _ => hasFeatureEnabled(node, feature) ? defaultName : null,
+  };
 }
 
-/// Extracts `deepCollectionEquality` from `@OverrideEquality` or `@DataClass`
-/// annotations on [declaration] in a single pass.
-bool? extractDeepCollectionEquality(ClassDeclaration declaration) {
-  bool? result;
-  for (final annotation in declaration.metadata) {
-    final name = annotation.name.name;
-    if (stringEqualsIgnoreCaseByAscii(
-          name,
-          FeatureAnnotation.overrideEquality.name,
-        ) ||
-        stringEqualsIgnoreCaseByAscii(name, FeatureAnnotation.dataClass.name)) {
-      final arguments = annotation.arguments?.arguments;
-      if (arguments == null) continue;
-      for (final arg in arguments) {
-        if (arg is NamedArgument &&
-            arg.name.lexeme == 'deepCollectionEquality') {
-          final expression = arg.argumentExpression;
-          if (expression is BooleanLiteral) {
-            result = expression.value;
-          }
-        }
-      }
-    }
-  }
-  return result;
-}
+/// Extracts `deepCollectionEquality` from `@OverrideEquality` or any
+/// `CompositeAnnotation` containing `OverrideEquality` on [declaration].
+bool? extractDeepCollectionEquality(ClassDeclaration declaration) =>
+    extractAnnotationConfig(declaration).deepCollectionEquality;
 
 /// Parsed annotation configuration for a [ClassDeclaration] in a single pass.
 final class AnnotationConfig {
   const AnnotationConfig({
-    this.hasDataClass = false,
+    this.hasCompositeAnnotation = false,
     this.copyWith = false,
     this.overrideToString = false,
     this.overrideEquality = false,
@@ -165,7 +108,7 @@ final class AnnotationConfig {
     this.deepCollectionEquality,
   });
 
-  final bool hasDataClass;
+  final bool hasCompositeAnnotation;
   final bool copyWith;
   final bool overrideToString;
   final bool overrideEquality;
@@ -176,143 +119,171 @@ final class AnnotationConfig {
   final bool? deepCollectionEquality;
 }
 
-/// Parses all analyzer_kit annotations on [node] in a single metadata pass.
+/// Parses all `analyzer_kit` annotations on [node] in a single metadata pass,
+/// expanding any `CompositeAnnotation` bundles via their constant values.
 AnnotationConfig extractAnnotationConfig(ClassDeclaration node) {
-  var hasDataClass = false;
-  var dcCopyWith = true;
-  var dcToString = true;
-  var dcEquality = true;
-  var dcSerialize = true;
-  var dcDeserialize = true;
-  bool? dcDeepEquality;
-
-  var directCopyWith = false;
-  var directToString = false;
-  var directEquality = false;
-  bool? directDeepEquality;
-  var directSerialize = false;
-  String? directSerializeName;
-  var directDeserialize = false;
-  String? directDeserializeName;
+  var hasCompositeAnnotation = false;
+  var copyWith = false;
+  var overrideToString = false;
+  var overrideEquality = false;
+  bool? deepCollectionEquality;
+  var serialize = false;
+  String? serializeMethodName;
+  var deserialize = false;
+  String? deserializeMethodName;
 
   for (final annotation in node.metadata) {
     final name = annotation.name.name;
     final arguments = annotation.arguments?.arguments;
 
-    if (stringEqualsIgnoreCaseByAscii(name, FeatureAnnotation.dataClass.name)) {
-      hasDataClass = true;
-      if (arguments != null) {
-        for (final arg in arguments) {
-          if (arg is! NamedArgument) continue;
-          final label = arg.name.lexeme;
-          final expr = arg.argumentExpression;
-          if (expr is BooleanLiteral) {
-            if (stringEqualsIgnoreCaseByAscii(
-              label,
-              FeatureAnnotation.copyWith.name,
-            )) {
-              dcCopyWith = expr.value;
-            } else if (stringEqualsIgnoreCaseByAscii(
-              label,
-              FeatureAnnotation.overrideToString.name,
-            )) {
-              dcToString = expr.value;
-            } else if (stringEqualsIgnoreCaseByAscii(
-              label,
-              FeatureAnnotation.overrideEquality.name,
-            )) {
-              dcEquality = expr.value;
-            } else if (stringEqualsIgnoreCaseByAscii(
-              label,
-              FeatureAnnotation.serialize.name,
-            )) {
-              dcSerialize = expr.value;
-            } else if (stringEqualsIgnoreCaseByAscii(
-              label,
-              FeatureAnnotation.deserialize.name,
-            )) {
-              dcDeserialize = expr.value;
-            } else if (label == 'deepCollectionEquality') {
-              dcDeepEquality = expr.value;
-            }
-          }
-        }
-      }
-    } else if (stringEqualsIgnoreCaseByAscii(
-      name,
-      FeatureAnnotation.copyWith.name,
-    )) {
-      directCopyWith = true;
-    } else if (stringEqualsIgnoreCaseByAscii(
+    if (stringEqualsIgnoreCaseByAscii(name, FeatureAnnotation.copyWith.name)) {
+      copyWith = true;
+      continue;
+    }
+    if (stringEqualsIgnoreCaseByAscii(
       name,
       FeatureAnnotation.overrideToString.name,
     )) {
-      directToString = true;
-    } else if (stringEqualsIgnoreCaseByAscii(
+      overrideToString = true;
+      continue;
+    }
+    if (stringEqualsIgnoreCaseByAscii(
       name,
       FeatureAnnotation.overrideEquality.name,
     )) {
-      directEquality = true;
+      overrideEquality = true;
       if (arguments != null) {
         for (final arg in arguments) {
           if (arg is NamedArgument &&
               arg.name.lexeme == 'deepCollectionEquality') {
             final expr = arg.argumentExpression;
             if (expr is BooleanLiteral) {
-              directDeepEquality = expr.value;
+              deepCollectionEquality = expr.value;
             }
           }
         }
       }
-    } else if (stringEqualsIgnoreCaseByAscii(
-      name,
-      FeatureAnnotation.serialize.name,
-    )) {
-      directSerialize = true;
+      continue;
+    }
+    if (stringEqualsIgnoreCaseByAscii(name, FeatureAnnotation.serialize.name)) {
+      serialize = true;
       if (arguments != null) {
         for (final arg in arguments) {
           if (arg is NamedArgument && arg.name.lexeme == 'name') {
-            directSerializeName = _extractMethodNameFromExpression(
+            serializeMethodName = _extractMethodNameFromExpression(
               arg.argumentExpression,
             );
           }
         }
       }
-    } else if (stringEqualsIgnoreCaseByAscii(
+      continue;
+    }
+    if (stringEqualsIgnoreCaseByAscii(
       name,
       FeatureAnnotation.deserialize.name,
     )) {
-      directDeserialize = true;
+      deserialize = true;
       if (arguments != null) {
         for (final arg in arguments) {
           if (arg is NamedArgument && arg.name.lexeme == 'name') {
-            directDeserializeName = _extractMethodNameFromExpression(
+            deserializeMethodName = _extractMethodNameFromExpression(
               arg.argumentExpression,
             );
           }
         }
+      }
+      continue;
+    }
+
+    // Check if this annotation resolves to a CompositeAnnotation (or any
+    // custom constant holding one of the feature annotations).
+    final constant = annotation.elementAnnotation?.computeConstantValue();
+    if (constant == null) continue;
+
+    if (_isCompositeAnnotation(constant)) {
+      hasCompositeAnnotation = true;
+    }
+
+    for (final item in _expandAnnotationConstant(constant)) {
+      final typeName = item.type?.element?.name;
+      if (typeName == null) continue;
+
+      if (stringEqualsIgnoreCaseByAscii(
+        typeName,
+        FeatureAnnotation.copyWith.name,
+      )) {
+        copyWith = true;
+      } else if (stringEqualsIgnoreCaseByAscii(
+        typeName,
+        FeatureAnnotation.overrideToString.name,
+      )) {
+        overrideToString = true;
+      } else if (stringEqualsIgnoreCaseByAscii(
+        typeName,
+        FeatureAnnotation.overrideEquality.name,
+      )) {
+        overrideEquality = true;
+        deepCollectionEquality ??= item
+            .getField('deepCollectionEquality')
+            ?.toBoolValue();
+      } else if (stringEqualsIgnoreCaseByAscii(
+        typeName,
+        FeatureAnnotation.serialize.name,
+      )) {
+        serialize = true;
+        serializeMethodName ??= _extractConstantMethodName(item);
+      } else if (stringEqualsIgnoreCaseByAscii(
+        typeName,
+        FeatureAnnotation.deserialize.name,
+      )) {
+        deserialize = true;
+        deserializeMethodName ??= _extractConstantMethodName(item);
       }
     }
   }
 
-  final serialize = directSerialize || (hasDataClass && dcSerialize);
-  final deserialize = directDeserialize || (hasDataClass && dcDeserialize);
-
   return AnnotationConfig(
-    hasDataClass: hasDataClass,
-    copyWith: directCopyWith || (hasDataClass && dcCopyWith),
-    overrideToString: directToString || (hasDataClass && dcToString),
-    overrideEquality: directEquality || (hasDataClass && dcEquality),
+    hasCompositeAnnotation: hasCompositeAnnotation,
+    copyWith: copyWith,
+    overrideToString: overrideToString,
+    overrideEquality: overrideEquality,
     serialize: serialize,
     deserialize: deserialize,
     serializeMethodName: serialize
-        ? (directSerializeName ?? FeatureMethod.toMap.name)
+        ? (serializeMethodName ?? FeatureMethod.toMap.name)
         : null,
     deserializeMethodName: deserialize
-        ? (directDeserializeName ?? FeatureMethod.fromMap.name)
+        ? (deserializeMethodName ?? FeatureMethod.fromMap.name)
         : null,
-    deepCollectionEquality: directDeepEquality ?? dcDeepEquality,
+    deepCollectionEquality: deepCollectionEquality,
   );
+}
+
+bool _isCompositeAnnotation(DartObject obj) =>
+    obj.type?.element?.name == 'CompositeAnnotation';
+
+Iterable<DartObject> _expandAnnotationConstant(
+  DartObject root, {
+  int depth = 0,
+}) sync* {
+  if (depth > 16) return;
+  if (_isCompositeAnnotation(root)) {
+    final items = root.getField('annotations')?.toListValue();
+    if (items == null) return;
+    for (final item in items) {
+      yield* _expandAnnotationConstant(item, depth: depth + 1);
+    }
+  } else {
+    yield root;
+  }
+}
+
+String? _extractConstantMethodName(DartObject obj) {
+  final nameObj = obj.getField('name');
+  if (nameObj == null) return null;
+  return (nameObj.getField('methodName') ??
+          nameObj.getField('(super)')?.getField('methodName'))
+      ?.toStringValue();
 }
 
 String? _extractMethodNameFromExpression(Object expression) {
