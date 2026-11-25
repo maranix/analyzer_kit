@@ -173,9 +173,17 @@ base class AddCompositeMethods extends ResolvedCorrectionProducer {
         handleMethod(
           existing,
           existing != null &&
-              checkSerializeSync(existing.body, featureFields).isInSync,
-          ({required bool format}) =>
-              generateSerializeMethod(toMapName, featureFields, format: format),
+              checkSerializeSync(
+                existing.body,
+                featureFields,
+                fieldRename: config.serializeFieldRename,
+              ).isInSync,
+          ({required bool format}) => generateSerializeMethod(
+            toMapName,
+            featureFields,
+            fieldRename: config.serializeFieldRename,
+            format: format,
+          ),
         );
       }
     }
@@ -196,11 +204,16 @@ base class AddCompositeMethods extends ResolvedCorrectionProducer {
               featureFields,
               constructorName: constructorName,
               typeArguments: typeArguments,
+              fieldRename: config.deserializeFieldRename,
               format: false,
             ),
           );
         } else if (forceRegenerate ||
-            !isDeserializeInSync(existing, featureFields)) {
+            !isDeserializeInSync(
+              existing,
+              featureFields,
+              fieldRename: config.deserializeFieldRename,
+            )) {
           toReplace.add((
             existing,
             generateDeserializeMethod(
@@ -209,6 +222,7 @@ base class AddCompositeMethods extends ResolvedCorrectionProducer {
               featureFields,
               constructorName: constructorName,
               typeArguments: typeArguments,
+              fieldRename: config.deserializeFieldRename,
             ),
           ));
         }

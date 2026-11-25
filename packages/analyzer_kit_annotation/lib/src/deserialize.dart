@@ -1,3 +1,5 @@
+import 'field_rename.dart';
+
 /// Method configuration used for the `@Deserialize()` annotation.
 sealed class DeserializeMethod {
   /// Uses the `fromMap(Map<String, dynamic> map)` convention.
@@ -33,6 +35,9 @@ final class _CustomDeserializeMethod extends DeserializeMethod {
 final class const Deserialize({
   /// The method name configuration for deserializing the class. Defaults to `.fromMap()`.
   final DeserializeMethod name = const .fromMap(),
+
+  /// The naming strategy applied to deserialized map keys. Defaults to `.none`.
+  final FieldRename fieldRename = .none,
 }) {
   /// Creates a new instance of [Deserialize].
   this;

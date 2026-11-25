@@ -233,7 +233,11 @@ final class _AnalyzerKitVisitor extends SimpleAstVisitor<void> {
         final method = findMethodDeclaration(node, toMapName);
         final sync = method == null
             ? null
-            : checkSerializeSync(method.body, featureFields);
+            : checkSerializeSync(
+                method.body,
+                featureFields,
+                fieldRename: config.serializeFieldRename,
+              );
         _report(
           config.annotationNodes[FeatureAnnotation.serialize],
           FeatureDiagnosticCode.serialize,
@@ -252,7 +256,11 @@ final class _AnalyzerKitVisitor extends SimpleAstVisitor<void> {
         final member = findDeserializeMember(node, fromMapName);
         final sync = member == null
             ? null
-            : checkDeserializeSync(member, featureFields);
+            : checkDeserializeSync(
+                member,
+                featureFields,
+                fieldRename: config.deserializeFieldRename,
+              );
         _report(
           config.annotationNodes[FeatureAnnotation.deserialize],
           FeatureDiagnosticCode.deserialize,

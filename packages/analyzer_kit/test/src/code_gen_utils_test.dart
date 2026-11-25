@@ -908,4 +908,38 @@ void main() {
       expect(toString, isNot(contains(r"can\'t")));
     });
   });
+
+  group('fieldRename in serialize and deserialize', () {
+    test('applies FieldRename strategies to map keys', () {
+      const fields = [
+        ClassField(name: 'firstName', type: 'String'),
+        ClassField(
+          name: 'apiSecret',
+          type: 'String',
+          redactedFor: {FeatureAnnotation.serialize},
+        ),
+      ];
+
+      final toMap = _norm(
+        generateSerializeMethod(
+          'toMap',
+          fields,
+          fieldRename: FieldRename.snake,
+        ),
+      );
+      expect(toMap, contains("'first_name': firstName"));
+      expect(toMap, contains("'api_secret': '[REDACTED]'"));
+
+      final fromMap = _norm(
+        generateDeserializeMethod(
+          'User',
+          'fromMap',
+          fields,
+          fieldRename: FieldRename.kebab,
+        ),
+      );
+      expect(fromMap, contains("firstName: map['first-name'] as String"));
+      expect(fromMap, contains("apiSecret: map['api-secret'] as String"));
+    });
+  });
 }

@@ -31,20 +31,21 @@ base class AddSerializeMethod extends ResolvedCorrectionProducer {
     final declaration = node.thisOrAncestorOfType<ClassDeclaration>();
     if (declaration == null) return;
 
-    final methodName = extractFeatureMethodName(
-      declaration,
-      FeatureAnnotation.serialize,
-      'toMap',
-    );
+    final config = extractAnnotationConfig(declaration);
+    final methodName = config.serializeMethodName;
 
-    if (methodName != null) {
+    if (config.serialize && methodName != null) {
       final fields = fieldsForFeature(
         extractGeneratableFields(declaration),
         FeatureAnnotation.serialize,
       );
       if (fields.isEmpty) return;
       final existing = findMethodDeclaration(declaration, methodName);
-      final generated = generateSerializeMethod(methodName, fields);
+      final generated = generateSerializeMethod(
+        methodName,
+        fields,
+        fieldRename: config.serializeFieldRename,
+      );
 
       await builder.addDartFileEdit(file, (fileEditBuilder) {
         if (existing != null) {

@@ -196,31 +196,34 @@ bool isBodyInSync(
 }) => checkBodySync(body, fields, feature: feature).isInSync;
 
 /// Checks whether a serialization [body] (`toMap` / `toJson`) has map keys
-/// matching [fields], accounting for redacted fields.
+/// matching [fields], accounting for redacted fields and [fieldRename].
 FieldSyncResult checkSerializeSync(
   FunctionBody body,
-  Iterable<ClassField> fields,
-) {
+  Iterable<ClassField> fields, {
+  FieldRename fieldRename = .none,
+}) {
   final collector = _FieldReferenceCollector(collectMapKeys: true);
   body.accept(collector);
 
-  final fieldNames = [for (final f in fields) f.name];
-  final fieldSet = fieldNames.toSet();
+  final keySet = <String>{};
   final missingFields = <String>[];
   final driftReasons = <String>[];
 
   for (final f in fields) {
+    final key = renameField(f.name, fieldRename);
+    keySet.add(key);
     if (f.redactedFor.contains(FeatureAnnotation.serialize)) {
-      final entryExpr = collector.mapEntries[f.name];
+      final entryExpr = collector.mapEntries[key];
       if (entryExpr == null) {
-        missingFields.add(f.name);
+        missingFields.add(key);
       } else if (entryExpr is! StringLiteral) {
         driftReasons.add('unredacted field: ${f.name}');
       } else if (entryExpr.stringValue != f.redactPlaceholder) {
         driftReasons.add('redacted placeholder mismatch: ${f.name}');
       }
-    } else if (!collector.names.contains(f.name)) {
-      missingFields.add(f.name);
+    } else if (!collector.names.contains(f.name) ||
+        !collector.mapKeys.contains(key)) {
+      missingFields.add(key);
     }
   }
 
@@ -228,25 +231,28 @@ FieldSyncResult checkSerializeSync(
     missingFields: missingFields,
     extraFields: [
       for (final key in collector.mapKeys)
-        if (!fieldSet.contains(key)) key,
+        if (!keySet.contains(key)) key,
     ],
     driftReasons: driftReasons,
   );
 }
 
 /// Checks whether a deserialization [member] references every field name in
-/// [fields] (via identifier or string key literal).
+/// [fields] (via identifier or string key literal), accounting for [fieldRename].
 FieldSyncResult checkDeserializeSync(
   ClassMember member,
-  Iterable<ClassField> fields,
-) {
+  Iterable<ClassField> fields, {
+  FieldRename fieldRename = .none,
+}) {
   final FunctionBody? body = switch (member) {
     ConstructorDeclaration(:final body) => body,
     MethodDeclaration(:final body) => body,
     _ => null,
   };
   if (body == null) {
-    return FieldSyncResult(missingFields: [for (final f in fields) f.name]);
+    return FieldSyncResult(
+      missingFields: [for (final f in fields) renameField(f.name, fieldRename)],
+    );
   }
 
   final collector = _FieldReferenceCollector(
@@ -258,22 +264,29 @@ FieldSyncResult checkDeserializeSync(
     for (final f in fields)
       if (f.isConstructorParam) f,
   ];
-  final fieldSet = {for (final f in ctorFields) f.name};
+  final keySet = {for (final f in ctorFields) renameField(f.name, fieldRename)};
   return FieldSyncResult(
     missingFields: [
       for (final f in ctorFields)
-        if (!collector.names.contains(f.name)) f.name,
+        if (!collector.mapIndexKeys.contains(
+              renameField(f.name, fieldRename),
+            ) &&
+            !collector.names.contains(renameField(f.name, fieldRename)))
+          renameField(f.name, fieldRename),
     ],
     extraFields: [
       for (final key in collector.mapIndexKeys)
-        if (!fieldSet.contains(key)) key,
+        if (!keySet.contains(key)) key,
     ],
   );
 }
 
 /// Returns whether a deserialization [member] is in sync with [fields].
-bool isDeserializeInSync(ClassMember member, Iterable<ClassField> fields) =>
-    checkDeserializeSync(member, fields).isInSync;
+bool isDeserializeInSync(
+  ClassMember member,
+  Iterable<ClassField> fields, {
+  FieldRename fieldRename = .none,
+}) => checkDeserializeSync(member, fields, fieldRename: fieldRename).isInSync;
 
 final class _FieldReferenceCollector extends RecursiveAstVisitor<void> {
   _FieldReferenceCollector({

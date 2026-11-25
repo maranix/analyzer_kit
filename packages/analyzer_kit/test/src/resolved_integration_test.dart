@@ -15,6 +15,7 @@ import 'package:analyzer/error/error.dart' show DiagnosticCode;
 import 'package:analyzer_kit/src/constants.dart';
 import 'package:analyzer_kit/src/enums.dart';
 import 'package:analyzer_kit/src/fixes/add_composite_methods.dart';
+import 'package:analyzer_kit/src/fixes/add_deserialize_method.dart';
 import 'package:analyzer_kit/src/fixes/add_serialize_method.dart';
 import 'package:analyzer_kit/src/fixes/override_to_string_method.dart';
 import 'package:analyzer_kit/src/rules/analyzer_kit_rule.dart';
@@ -824,4 +825,101 @@ class PrimaryParamTest({@OverrideToString() required final String id});
       ['copyWith', 'validBundle', 'Serialize', 'OverrideToString'],
     );
   });
+
+  test(
+    'supports fieldRename on @Serialize, @Deserialize, and CompositeAnnotation',
+    () async {
+      final unitResult = await resolveCode('field_rename.dart', '''
+import 'package:analyzer_kit_annotation/analyzer_kit_annotation.dart';
+
+const snakeJson = CompositeAnnotation([
+  Serialize(name: .toJson(), fieldRename: .snake),
+  Deserialize(name: .fromJson(), fieldRename: .snake),
+]);
+
+@snakeJson
+class ApiUser {
+  final String firstName;
+  final DateTime createdAt;
+
+  const ApiUser({required this.firstName, required this.createdAt});
+}
+
+@Serialize(fieldRename: .screamingSnake)
+@Deserialize(fieldRename: .screamingSnake)
+class EnvConfig {
+  final String apiBaseUrl;
+
+  const EnvConfig({required this.apiBaseUrl});
+}
+''');
+
+      final classes = unitResult.unit.declarations
+          .whereType<ClassDeclaration>()
+          .toList();
+      final apiUser = classes.firstWhere(
+        (c) => c.namePart.typeName.lexeme == 'ApiUser',
+      );
+      final envConfig = classes.firstWhere(
+        (c) => c.namePart.typeName.lexeme == 'EnvConfig',
+      );
+
+      final apiConfig = extractAnnotationConfig(apiUser);
+      expect(apiConfig.serializeFieldRename, FieldRename.snake);
+      expect(apiConfig.deserializeFieldRename, FieldRename.snake);
+
+      final envConfigParsed = extractAnnotationConfig(envConfig);
+      expect(envConfigParsed.serializeFieldRename, FieldRename.screamingSnake);
+      expect(
+        envConfigParsed.deserializeFieldRename,
+        FieldRename.screamingSnake,
+      );
+
+      final libraryResult =
+          await unitResult.session.getResolvedLibraryByElement(
+            unitResult.libraryElement,
+          ) as ResolvedLibraryResult;
+
+      final apiContext = CorrectionProducerContext.createResolved(
+        libraryResult: libraryResult,
+        unitResult: unitResult,
+        selectionOffset: apiUser.offset,
+      );
+      final apiBuilder = ChangeBuilder(session: unitResult.session);
+      await AddCompositeMethods(context: apiContext).compute(apiBuilder);
+      final apiGenerated = apiBuilder.sourceChange.edits.single.edits
+          .map((e) => e.replacement)
+          .join('\n');
+
+      expect(apiGenerated, contains("'first_name': firstName"));
+      expect(
+        apiGenerated,
+        contains("'created_at': createdAt.toIso8601String()"),
+      );
+      expect(apiGenerated, contains("firstName: map['first_name'] as String"));
+      expect(
+        apiGenerated,
+        contains("createdAt: DateTime.parse(map['created_at'] as String)"),
+      );
+
+      final envContext = CorrectionProducerContext.createResolved(
+        libraryResult: libraryResult,
+        unitResult: unitResult,
+        selectionOffset: envConfig.offset,
+      );
+      final serBuilder = ChangeBuilder(session: unitResult.session);
+      await AddSerializeMethod(context: envContext).compute(serBuilder);
+      expect(
+        serBuilder.sourceChange.edits.single.edits.single.replacement,
+        contains("'API_BASE_URL': apiBaseUrl"),
+      );
+
+      final deserBuilder = ChangeBuilder(session: unitResult.session);
+      await AddDeserializeMethod(context: envContext).compute(deserBuilder);
+      expect(
+        deserBuilder.sourceChange.edits.single.edits.single.replacement,
+        contains("apiBaseUrl: map['API_BASE_URL'] as String"),
+      );
+    },
+  );
 }

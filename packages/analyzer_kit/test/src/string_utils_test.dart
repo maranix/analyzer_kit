@@ -1,3 +1,4 @@
+import 'package:analyzer_kit/src/enums.dart';
 import 'package:analyzer_kit/src/utils/utils.dart';
 import 'package:test/test.dart';
 
@@ -119,6 +120,32 @@ void main() {
         escapeSingleQuotedString("a\\b'c\$d\ne\rf\tg"),
         r"a\\b\'c\$d\ne\rf\tg",
       );
+    });
+  });
+
+  group('renameField', () {
+    test('none returns the original string identically', () {
+      const input = 'firstName';
+      expect(identical(renameField(input, FieldRename.none), input), isTrue);
+    });
+
+    test('converts camelCase, acronyms, digits, and snake_case', () {
+      expect(renameField('firstName', FieldRename.snake), 'first_name');
+      expect(renameField('firstName', FieldRename.kebab), 'first-name');
+      expect(renameField('firstName', FieldRename.pascal), 'FirstName');
+      expect(
+        renameField('firstName', FieldRename.screamingSnake),
+        'FIRST_NAME',
+      );
+
+      expect(renameField('userID', FieldRename.snake), 'user_id');
+      expect(
+        renameField('parseHTMLString', FieldRename.snake),
+        'parse_html_string',
+      );
+      expect(renameField('v2Endpoint', FieldRename.kebab), 'v2-endpoint');
+      expect(renameField('already_snake', FieldRename.pascal), 'AlreadySnake');
+      expect(renameField('', FieldRename.snake), '');
     });
   });
 }

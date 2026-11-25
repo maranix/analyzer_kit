@@ -297,5 +297,69 @@ class Secret {
         contains('redacted placeholder mismatch: userId'),
       );
     });
+
+    test(
+      'checkSerializeSync and checkDeserializeSync validate fieldRename keys',
+      () {
+        final cls = _parseClass('''
+class Profile {
+  Profile({required this.firstName, required this.lastName});
+  final String firstName;
+  final String lastName;
+
+  Map<String, dynamic> toMap() => {
+    'first_name': firstName,
+    'last_name': lastName,
+  };
+
+  factory Profile.fromMap(Map<String, dynamic> map) {
+    return Profile(
+      firstName: map['first_name'] as String,
+      lastName: map['last_name'] as String,
+    );
+  }
+}
+''');
+        final fields = extractGeneratableFields(cls);
+        final toMap = findMethodDeclaration(cls, 'toMap')!;
+        final fromMap = findDeserializeMember(cls, 'fromMap')!;
+
+        expect(
+          checkSerializeSync(
+            toMap.body,
+            fields,
+            fieldRename: FieldRename.snake,
+          ).isInSync,
+          isTrue,
+        );
+        expect(
+          checkDeserializeSync(
+            fromMap,
+            fields,
+            fieldRename: FieldRename.snake,
+          ).isInSync,
+          isTrue,
+        );
+
+        // Drift when fieldRename is none (or changed to kebab)
+        final serDrift = checkSerializeSync(
+          toMap.body,
+          fields,
+          fieldRename: FieldRename.kebab,
+        );
+        expect(serDrift.isInSync, isFalse);
+        expect(serDrift.missingFields, ['first-name', 'last-name']);
+        expect(serDrift.extraFields, ['first_name', 'last_name']);
+
+        final deserDrift = checkDeserializeSync(
+          fromMap,
+          fields,
+          fieldRename: FieldRename.kebab,
+        );
+        expect(deserDrift.isInSync, isFalse);
+        expect(deserDrift.missingFields, ['first-name', 'last-name']);
+        expect(deserDrift.extraFields, ['first_name', 'last_name']);
+      },
+    );
   });
 }

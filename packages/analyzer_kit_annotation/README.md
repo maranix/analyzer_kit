@@ -202,14 +202,14 @@ class Event {
   // Generated: Map<String, dynamic> toMap() => {'title': title, 'date': date};
 }
 
-// Custom method name
-@Serialize(name: .toJson())
+// Custom method name and field casing
+@Serialize(name: .toJson(), fieldRename: .snake)
 class ApiResponse {
-  final int status;
+  final int statusCode;
 
-  ApiResponse({required this.status});
+  ApiResponse({required this.statusCode});
 
-  // Generated: Map<String, dynamic> toJson() => {'status': status};
+  // Generated: Map<String, dynamic> toJson() => {'status_code': statusCode};
 }
 
 // Fully custom name

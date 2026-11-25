@@ -51,6 +51,7 @@ export 'src/class_annotation.dart';
 export 'src/composite_annotation.dart';
 export 'src/copy_with.dart';
 export 'src/deserialize.dart';
+export 'src/field_rename.dart';
 export 'src/ignore.dart';
 export 'src/override_equality.dart';
 export 'src/override_to_string.dart';
