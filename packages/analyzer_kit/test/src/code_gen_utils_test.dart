@@ -2,6 +2,9 @@ import 'package:analyzer_kit/src/types.dart';
 import 'package:analyzer_kit/src/utils/utils.dart';
 import 'package:test/test.dart';
 
+String _norm(String s) =>
+    s.replaceAll(RegExp(r'\s+'), ' ').replaceAll(' .', '.');
+
 void main() {
   group('generateCopyWithMethod', () {
     test('generates method for single field', () {
@@ -498,5 +501,243 @@ void main() {
         expect(deserialize, contains("y: map['y'] as int"));
       },
     );
+  });
+
+  group('nullable-aware copyWith', () {
+    test('wraps nullable fields in T? Function()? when nullable is true', () {
+      const fields = [
+        ClassField(name: 'name', type: 'String'),
+        ClassField(name: 'nickname', type: 'String?'),
+      ];
+
+      final result = generateCopyWithMethod('User', fields, nullable: true);
+
+      expect(result, contains('String? name'));
+      expect(result, contains('String? Function()? nickname'));
+      expect(result, contains('name: name ?? this.name'));
+      expect(
+        result,
+        contains('nickname: nickname != null ? nickname() : this.nickname'),
+      );
+    });
+  });
+
+  group('generic class support', () {
+    test('includes type arguments in copyWith, ==, and fromMap', () {
+      const fields = [
+        ClassField(name: 'value', type: 'T'),
+        ClassField(name: 'label', type: 'String?'),
+      ];
+
+      final copyWith = generateCopyWithMethod(
+        'Box',
+        fields,
+        typeArguments: '<T>',
+      );
+      expect(copyWith, contains('Box<T> copyWith('));
+      expect(copyWith, contains('Box<T>('));
+
+      final equals = generateEqualityOperatorOverride(
+        'Box',
+        fields,
+        typeArguments: '<T>',
+      );
+      expect(equals, contains('other is Box<T>'));
+
+      final fromMap = generateDeserializeMethod(
+        'Box',
+        'fromMap',
+        fields,
+        typeArguments: '<T>',
+      );
+      expect(
+        fromMap,
+        contains('factory Box.fromMap(Map<String, dynamic> map)'),
+      );
+      expect(fromMap, contains('return Box<T>('));
+    });
+  });
+
+  group('rich serialization and deserialization', () {
+    test('handles DateTime and DateTime?', () {
+      const fields = [
+        ClassField(
+          name: 'createdAt',
+          type: 'DateTime',
+          typeKind: FieldTypeKind.dateTime,
+        ),
+        ClassField(
+          name: 'deletedAt',
+          type: 'DateTime?',
+          typeKind: FieldTypeKind.dateTime,
+        ),
+      ];
+
+      final toMap = generateSerializeMethod('toMap', fields);
+      expect(toMap, contains("'createdAt': createdAt.toIso8601String()"));
+      expect(toMap, contains("'deletedAt': deletedAt?.toIso8601String()"));
+
+      final fromMap = _norm(
+        generateDeserializeMethod('Event', 'fromMap', fields),
+      );
+      expect(
+        fromMap,
+        contains("createdAt: DateTime.parse(map['createdAt'] as String)"),
+      );
+      expect(
+        fromMap,
+        contains(
+          "deletedAt: map['deletedAt'] != null ? DateTime.parse(map['deletedAt'] as String) : null",
+        ),
+      );
+    });
+
+    test('handles Enum and Enum?', () {
+      const fields = [
+        ClassField(
+          name: 'status',
+          type: 'Status',
+          typeKind: FieldTypeKind.enumType,
+        ),
+        ClassField(
+          name: 'prevStatus',
+          type: 'Status?',
+          typeKind: FieldTypeKind.enumType,
+        ),
+      ];
+
+      final toMap = _norm(generateSerializeMethod('toMap', fields));
+      expect(toMap, contains("'status': status.name"));
+      expect(toMap, contains("'prevStatus': prevStatus?.name"));
+
+      final fromMap = _norm(
+        generateDeserializeMethod('Task', 'fromMap', fields),
+      );
+      expect(
+        fromMap,
+        contains("status: Status.values.byName(map['status'] as String)"),
+      );
+      expect(
+        fromMap,
+        contains(
+          "prevStatus: map['prevStatus'] != null ? Status.values.byName(map['prevStatus'] as String) : null",
+        ),
+      );
+    });
+
+    test(
+      'handles List, Set, and Map collections including DateTime/Enum elements',
+      () {
+        const fields = [
+          ClassField(name: 'ids', type: 'List<int>'),
+          ClassField(name: 'tags', type: 'Set<String>?'),
+          ClassField(
+            name: 'dates',
+            type: 'List<DateTime>',
+            typeKind: FieldTypeKind.list,
+            typeArguments: [
+              ClassField(
+                name: 'e',
+                type: 'DateTime',
+                typeKind: FieldTypeKind.dateTime,
+              ),
+            ],
+          ),
+          ClassField(
+            name: 'statuses',
+            type: 'Set<Status>',
+            typeKind: FieldTypeKind.set,
+            typeArguments: [
+              ClassField(
+                name: 'e',
+                type: 'Status',
+                typeKind: FieldTypeKind.enumType,
+              ),
+            ],
+          ),
+          ClassField(name: 'meta', type: 'Map<String, int>'),
+          ClassField(
+            name: 'timestamps',
+            type: 'Map<String, DateTime>',
+            typeKind: FieldTypeKind.map,
+            typeArguments: [
+              ClassField(name: 'k', type: 'String'),
+              ClassField(
+                name: 'v',
+                type: 'DateTime',
+                typeKind: FieldTypeKind.dateTime,
+              ),
+            ],
+          ),
+        ];
+
+        final toMap = _norm(generateSerializeMethod('toMap', fields));
+        expect(toMap, contains("'ids': ids"));
+        expect(toMap, contains("'tags': tags?.toList()"));
+        expect(
+          toMap,
+          contains("'dates': dates.map((e) => e.toIso8601String()).toList()"),
+        );
+        expect(
+          toMap,
+          contains("'statuses': statuses.map((e) => e.name).toList()"),
+        );
+        expect(toMap, contains("'meta': meta"));
+        expect(
+          toMap,
+          contains(
+            "'timestamps': timestamps.map((k, v) => MapEntry(k, v.toIso8601String()))",
+          ),
+        );
+
+        final fromMap = _norm(
+          generateDeserializeMethod('Bundle', 'fromMap', fields),
+        );
+        expect(fromMap, contains("(map['ids'] as List<dynamic>).cast<int>()"));
+        expect(
+          fromMap,
+          contains("(map['tags'] as List<dynamic>?)?.cast<String>().toSet()"),
+        );
+        expect(
+          fromMap,
+          contains(
+            "(map['dates'] as List<dynamic>).map((e) => DateTime.parse(e as String)).toList()",
+          ),
+        );
+        expect(
+          fromMap,
+          contains(
+            "(map['statuses'] as List<dynamic>).map((e) => Status.values.byName(e as String)).toSet()",
+          ),
+        );
+        expect(
+          fromMap,
+          contains("(map['meta'] as Map<String, dynamic>).cast<String, int>()"),
+        );
+        expect(
+          fromMap,
+          contains('(map[\'timestamps\'] as Map<String, dynamic>).map('),
+        );
+        expect(
+          fromMap,
+          contains('MapEntry(k as String, DateTime.parse(v as String))'),
+        );
+      },
+    );
+  });
+
+  group('formatClassMembers', () {
+    test('formats multiple unformatted class members in one pass', () {
+      const fields = [ClassField(name: 'name', type: 'String')];
+      final formatted = formatClassMembers([
+        generateCopyWithMethod('User', fields, format: false),
+        generateToStringMethod('User', fields, format: false),
+        generateSerializeMethod('toMap', fields, format: false),
+      ]);
+
+      expect(formatted, contains('User copyWith({String? name})'));
+      expect(formatted, contains('@override'));
+      expect(formatted, contains('Map<String, dynamic> toMap()'));
+    });
   });
 }

@@ -31,7 +31,8 @@ base class AddCopyWithMethod extends ResolvedCorrectionProducer {
     final declaration = node.thisOrAncestorOfType<ClassDeclaration>();
     if (declaration == null) return;
 
-    if (hasFeatureEnabled(declaration, FeatureAnnotation.copyWith)) {
+    final config = extractAnnotationConfig(declaration);
+    if (config.copyWith) {
       final fields = extractGeneratableFields(declaration);
       if (fields.isEmpty) return;
 
@@ -43,6 +44,8 @@ base class AddCopyWithMethod extends ResolvedCorrectionProducer {
         declaration.namePart.typeName.lexeme,
         fields,
         constructorName: extractPrimaryConstructorName(declaration),
+        typeArguments: extractTypeArguments(declaration),
+        nullable: config.copyWithNullable,
       );
 
       await builder.addDartFileEdit(file, (fileEditBuilder) {

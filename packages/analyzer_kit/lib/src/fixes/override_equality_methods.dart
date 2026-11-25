@@ -33,14 +33,17 @@ base class OverrideEqualityMethods extends ResolvedCorrectionProducer {
     final declaration = node.thisOrAncestorOfType<ClassDeclaration>();
     if (declaration == null) return;
 
-    if (!hasFeatureEnabled(declaration, FeatureAnnotation.overrideEquality)) {
+    final config = extractAnnotationConfig(declaration);
+    if (!config.overrideEquality) {
       return;
     }
 
     final fields = extractGeneratableFields(declaration);
     if (fields.isEmpty) return;
 
-    final deepCollectionEquality = extractDeepCollectionEquality(declaration);
+    final deepCollectionEquality = config.deepCollectionEquality;
+    final className = declaration.namePart.typeName.lexeme;
+    final typeArguments = extractTypeArguments(declaration);
     final existingHashCode = findMethodDeclaration(
       declaration,
       FeatureMethod.overrideHashCode.name,
@@ -50,25 +53,37 @@ base class OverrideEqualityMethods extends ResolvedCorrectionProducer {
       FeatureMethod.overrideEquals.name,
     );
 
-    final hashCodeCode = generateHashCodeOverride(
-      fields,
-      deepCollectionEquality: deepCollectionEquality,
-    );
-    final equalsCode = generateEqualityOperatorOverride(
-      declaration.namePart.typeName.lexeme,
-      fields,
-      deepCollectionEquality: deepCollectionEquality,
-    );
-
     final needsHashCodeInsert = existingHashCode == null;
     final needsEqualsInsert = existingEquals == null;
+
+    final toInsert = <String>[
+      if (needsHashCodeInsert)
+        generateHashCodeOverride(
+          fields,
+          deepCollectionEquality: deepCollectionEquality,
+          format: false,
+        ),
+      if (needsEqualsInsert)
+        generateEqualityOperatorOverride(
+          className,
+          fields,
+          typeArguments: typeArguments,
+          deepCollectionEquality: deepCollectionEquality,
+        ),
+    ];
+    final formattedInsert = toInsert.isNotEmpty
+        ? formatClassMembers(toInsert)
+        : null;
 
     await builder.addDartFileEdit(file, (fileEditBuilder) {
       if (existingHashCode != null &&
           (forceRegenerate || !isBodyInSync(existingHashCode.body, fields))) {
         fileEditBuilder.addSimpleReplacement(
           range.node(existingHashCode),
-          hashCodeCode.trimRight(),
+          generateHashCodeOverride(
+            fields,
+            deepCollectionEquality: deepCollectionEquality,
+          ).trimRight(),
         );
       }
 
@@ -76,18 +91,20 @@ base class OverrideEqualityMethods extends ResolvedCorrectionProducer {
           (forceRegenerate || !isBodyInSync(existingEquals.body, fields))) {
         fileEditBuilder.addSimpleReplacement(
           range.node(existingEquals),
-          equalsCode.trimRight(),
+          formatCode(
+            generateEqualityOperatorOverride(
+              className,
+              fields,
+              typeArguments: typeArguments,
+              deepCollectionEquality: deepCollectionEquality,
+            ),
+          ).trimRight(),
         );
       }
 
-      if (needsHashCodeInsert || needsEqualsInsert) {
+      if (formattedInsert != null) {
         fileEditBuilder.insertMethod(declaration, (editBuilder) {
-          if (needsHashCodeInsert) {
-            editBuilder.writeln(hashCodeCode);
-          }
-          if (needsEqualsInsert) {
-            editBuilder.writeln(equalsCode);
-          }
+          editBuilder.write(formattedInsert);
         });
       }
     });

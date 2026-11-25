@@ -7,7 +7,7 @@ import 'package:analyzer_kit/src/fixes/add_deserialize_method.dart';
 import 'package:analyzer_kit/src/fixes/add_serialize_method.dart';
 import 'package:analyzer_kit/src/fixes/override_equality_methods.dart';
 import 'package:analyzer_kit/src/fixes/override_to_string_method.dart';
-import 'package:analyzer_kit/src/rules/annotation_rule/annotation_rule.dart';
+import 'package:analyzer_kit/src/rules/analyzer_kit_rule.dart';
 
 /// The plugin singleton, instantiated by the Dart analysis server.
 final plugin = AnalyzerKit();
@@ -22,14 +22,11 @@ class AnalyzerKit extends Plugin {
   @override
   void register(PluginRegistry registry) {
     registry
-      ..registerWarningRule(CopyWithRule())
+      ..registerWarningRule(AnalyzerKitRule())
       ..registerFixForRule(LintCodes.copyWith, AddCompositeMethods.new)
       ..registerFixForRule(LintCodes.copyWithOutOfSync, AddCompositeMethods.new)
       ..registerFixForRule(LintCodes.copyWith, AddCopyWithMethod.new)
-      ..registerFixForRule(LintCodes.copyWithOutOfSync, AddCopyWithMethod.new);
-
-    registry
-      ..registerWarningRule(OverrideToStringRule())
+      ..registerFixForRule(LintCodes.copyWithOutOfSync, AddCopyWithMethod.new)
       ..registerFixForRule(LintCodes.overrideToString, AddCompositeMethods.new)
       ..registerFixForRule(
         LintCodes.overrideToStringOutOfSync,
@@ -42,10 +39,7 @@ class AnalyzerKit extends Plugin {
       ..registerFixForRule(
         LintCodes.overrideToStringOutOfSync,
         OverrideToStringMethod.new,
-      );
-
-    registry
-      ..registerWarningRule(OverrideEqualityRule())
+      )
       ..registerFixForRule(LintCodes.overrideEquality, AddCompositeMethods.new)
       ..registerFixForRule(
         LintCodes.overrideEqualityOutOfSync,
@@ -58,23 +52,14 @@ class AnalyzerKit extends Plugin {
       ..registerFixForRule(
         LintCodes.overrideEqualityOutOfSync,
         OverrideEqualityMethods.new,
-      );
-
-    registry
-      ..registerWarningRule(SerializeRule())
+      )
       ..registerFixForRule(LintCodes.serialize, AddCompositeMethods.new)
       ..registerFixForRule(
         LintCodes.serializeOutOfSync,
         AddCompositeMethods.new,
       )
       ..registerFixForRule(LintCodes.serialize, AddSerializeMethod.new)
-      ..registerFixForRule(
-        LintCodes.serializeOutOfSync,
-        AddSerializeMethod.new,
-      );
-
-    registry
-      ..registerWarningRule(DeserializeRule())
+      ..registerFixForRule(LintCodes.serializeOutOfSync, AddSerializeMethod.new)
       ..registerFixForRule(LintCodes.deserialize, AddCompositeMethods.new)
       ..registerFixForRule(
         LintCodes.deserializeOutOfSync,

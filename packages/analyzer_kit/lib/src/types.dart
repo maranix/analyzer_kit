@@ -1,5 +1,13 @@
 import 'package:analyzer/dart/ast/ast.dart'
     show FieldDeclaration, FormalParameter, VariableDeclaration;
+import 'package:analyzer/dart/element/element.dart' show EnumElement;
+import 'package:analyzer/dart/element/nullability_suffix.dart'
+    show NullabilitySuffix;
+import 'package:analyzer/dart/element/type.dart' show DartType, InterfaceType;
+
+/// Semantic type classification for a [ClassField], used by serialization and
+/// collection code generation.
+enum FieldTypeKind { other, dateTime, enumType, list, iterable, set, map }
 
 /// Represents a class field extracted from AST for code generation.
 final class ClassField {
@@ -17,6 +25,8 @@ final class ClassField {
     this.isPublic = false,
     this.isPrivate = false,
     this.isPositional = false,
+    this.typeKind,
+    this.typeArguments = const [],
   });
 
   final String name;
@@ -33,6 +43,14 @@ final class ClassField {
   final bool isPrivate;
   final bool isPositional;
 
+  /// Resolved semantic kind of [type], or `null` when constructed without AST
+  /// type resolution (in which case getters fall back to parsing [type]).
+  final FieldTypeKind? typeKind;
+
+  /// Resolved generic type arguments for collection types (e.g. `[T]` for
+  /// `List<T>`, `[K, V]` for `Map<K, V>`).
+  final List<ClassField> typeArguments;
+
   /// Whether this field should be included in generated methods.
   ///
   /// Excludes static, synthetic, and late fields.
@@ -41,23 +59,49 @@ final class ClassField {
   /// Whether this field's type is nullable (ends with `?`).
   bool get isNullableType => type.endsWith('?');
 
+  /// The non-nullable representation of [type] (strips trailing `?` if any).
+  String get nonNullableType =>
+      isNullableType ? type.substring(0, type.length - 1) : type;
+
+  /// Whether this field's type is `DateTime` or `DateTime?`.
+  bool get isDateTimeType =>
+      typeKind == FieldTypeKind.dateTime || _isType('DateTime');
+
+  /// Whether this field's type is an `enum` (requires resolved [typeKind]).
+  bool get isEnumType => typeKind == FieldTypeKind.enumType;
+
   /// Whether this field's type is a `List`.
-  bool get isListType => _isType('List');
+  bool get isListType => typeKind == FieldTypeKind.list || _isType('List');
 
   /// Whether this field's type is an `Iterable`.
-  bool get isIterableType => _isType('Iterable');
+  bool get isIterableType =>
+      typeKind == FieldTypeKind.iterable || _isType('Iterable');
 
   /// Whether this field's type is a `List` or `Iterable` (ordered collection).
   bool get isListOrIterableType => isListType || isIterableType;
 
   /// Whether this field's type is a `Set` (unordered collection).
-  bool get isSetType => _isType('Set');
+  bool get isSetType => typeKind == FieldTypeKind.set || _isType('Set');
 
   /// Whether this field's type is a `Map`.
-  bool get isMapType => _isType('Map');
+  bool get isMapType => typeKind == FieldTypeKind.map || _isType('Map');
 
   /// Whether this field's type is any collection type.
   bool get isCollectionType => isListOrIterableType || isSetType || isMapType;
+
+  /// Returns the effective [typeArguments], falling back to parsing [type]
+  /// when [typeArguments] is empty (e.g. in unit tests).
+  List<ClassField> get resolvedTypeArguments {
+    if (typeArguments.isNotEmpty) return typeArguments;
+    final lt = type.indexOf('<');
+    final gt = type.lastIndexOf('>');
+    if (lt == -1 || gt <= lt) return const [];
+    final inner = type.substring(lt + 1, gt);
+    return [
+      for (final part in _splitTopLevelTypeArgs(inner))
+        ClassField(name: 'e', type: part.trim()),
+    ];
+  }
 
   /// Checks if [type] matches the given [typeName], accounting for generics
   /// and nullability (e.g. `List`, `List<int>`, `List<int>?`).
@@ -73,6 +117,7 @@ final class ClassField {
   /// multi-variable declarations (e.g. `final int a, b;`).
   static Iterable<ClassField> fromFieldDeclarationAll(FieldDeclaration fd) {
     final type = fd.fields.type?.toSource() ?? 'dynamic';
+    final dartType = fd.fields.type?.type;
     final keyword = fd.fields.keyword?.lexeme;
     final isStatic = fd.isStatic;
 
@@ -81,6 +126,7 @@ final class ClassField {
         fd,
         v,
         type: type,
+        dartType: dartType,
         keyword: keyword,
         isStatic: isStatic,
       ),
@@ -92,6 +138,8 @@ final class ClassField {
   static ClassField fromPrimaryConstructorParameter(FormalParameter param) {
     final name = param.name!.lexeme;
     final isPrivate = name.startsWith('_');
+    final dartType = param.declaredFragment?.element.type;
+    final (kind, args) = _classifyDartType(dartType);
 
     return ClassField(
       keyword: param.constFinalOrVarKeyword?.lexeme,
@@ -102,6 +150,8 @@ final class ClassField {
       isPublic: !isPrivate,
       isPrivate: isPrivate,
       isPositional: param.isPositional,
+      typeKind: kind,
+      typeArguments: args,
     );
   }
 
@@ -109,11 +159,14 @@ final class ClassField {
     FieldDeclaration fd,
     VariableDeclaration variable, {
     String? type,
+    DartType? dartType,
     String? keyword,
     bool? isStatic,
   }) {
     final name = variable.name.lexeme;
     final isPrivate = name.startsWith('_');
+    final resolvedDartType = dartType ?? fd.fields.type?.type;
+    final (kind, args) = _classifyDartType(resolvedDartType);
 
     return ClassField(
       keyword: keyword ?? fd.fields.keyword?.lexeme,
@@ -128,7 +181,69 @@ final class ClassField {
       isSynthetic: variable.isSynthetic,
       isPublic: !isPrivate,
       isPrivate: isPrivate,
+      typeKind: kind,
+      typeArguments: args,
     );
+  }
+
+  static (FieldTypeKind?, List<ClassField>) _classifyDartType(
+    DartType? dartType,
+  ) {
+    if (dartType == null) return (null, const []);
+    final element = dartType.element;
+    if (element?.name == 'DateTime' &&
+        (element?.library?.isDartCore ?? false)) {
+      return (FieldTypeKind.dateTime, const []);
+    }
+    if (element is EnumElement) {
+      return (FieldTypeKind.enumType, const []);
+    }
+    if (dartType is InterfaceType) {
+      final args = [
+        for (final arg in dartType.typeArguments) _fromDartType(arg),
+      ];
+      if (dartType.isDartCoreList) return (FieldTypeKind.list, args);
+      if (dartType.isDartCoreIterable) return (FieldTypeKind.iterable, args);
+      if (dartType.isDartCoreSet) return (FieldTypeKind.set, args);
+      if (dartType.isDartCoreMap) return (FieldTypeKind.map, args);
+    }
+    return (FieldTypeKind.other, const []);
+  }
+
+  static ClassField _fromDartType(DartType dartType) {
+    final (kind, args) = _classifyDartType(dartType);
+    final suffix = dartType.nullabilitySuffix == NullabilitySuffix.question
+        ? '?'
+        : '';
+    final display = dartType.getDisplayString();
+    final typeStr = suffix.isNotEmpty && !display.endsWith('?')
+        ? '$display?'
+        : display;
+    return ClassField(
+      name: 'e',
+      type: typeStr,
+      typeKind: kind,
+      typeArguments: args,
+    );
+  }
+
+  static List<String> _splitTopLevelTypeArgs(String input) {
+    final result = <String>[];
+    var depth = 0;
+    var start = 0;
+    for (var i = 0; i < input.length; i++) {
+      final ch = input[i];
+      if (ch == '<' || ch == '(') {
+        depth++;
+      } else if (ch == '>' || ch == ')') {
+        depth--;
+      } else if (ch == ',' && depth == 0) {
+        result.add(input.substring(start, i));
+        start = i + 1;
+      }
+    }
+    result.add(input.substring(start));
+    return result;
   }
 
   @override

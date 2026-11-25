@@ -1,17 +1,26 @@
 part of 'utils.dart';
 
 /// Generates a `copyWith` method for the given [className] and [fields].
+///
+/// When [nullable] is `true`, nullable fields are wrapped in `T? Function()?`
+/// parameters so callers can explicitly reset them to `null`.
 String generateCopyWithMethod(
   String className,
   Iterable<ClassField> fields, {
   String? constructorName,
+  String typeArguments = '',
+  bool nullable = false,
+  bool format = true,
 }) {
   final positionalArgs = <Expression>[];
   final namedArgs = <String, Expression>{};
   final functionParams = <Parameter>[];
 
   for (final field in fields) {
-    final paramType = field.isNullableType ? field.type : '${field.type}?';
+    final useWrapper = nullable && field.isNullableType;
+    final paramType = useWrapper
+        ? '${field.type} Function()?'
+        : (field.isNullableType ? field.type : '${field.type}?');
     functionParams.add(
       Parameter(
         (b) => b
@@ -21,7 +30,13 @@ String generateCopyWithMethod(
       ),
     );
 
-    final argExpr = refer(field.name).ifNullThen(refer('this.${field.name}'));
+    final Expression argExpr = useWrapper
+        ? CodeExpression(
+            Code(
+              '${field.name} != null ? ${field.name}() : this.${field.name}',
+            ),
+          )
+        : refer(field.name).ifNullThen(refer('this.${field.name}'));
     if (field.isPositional) {
       positionalArgs.add(argExpr);
     } else {
@@ -29,9 +44,10 @@ String generateCopyWithMethod(
     }
   }
 
+  final fullClassName = '$className$typeArguments';
   final target = constructorName != null
-      ? '$className.$constructorName'
-      : className;
+      ? '$fullClassName.$constructorName'
+      : fullClassName;
 
   final method = Method(
     (b) => b
@@ -39,14 +55,19 @@ String generateCopyWithMethod(
       ..optionalParameters.addAll(functionParams)
       ..lambda = true
       ..body = refer(target).call(positionalArgs, namedArgs).statement
-      ..returns = refer(className),
+      ..returns = refer(fullClassName),
   );
 
-  return formatCode('${method.accept(_dartEmitter)}');
+  final raw = '${method.accept(_dartEmitter)}';
+  return format ? formatCode(raw) : raw;
 }
 
 /// Generates a `toString` override for the given [className] and [fields].
-String generateToStringMethod(String className, Iterable<ClassField> fields) {
+String generateToStringMethod(
+  String className,
+  Iterable<ClassField> fields, {
+  bool format = true,
+}) {
   final body = literalString(
     '$className(${fields.map((f) => '${f.name}: \$${f.name}').join(', ')})',
   );
@@ -60,7 +81,8 @@ String generateToStringMethod(String className, Iterable<ClassField> fields) {
       ..returns = refer('String'),
   );
 
-  return formatCode('${method.accept(_dartEmitter)}');
+  final raw = '${method.accept(_dartEmitter)}';
+  return format ? formatCode(raw) : raw;
 }
 
 /// Generates a `hashCode` getter override for the given [fields].
@@ -71,6 +93,7 @@ String generateToStringMethod(String className, Iterable<ClassField> fields) {
 String generateHashCodeOverride(
   Iterable<ClassField> fields, {
   bool? deepCollectionEquality,
+  bool format = true,
 }) {
   final fieldList = fields is List<ClassField> ? fields : fields.toList();
   final String bodyCode;
@@ -107,7 +130,8 @@ String generateHashCodeOverride(
       ..body = Code(bodyCode),
   );
 
-  return formatCode('${override.accept(_dartEmitter)}');
+  final raw = '${override.accept(_dartEmitter)}';
+  return format ? formatCode(raw) : raw;
 }
 
 /// Returns the hash expression for a single [field].
@@ -148,6 +172,7 @@ String _hashExpression(ClassField field, {bool? deepCollectionEquality}) {
 String generateEqualityOperatorOverride(
   String className,
   Iterable<ClassField> fields, {
+  String typeArguments = '',
   bool? deepCollectionEquality,
 }) {
   final comparisons = fields.isEmpty
@@ -157,7 +182,7 @@ String generateEqualityOperatorOverride(
   final statements = <Code>[
     Code(''),
     Code('if (identical(this, other)) return true;'),
-    Code('return other is $className $comparisons;'),
+    Code('return other is $className$typeArguments $comparisons;'),
     Code(''),
   ];
 
@@ -235,8 +260,14 @@ String _equalityExpression(ClassField field, {bool? deepCollectionEquality}) {
 }
 
 /// Generates a serialization method for the given [fields] and [methodName].
-String generateSerializeMethod(String methodName, Iterable<ClassField> fields) {
-  final entries = fields.map((f) => "'${f.name}': ${f.name}").join(', ');
+String generateSerializeMethod(
+  String methodName,
+  Iterable<ClassField> fields, {
+  bool format = true,
+}) {
+  final entries = fields
+      .map((f) => "'${f.name}': ${_serializeExpression(f, f.name)}")
+      .join(', ');
 
   final method = Method(
     (b) => b
@@ -246,7 +277,8 @@ String generateSerializeMethod(String methodName, Iterable<ClassField> fields) {
       ..body = Code('{$entries};'),
   );
 
-  return formatCode('${method.accept(_dartEmitter)}');
+  final raw = '${method.accept(_dartEmitter)}';
+  return format ? formatCode(raw) : raw;
 }
 
 /// Generates a deserialization factory/method for the given [className], [fields], and [methodName].
@@ -255,18 +287,20 @@ String generateDeserializeMethod(
   String methodName,
   Iterable<ClassField> fields, {
   String? constructorName,
+  String typeArguments = '',
+  bool format = true,
 }) {
   final assignments = fields
-      .map(
-        (f) => f.isPositional
-            ? "map['${f.name}'] as ${f.type}"
-            : "${f.name}: map['${f.name}'] as ${f.type}",
-      )
+      .map((f) {
+        final expr = _deserializeExpression(f, "map['${f.name}']");
+        return f.isPositional ? expr : '${f.name}: $expr';
+      })
       .join(',\n');
 
+  final fullClassName = '$className$typeArguments';
   final target = constructorName != null
-      ? '$className.$constructorName'
-      : className;
+      ? '$fullClassName.$constructorName'
+      : fullClassName;
 
   final code =
       '''
@@ -277,5 +311,106 @@ factory $className.$methodName(Map<String, dynamic> map) {
 }
 ''';
 
-  return formatConstructor(code);
+  return format ? formatConstructor(code) : code;
+}
+
+bool _needsElementTransform(ClassField? field) =>
+    field != null &&
+    (field.isDateTimeType || field.isEnumType || field.isCollectionType);
+
+String _serializeExpression(ClassField field, String expr) {
+  final nullable = field.isNullableType;
+  final q = nullable ? '?' : '';
+
+  if (field.isDateTimeType) {
+    return '$expr$q.toIso8601String()';
+  }
+  if (field.isEnumType) {
+    return '$expr$q.name';
+  }
+  if (field.isListOrIterableType || field.isSetType) {
+    final elem = field.resolvedTypeArguments.firstOrNull;
+    if (_needsElementTransform(elem)) {
+      return '$expr$q.map((e) => ${_serializeExpression(elem!, 'e')}).toList()';
+    }
+    if (field.isSetType || field.isIterableType) {
+      return '$expr$q.toList()';
+    }
+    return expr;
+  }
+  if (field.isMapType) {
+    final args = field.resolvedTypeArguments;
+    final keyField = args.elementAtOrNull(0);
+    final valField = args.elementAtOrNull(1);
+    if (_needsElementTransform(keyField) || _needsElementTransform(valField)) {
+      final kExpr = keyField != null && _needsElementTransform(keyField)
+          ? _serializeExpression(keyField, 'k')
+          : 'k';
+      final vExpr = valField != null && _needsElementTransform(valField)
+          ? _serializeExpression(valField, 'v')
+          : 'v';
+      return '$expr$q.map((k, v) => MapEntry($kExpr, $vExpr))';
+    }
+    return expr;
+  }
+  return expr;
+}
+
+String _deserializeExpression(ClassField field, String expr) {
+  final nullable = field.isNullableType;
+  final q = nullable ? '?' : '';
+
+  if (field.isDateTimeType) {
+    return nullable
+        ? '$expr != null ? DateTime.parse($expr as String) : null'
+        : 'DateTime.parse($expr as String)';
+  }
+  if (field.isEnumType) {
+    final enumType = field.nonNullableType;
+    return nullable
+        ? '$expr != null ? $enumType.values.byName($expr as String) : null'
+        : '$enumType.values.byName($expr as String)';
+  }
+  if (field.isListOrIterableType || field.isSetType) {
+    final elem = field.resolvedTypeArguments.firstOrNull;
+    final listBase = '($expr as List<dynamic>$q)$q';
+    if (_needsElementTransform(elem)) {
+      final mapped =
+          '$listBase.map((e) => ${_deserializeExpression(elem!, 'e')})';
+      if (field.isSetType) return '$mapped.toSet()';
+      if (field.isListType) return '$mapped.toList()';
+      return mapped;
+    }
+    if (elem != null && elem.type != 'dynamic') {
+      final castExpr = '$listBase.cast<${elem.type}>()';
+      return field.isSetType ? '$castExpr.toSet()' : castExpr;
+    }
+    return field.isSetType ? '$listBase.toSet()' : '$expr as ${field.type}';
+  }
+  if (field.isMapType) {
+    final args = field.resolvedTypeArguments;
+    final keyField = args.elementAtOrNull(0);
+    final valField = args.elementAtOrNull(1);
+    final mapBase = '($expr as Map<String, dynamic>$q)$q';
+    if (_needsElementTransform(keyField) || _needsElementTransform(valField)) {
+      final kExpr = keyField != null && _needsElementTransform(keyField)
+          ? _deserializeExpression(keyField, 'k')
+          : (keyField != null && keyField.type != 'dynamic'
+                ? 'k as ${keyField.type}'
+                : 'k');
+      final vExpr = valField != null && _needsElementTransform(valField)
+          ? _deserializeExpression(valField, 'v')
+          : (valField != null && valField.type != 'dynamic'
+                ? 'v as ${valField.type}'
+                : 'v');
+      return '$mapBase.map((k, v) => MapEntry($kExpr, $vExpr))';
+    }
+    if (keyField != null &&
+        valField != null &&
+        (keyField.type != 'dynamic' || valField.type != 'dynamic')) {
+      return '$mapBase.cast<${keyField.type}, ${valField.type}>()';
+    }
+    return '$expr as ${field.type}';
+  }
+  return '$expr as ${field.type}';
 }

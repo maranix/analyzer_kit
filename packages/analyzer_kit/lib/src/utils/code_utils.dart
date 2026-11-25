@@ -17,3 +17,16 @@ String formatConstructor(String code) {
       .substring(formatted.indexOf('{') + 1, formatted.lastIndexOf('}'))
       .trim();
 }
+
+/// Formats one or more class member declarations in a single [DartFormatter]
+/// pass by wrapping them in a temporary class.
+String formatClassMembers(Iterable<String> members) {
+  final joined = members.join('\n\n');
+  if (joined.trim().isEmpty) return '';
+  final wrapped = 'class _Dummy {\n$joined\n}';
+  final formatted = _codeFormatter.format(wrapped);
+  final body = formatted
+      .substring(formatted.indexOf('{') + 1, formatted.lastIndexOf('}'))
+      .trim();
+  return '$body\n';
+}

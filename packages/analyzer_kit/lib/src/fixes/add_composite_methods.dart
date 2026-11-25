@@ -40,6 +40,7 @@ base class AddCompositeMethods extends ResolvedCorrectionProducer {
     if (fields.isEmpty) return;
 
     final className = declaration.namePart.typeName.lexeme;
+    final typeArguments = extractTypeArguments(declaration);
     final constructorName = extractPrimaryConstructorName(declaration);
 
     final toReplace = <(ClassMember, String)>[];
@@ -48,12 +49,12 @@ base class AddCompositeMethods extends ResolvedCorrectionProducer {
     void handleMethod(
       MethodDeclaration? existing,
       bool inSync,
-      String generated,
+      String Function({required bool format}) generate,
     ) {
       if (existing == null) {
-        toInsert.add(generated);
+        toInsert.add(generate(format: false));
       } else if (forceRegenerate || !inSync) {
-        toReplace.add((existing, generated));
+        toReplace.add((existing, generate(format: true)));
       }
     }
 
@@ -65,10 +66,13 @@ base class AddCompositeMethods extends ResolvedCorrectionProducer {
       handleMethod(
         existing,
         existing != null && isCopyWithInSync(existing, fields),
-        generateCopyWithMethod(
+        ({required bool format}) => generateCopyWithMethod(
           className,
           fields,
           constructorName: constructorName,
+          typeArguments: typeArguments,
+          nullable: config.copyWithNullable,
+          format: format,
         ),
       );
     }
@@ -81,7 +85,8 @@ base class AddCompositeMethods extends ResolvedCorrectionProducer {
       handleMethod(
         existing,
         existing != null && isBodyInSync(existing.body, fields),
-        generateToStringMethod(className, fields),
+        ({required bool format}) =>
+            generateToStringMethod(className, fields, format: format),
       );
     }
 
@@ -93,9 +98,10 @@ base class AddCompositeMethods extends ResolvedCorrectionProducer {
       handleMethod(
         existingHashCode,
         existingHashCode != null && isBodyInSync(existingHashCode.body, fields),
-        generateHashCodeOverride(
+        ({required bool format}) => generateHashCodeOverride(
           fields,
           deepCollectionEquality: config.deepCollectionEquality,
+          format: format,
         ),
       );
 
@@ -106,9 +112,10 @@ base class AddCompositeMethods extends ResolvedCorrectionProducer {
       handleMethod(
         existingEquals,
         existingEquals != null && isBodyInSync(existingEquals.body, fields),
-        generateEqualityOperatorOverride(
+        ({required bool format}) => generateEqualityOperatorOverride(
           className,
           fields,
+          typeArguments: typeArguments,
           deepCollectionEquality: config.deepCollectionEquality,
         ),
       );
@@ -120,27 +127,44 @@ base class AddCompositeMethods extends ResolvedCorrectionProducer {
       handleMethod(
         existing,
         existing != null && isBodyInSync(existing.body, fields),
-        generateSerializeMethod(toMapName, fields),
+        ({required bool format}) =>
+            generateSerializeMethod(toMapName, fields, format: format),
       );
     }
 
     final fromMapName = config.deserializeMethodName;
     if (config.deserialize && fromMapName != null) {
       final existing = findDeserializeMember(declaration, fromMapName);
-      final generated = generateDeserializeMethod(
-        className,
-        fromMapName,
-        fields,
-        constructorName: constructorName,
-      );
       if (existing == null) {
-        toInsert.add(generated);
+        toInsert.add(
+          generateDeserializeMethod(
+            className,
+            fromMapName,
+            fields,
+            constructorName: constructorName,
+            typeArguments: typeArguments,
+            format: false,
+          ),
+        );
       } else if (forceRegenerate || !isDeserializeInSync(existing, fields)) {
-        toReplace.add((existing, generated));
+        toReplace.add((
+          existing,
+          generateDeserializeMethod(
+            className,
+            fromMapName,
+            fields,
+            constructorName: constructorName,
+            typeArguments: typeArguments,
+          ),
+        ));
       }
     }
 
     if (toReplace.isEmpty && toInsert.isEmpty) return;
+
+    final formattedInsert = toInsert.isNotEmpty
+        ? formatClassMembers(toInsert)
+        : null;
 
     await builder.addDartFileEdit(file, (fileEditBuilder) {
       for (final (member, code) in toReplace) {
@@ -150,11 +174,9 @@ base class AddCompositeMethods extends ResolvedCorrectionProducer {
         );
       }
 
-      if (toInsert.isNotEmpty) {
+      if (formattedInsert != null) {
         fileEditBuilder.insertMethod(declaration, (editBuilder) {
-          for (final code in toInsert) {
-            editBuilder.writeln(code);
-          }
+          editBuilder.write(formattedInsert);
         });
       }
     });

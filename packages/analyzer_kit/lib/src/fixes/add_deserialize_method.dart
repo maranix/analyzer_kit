@@ -45,6 +45,7 @@ base class AddDeserializeMethod extends ResolvedCorrectionProducer {
         methodName,
         fields,
         constructorName: extractPrimaryConstructorName(declaration),
+        typeArguments: extractTypeArguments(declaration),
       );
 
       await builder.addDartFileEdit(file, (fileEditBuilder) {

@@ -70,6 +70,14 @@ String? extractPrimaryConstructorName(ClassDeclaration declaration) {
   return null;
 }
 
+/// Returns the generic type argument list for [declaration] (e.g. `'<T, U>'`
+/// for `class Box<T, U extends num>`), or `''` if the class is not generic.
+String extractTypeArguments(ClassDeclaration declaration) {
+  final typeParams = declaration.namePart.typeParameters?.typeParameters;
+  if (typeParams == null || typeParams.isEmpty) return '';
+  return '<${typeParams.map((p) => p.name.lexeme).join(', ')}>';
+}
+
 /// Checks whether a specific code generation [feature] is enabled for [node],
 /// either via a direct annotation or via a `CompositeAnnotation` bundle.
 bool hasFeatureEnabled(ClassDeclaration node, FeatureAnnotation feature) {
@@ -133,6 +141,7 @@ final class AnnotationConfig {
   const AnnotationConfig({
     this.hasCompositeAnnotation = false,
     this.copyWith = false,
+    this.copyWithNullable = false,
     this.overrideToString = false,
     this.overrideEquality = false,
     this.serialize = false,
@@ -144,6 +153,7 @@ final class AnnotationConfig {
 
   final bool hasCompositeAnnotation;
   final bool copyWith;
+  final bool copyWithNullable;
   final bool overrideToString;
   final bool overrideEquality;
   final bool serialize;
@@ -151,6 +161,13 @@ final class AnnotationConfig {
   final String? serializeMethodName;
   final String? deserializeMethodName;
   final bool? deepCollectionEquality;
+
+  bool get hasAnyFeature =>
+      copyWith ||
+      overrideToString ||
+      overrideEquality ||
+      serialize ||
+      deserialize;
 }
 
 /// Parses all `analyzer_kit` annotations on [node] in a single metadata pass,
@@ -158,6 +175,7 @@ final class AnnotationConfig {
 AnnotationConfig extractAnnotationConfig(ClassDeclaration node) {
   var hasCompositeAnnotation = false;
   var copyWith = false;
+  var copyWithNullable = false;
   var overrideToString = false;
   var overrideEquality = false;
   bool? deepCollectionEquality;
@@ -172,6 +190,16 @@ AnnotationConfig extractAnnotationConfig(ClassDeclaration node) {
 
     if (stringEqualsIgnoreCaseByAscii(name, FeatureAnnotation.copyWith.name)) {
       copyWith = true;
+      if (arguments != null) {
+        for (final arg in arguments) {
+          if (arg is NamedArgument && arg.name.lexeme == 'nullable') {
+            final expr = arg.argumentExpression;
+            if (expr is BooleanLiteral) {
+              copyWithNullable = expr.value;
+            }
+          }
+        }
+      }
       continue;
     }
     if (stringEqualsIgnoreCaseByAscii(
@@ -247,6 +275,10 @@ AnnotationConfig extractAnnotationConfig(ClassDeclaration node) {
         FeatureAnnotation.copyWith.name,
       )) {
         copyWith = true;
+        final nullableVal = item.getField('nullable')?.toBoolValue();
+        if (nullableVal == true) {
+          copyWithNullable = true;
+        }
       } else if (stringEqualsIgnoreCaseByAscii(
         typeName,
         FeatureAnnotation.overrideToString.name,
@@ -279,6 +311,7 @@ AnnotationConfig extractAnnotationConfig(ClassDeclaration node) {
   return AnnotationConfig(
     hasCompositeAnnotation: hasCompositeAnnotation,
     copyWith: copyWith,
+    copyWithNullable: copyWithNullable,
     overrideToString: overrideToString,
     overrideEquality: overrideEquality,
     serialize: serialize,

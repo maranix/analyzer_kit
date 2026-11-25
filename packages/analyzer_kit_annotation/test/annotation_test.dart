@@ -20,6 +20,11 @@ void main() {
       const annotation = CopyWith();
       expect(annotation.runtimeType.toString(), 'CopyWith');
     });
+
+    test('nullable defaults to false and can be set to true', () {
+      expect(const CopyWith().nullable, isFalse);
+      expect(const CopyWith(nullable: true).nullable, isTrue);
+    });
   });
 
   group('OverrideToString', () {
