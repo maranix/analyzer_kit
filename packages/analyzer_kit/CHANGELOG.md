@@ -7,6 +7,11 @@
 - Added out-of-sync field detection across all rules with separate `*_out_of_sync` warning diagnostics (`copy_with_out_of_sync`, `override_equality_out_of_sync`, `override_to_string_out_of_sync`, `serialize_out_of_sync`, `deserialize_out_of_sync`) showing exact missing/extra fields, plus removed-field detection for `copyWith` and serialization methods.
 - Added in-place replacement in all quick fixes and registered 6 force-regenerate IDE assists (`RegenerateCompositeMethods`, `RegenerateCopyWithMethod`, `RegenerateToStringMethod`, `RegenerateEqualityMethods`, `RegenerateSerializeMethod`, `RegenerateDeserializeMethod`).
 - Updated SDK constraint to `^3.14.0` and bumped `analyzer`, `analyzer_plugin`, `analysis_server_plugin`, `code_builder`, and `dart_style`.
+- Consolidated all 5 warning rules into a single-pass `AnalyzerKitRule` with cached annotation nodes and single-pass `DartFormatter` formatting for batch edits.
+- Added nullable-aware `copyWith` generation (`@CopyWith(nullable: true)` using `T? Function()?` parameters) and out-of-sync signature drift detection.
+- Added generic class support (`Box<T>`) across `copyWith`, `==`, `fromMap`, and equality sync checks.
+- Added rich serialization/deserialization for `DateTime`, `Uri`, `Duration`, `BigInt`, `Enum`, `List`, `Set`, `Iterable`, `Map`, and nested `@Serialize`/`@Deserialize` classes.
+- Added constructor parameter matching for non-primary constructors, inherited superclass field extraction, and automatic `analyzer_kit_annotation` import insertion for `deepHash`/`deepEquals`.
 
 ## 1.0.0+2
 - Documentation:

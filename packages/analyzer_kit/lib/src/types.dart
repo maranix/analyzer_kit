@@ -2,14 +2,25 @@ import 'package:analyzer/dart/ast/ast.dart'
     show FieldDeclaration, FormalParameter, VariableDeclaration;
 import 'package:analyzer/dart/constant/value.dart' show DartObject;
 import 'package:analyzer/dart/element/element.dart'
-    show ClassElement, EnumElement;
+    show ClassElement, EnumElement, FieldElement;
 import 'package:analyzer/dart/element/nullability_suffix.dart'
     show NullabilitySuffix;
 import 'package:analyzer/dart/element/type.dart' show DartType, InterfaceType;
 
 /// Semantic type classification for a [ClassField], used by serialization and
 /// collection code generation.
-enum FieldTypeKind { other, dateTime, enumType, list, iterable, set, map }
+enum FieldTypeKind {
+  other,
+  dateTime,
+  uri,
+  duration,
+  bigInt,
+  enumType,
+  list,
+  iterable,
+  set,
+  map,
+}
 
 /// Represents a class field extracted from AST for code generation.
 final class ClassField {
@@ -27,6 +38,7 @@ final class ClassField {
     this.isPublic = false,
     this.isPrivate = false,
     this.isPositional = false,
+    this.isConstructorParam = true,
     this.typeKind,
     this.typeArguments = const [],
     this.serializeMethodName,
@@ -46,6 +58,10 @@ final class ClassField {
   final bool isPublic;
   final bool isPrivate;
   final bool isPositional;
+
+  /// Whether this field is accepted by the target constructor (and should be
+  /// included in `copyWith` and `fromMap` constructor calls).
+  final bool isConstructorParam;
 
   /// Resolved semantic kind of [type], or `null` when constructed without AST
   /// type resolution (in which case getters fall back to parsing [type]).
@@ -78,6 +94,17 @@ final class ClassField {
   /// Whether this field's type is `DateTime` or `DateTime?`.
   bool get isDateTimeType =>
       typeKind == FieldTypeKind.dateTime || _isType('DateTime');
+
+  /// Whether this field's type is `Uri` or `Uri?`.
+  bool get isUriType => typeKind == FieldTypeKind.uri || _isType('Uri');
+
+  /// Whether this field's type is `Duration` or `Duration?`.
+  bool get isDurationType =>
+      typeKind == FieldTypeKind.duration || _isType('Duration');
+
+  /// Whether this field's type is `BigInt` or `BigInt?`.
+  bool get isBigIntType =>
+      typeKind == FieldTypeKind.bigInt || _isType('BigInt');
 
   /// Whether this field's type is an `enum` (requires resolved [typeKind]).
   bool get isEnumType => typeKind == FieldTypeKind.enumType;
@@ -144,6 +171,68 @@ final class ClassField {
       ),
     );
   }
+
+  /// Extracts a [ClassField] from an inherited [FieldElement].
+  static ClassField fromFieldElement(
+    FieldElement element, {
+    bool isPositional = false,
+    bool isConstructorParam = true,
+  }) {
+    final name = element.name ?? '';
+    final isPrivate = name.startsWith('_');
+    final dartType = element.type;
+    final resolved = _resolveDartType(dartType);
+    final suffix = dartType.nullabilitySuffix == NullabilitySuffix.question
+        ? '?'
+        : '';
+    final display = dartType.getDisplayString();
+    final typeStr = suffix.isNotEmpty && !display.endsWith('?')
+        ? '$display?'
+        : display;
+
+    return ClassField(
+      name: name,
+      type: typeStr,
+      isConst: element.isConst,
+      isLate: element.isLate,
+      isFinal: element.isFinal,
+      isStatic: element.isStatic,
+      isSynthetic: !element.isOriginDeclaration,
+      isPublic: !isPrivate,
+      isPrivate: isPrivate,
+      isPositional: isPositional,
+      isConstructorParam: isConstructorParam,
+      typeKind: resolved.kind,
+      typeArguments: resolved.args,
+      serializeMethodName: resolved.serializeMethodName,
+      deserializeMethodName: resolved.deserializeMethodName,
+    );
+  }
+
+  /// Returns a copy of this [ClassField] with updated constructor metadata.
+  ClassField copyWithConstructorInfo({
+    bool? isPositional,
+    bool? isConstructorParam,
+  }) => ClassField(
+    name: name,
+    type: type,
+    keyword: keyword,
+    equals: equals,
+    initializer: initializer,
+    isConst: isConst,
+    isLate: isLate,
+    isFinal: isFinal,
+    isStatic: isStatic,
+    isSynthetic: isSynthetic,
+    isPublic: isPublic,
+    isPrivate: isPrivate,
+    isPositional: isPositional ?? this.isPositional,
+    isConstructorParam: isConstructorParam ?? this.isConstructorParam,
+    typeKind: typeKind,
+    typeArguments: typeArguments,
+    serializeMethodName: serializeMethodName,
+    deserializeMethodName: deserializeMethodName,
+  );
 
   /// Extracts a [ClassField] from a declaring [FormalParameter] in a
   /// `PrimaryConstructorDeclaration`.
@@ -218,14 +307,22 @@ final class ClassField {
       );
     }
     final element = dartType.element;
-    if (element?.name == 'DateTime' &&
-        (element?.library?.isDartCore ?? false)) {
-      return (
-        kind: FieldTypeKind.dateTime,
-        args: const [],
-        serializeMethodName: null,
-        deserializeMethodName: null,
-      );
+    if (element?.library?.isDartCore ?? false) {
+      final kind = switch (element?.name) {
+        'DateTime' => FieldTypeKind.dateTime,
+        'Uri' => FieldTypeKind.uri,
+        'Duration' => FieldTypeKind.duration,
+        'BigInt' => FieldTypeKind.bigInt,
+        _ => null,
+      };
+      if (kind != null) {
+        return (
+          kind: kind,
+          args: const [],
+          serializeMethodName: null,
+          deserializeMethodName: null,
+        );
+      }
     }
     if (element is EnumElement) {
       return (

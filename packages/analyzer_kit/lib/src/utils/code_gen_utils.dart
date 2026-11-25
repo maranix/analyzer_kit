@@ -16,7 +16,7 @@ String generateCopyWithMethod(
   final namedArgs = <String, Expression>{};
   final functionParams = <Parameter>[];
 
-  for (final field in fields) {
+  for (final field in fields.where((f) => f.isConstructorParam)) {
     final useWrapper = nullable && field.isNullableType;
     final paramType = useWrapper
         ? '${field.type} Function()?'
@@ -291,6 +291,7 @@ String generateDeserializeMethod(
   bool format = true,
 }) {
   final assignments = fields
+      .where((f) => f.isConstructorParam)
       .map((f) {
         final expr = _deserializeExpression(f, "map['${f.name}']");
         return f.isPositional ? expr : '${f.name}: $expr';
@@ -317,6 +318,9 @@ factory $className.$methodName(Map<String, dynamic> map) {
 bool _needsElementTransform(ClassField? field) =>
     field != null &&
     (field.isDateTimeType ||
+        field.isUriType ||
+        field.isDurationType ||
+        field.isBigIntType ||
         field.isEnumType ||
         field.isCollectionType ||
         field.serializeMethodName != null ||
@@ -328,6 +332,12 @@ String _serializeExpression(ClassField field, String expr) {
 
   if (field.isDateTimeType) {
     return '$expr$q.toIso8601String()';
+  }
+  if (field.isUriType || field.isBigIntType) {
+    return '$expr$q.toString()';
+  }
+  if (field.isDurationType) {
+    return '$expr$q.inMicroseconds';
   }
   if (field.isEnumType) {
     return '$expr$q.name';
@@ -371,6 +381,21 @@ String _deserializeExpression(ClassField field, String expr) {
     return nullable
         ? '$expr != null ? DateTime.parse($expr as String) : null'
         : 'DateTime.parse($expr as String)';
+  }
+  if (field.isUriType) {
+    return nullable
+        ? '$expr != null ? Uri.parse($expr as String) : null'
+        : 'Uri.parse($expr as String)';
+  }
+  if (field.isDurationType) {
+    return nullable
+        ? '$expr != null ? Duration(microseconds: $expr as int) : null'
+        : 'Duration(microseconds: $expr as int)';
+  }
+  if (field.isBigIntType) {
+    return nullable
+        ? '$expr != null ? BigInt.parse($expr as String) : null'
+        : 'BigInt.parse($expr as String)';
   }
   if (field.isEnumType) {
     final enumType = field.nonNullableType;

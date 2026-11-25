@@ -182,6 +182,16 @@ base class AddCompositeMethods extends ResolvedCorrectionProducer {
         : null;
 
     await builder.addDartFileEdit(file, (fileEditBuilder) {
+      if (config.overrideEquality &&
+          config.deepCollectionEquality != false &&
+          fields.any((f) => f.isCollectionType)) {
+        fileEditBuilder.importLibrary(
+          Uri.parse(
+            'package:analyzer_kit_annotation/analyzer_kit_annotation.dart',
+          ),
+        );
+      }
+
       for (final (member, code) in toReplace) {
         fileEditBuilder.addSimpleReplacement(
           range.node(member),

@@ -61,7 +61,10 @@ FieldSyncResult checkCopyWithSync(
   Iterable<ClassField> fields, {
   bool nullable = false,
 }) {
-  final fieldMap = {for (final f in fields) f.name: f};
+  final fieldMap = {
+    for (final f in fields)
+      if (f.isConstructorParam) f.name: f,
+  };
   final fieldNames = fieldMap.keys.toList();
   final paramNames = <String>[];
   final driftReasons = <String>[];
@@ -206,10 +209,14 @@ FieldSyncResult checkDeserializeSync(
     collectMapIndexKeys: true,
   );
   body.accept(collector);
-  final fieldSet = {for (final f in fields) f.name};
+  final ctorFields = [
+    for (final f in fields)
+      if (f.isConstructorParam) f,
+  ];
+  final fieldSet = {for (final f in ctorFields) f.name};
   return FieldSyncResult(
     missingFields: [
-      for (final f in fields)
+      for (final f in ctorFields)
         if (!collector.names.contains(f.name)) f.name,
     ],
     extraFields: [

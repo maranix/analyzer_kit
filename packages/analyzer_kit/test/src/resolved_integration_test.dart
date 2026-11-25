@@ -263,4 +263,89 @@ class Box<T> {
     expect(deserSync.isInSync, isFalse);
     expect(deserSync.extraFields, contains('stale'));
   });
+
+  test('extracts inherited fields, non-primary positional params, Uri/Duration/BigInt, and auto-imports deep equality', () async {
+    await resolveCode('base_model.dart', '''
+import 'package:analyzer_kit_annotation/analyzer_kit_annotation.dart';
+
+const myBundle = CompositeAnnotation([
+  CopyWith(),
+  OverrideEquality(),
+  Serialize(),
+  Deserialize(),
+]);
+
+class BaseEntity {
+  final int id;
+  const BaseEntity(this.id);
+}
+''');
+
+    final unitResult = await resolveCode('derived_model.dart', '''
+import 'base_model.dart';
+
+@myBundle
+class DerivedEntity extends BaseEntity {
+  final Uri link;
+  final Duration ttl;
+  final BigInt big;
+  final List<String> tags;
+  final String computed = 'v1';
+
+  const DerivedEntity(
+    super.id, {
+    required this.link,
+    required this.ttl,
+    required this.big,
+    required this.tags,
+  });
+}
+''');
+
+    final cls = unitResult.unit.declarations
+        .whereType<ClassDeclaration>()
+        .single;
+    final fields = extractGeneratableFields(cls);
+
+    final idField = fields.firstWhere((f) => f.name == 'id');
+    expect(idField.isPositional, isTrue);
+    expect(idField.isConstructorParam, isTrue);
+
+    final computedField = fields.firstWhere((f) => f.name == 'computed');
+    expect(computedField.isConstructorParam, isFalse);
+
+    expect(fields.firstWhere((f) => f.name == 'link').isUriType, isTrue);
+    expect(fields.firstWhere((f) => f.name == 'ttl').isDurationType, isTrue);
+    expect(fields.firstWhere((f) => f.name == 'big').isBigIntType, isTrue);
+
+    final context = CorrectionProducerContext.createResolved(
+      libraryResult: await unitResult.session.getResolvedLibraryByElement(
+        unitResult.libraryElement,
+      ) as ResolvedLibraryResult,
+      unitResult: unitResult,
+      selectionOffset: cls.offset,
+    );
+
+    final builder = ChangeBuilder(session: unitResult.session);
+    await AddCompositeMethods(context: context).compute(builder);
+
+    final allEdits = builder.sourceChange.edits.single.edits
+        .map((e) => e.replacement)
+        .join('\n');
+
+    // Auto-imported analyzer_kit_annotation for deepHash/deepEquals
+    expect(
+      allEdits,
+      contains(
+        "import 'package:analyzer_kit_annotation/analyzer_kit_annotation.dart';",
+      ),
+    );
+    // Positional super.id in copyWith & fromMap, and computed omitted from them
+    expect(allEdits, contains('id ?? this.id,'));
+    expect(allEdits, contains("map['id'] as int,"));
+    expect(allEdits, contains('link.toString()'));
+    expect(allEdits, contains('ttl.inMicroseconds'));
+    expect(allEdits, contains('big.toString()'));
+    expect(allEdits, isNot(contains('String? computed')));
+  });
 }

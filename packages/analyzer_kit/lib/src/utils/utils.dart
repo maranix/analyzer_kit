@@ -37,15 +37,49 @@ part 'string_utils.dart';
 part 'sync_utils.dart';
 
 /// Extracts generatable fields from a [ClassDeclaration], including declaring
-/// parameters on a primary constructor and body [FieldDeclaration]s.
+/// parameters on a primary constructor, body [FieldDeclaration]s, and
+/// inherited fields from non-core supertypes.
+///
+/// Constructor parameter metadata (`isPositional`, `isConstructorParam`) is
+/// matched against the primary constructor or the unnamed generative
+/// constructor when present.
 List<ClassField> extractGeneratableFields(ClassDeclaration declaration) {
+  final ctorParamPositional = <String, bool>{};
+  var hasExplicitCtor = false;
+
+  if (declaration.namePart case final PrimaryConstructorDeclaration primary) {
+    hasExplicitCtor = true;
+    for (final param in primary.formalParameters.parameters) {
+      final name = param.name?.lexeme;
+      if (name != null) {
+        ctorParamPositional[name] = param.isPositional;
+      }
+    }
+  } else {
+    for (final member in declaration.body.members) {
+      if (member is ConstructorDeclaration &&
+          member.factoryKeyword == null &&
+          (member.name == null || member.name?.lexeme == 'new')) {
+        hasExplicitCtor = true;
+        for (final param in member.parameters.parameters) {
+          final name = param.name?.lexeme;
+          if (name != null) {
+            ctorParamPositional[name] = param.isPositional;
+          }
+        }
+        break;
+      }
+    }
+  }
+
   final fields = <ClassField>[];
+  final seenNames = <String>{};
 
   if (declaration.namePart case final PrimaryConstructorDeclaration primary) {
     for (final param in primary.formalParameters.parameters) {
       if (param.constFinalOrVarKeyword != null && param.name != null) {
         final field = ClassField.fromPrimaryConstructorParameter(param);
-        if (field.isGeneratable) {
+        if (field.isGeneratable && seenNames.add(field.name)) {
           fields.add(field);
         }
       }
@@ -54,13 +88,49 @@ List<ClassField> extractGeneratableFields(ClassDeclaration declaration) {
 
   for (final member in declaration.body.members) {
     if (member is FieldDeclaration) {
-      for (final field in ClassField.fromFieldDeclarationAll(member)) {
-        if (field.isGeneratable) {
+      for (final rawField in ClassField.fromFieldDeclarationAll(member)) {
+        if (rawField.isGeneratable && seenNames.add(rawField.name)) {
+          final field = hasExplicitCtor
+              ? rawField.copyWithConstructorInfo(
+                  isPositional:
+                      ctorParamPositional[rawField.name] ??
+                      rawField.isPositional,
+                  isConstructorParam: ctorParamPositional.containsKey(
+                    rawField.name,
+                  ),
+                )
+              : rawField;
           fields.add(field);
         }
       }
     }
   }
+
+  final classEl = declaration.declaredFragment?.element;
+  if (classEl != null) {
+    for (final supertype in classEl.allSupertypes) {
+      if (supertype.element.library.isDartCore) continue;
+      for (final fieldEl in supertype.element.fields) {
+        final name = fieldEl.name;
+        if (name == null ||
+            fieldEl.isStatic ||
+            !fieldEl.isOriginDeclaration ||
+            fieldEl.isLate ||
+            !seenNames.add(name)) {
+          continue;
+        }
+        fields.add(
+          ClassField.fromFieldElement(
+            fieldEl,
+            isPositional: ctorParamPositional[name] ?? false,
+            isConstructorParam:
+                !hasExplicitCtor || ctorParamPositional.containsKey(name),
+          ),
+        );
+      }
+    }
+  }
+
   return fields;
 }
 

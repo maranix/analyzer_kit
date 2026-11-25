@@ -2,6 +2,7 @@
 
 - **Breaking:** Removed `DataClass` and `@dataClass` in favor of `CompositeAnnotation`, allowing users to compose reusable annotation bundles with custom configurations.
 - Added `deepCollectionEquality` option on `OverrideEquality` and switched `deepHash` / `deepEquals` to order-sensitive `DeepCollectionEquality()`.
+- Added `nullable` option on `CopyWith` (`@CopyWith(nullable: true)`) for resetting nullable fields to `null`.
 - Updated SDK constraint to `^3.14.0`.
 
 ## 1.0.0+1

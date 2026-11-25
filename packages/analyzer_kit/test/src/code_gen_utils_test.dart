@@ -740,4 +740,71 @@ void main() {
       expect(formatted, contains('Map<String, dynamic> toMap()'));
     });
   });
+
+  group('Uri, Duration, BigInt, and non-constructor fields', () {
+    test('serializes and deserializes Uri, Duration, and BigInt (including nullable)', () {
+      const fields = [
+        ClassField(name: 'endpoint', type: 'Uri', typeKind: FieldTypeKind.uri),
+        ClassField(name: 'fallback', type: 'Uri?', typeKind: FieldTypeKind.uri),
+        ClassField(
+          name: 'timeout',
+          type: 'Duration',
+          typeKind: FieldTypeKind.duration,
+        ),
+        ClassField(
+          name: 'amount',
+          type: 'BigInt?',
+          typeKind: FieldTypeKind.bigInt,
+        ),
+      ];
+
+      final toMap = _norm(generateSerializeMethod('toMap', fields));
+      expect(toMap, contains("'endpoint': endpoint.toString()"));
+      expect(toMap, contains("'fallback': fallback?.toString()"));
+      expect(toMap, contains("'timeout': timeout.inMicroseconds"));
+      expect(toMap, contains("'amount': amount?.toString()"));
+
+      final fromMap = _norm(
+        generateDeserializeMethod('Config', 'fromMap', fields),
+      );
+      expect(
+        fromMap,
+        contains("endpoint: Uri.parse(map['endpoint'] as String)"),
+      );
+      expect(
+        fromMap,
+        contains(
+          "fallback: map['fallback'] != null ? Uri.parse(map['fallback'] as String) : null",
+        ),
+      );
+      expect(
+        fromMap,
+        contains('timeout: Duration(microseconds: map[\'timeout\'] as int)'),
+      );
+      expect(
+        fromMap,
+        contains(
+          "amount: map['amount'] != null ? BigInt.parse(map['amount'] as String) : null",
+        ),
+      );
+    });
+
+    test('skips non-constructor fields in copyWith and fromMap', () {
+      const fields = [
+        ClassField(name: 'id', type: 'int'),
+        ClassField(name: 'tag', type: 'String', isConstructorParam: false),
+      ];
+
+      final copyWith = generateCopyWithMethod('Item', fields);
+      expect(copyWith, contains('int? id'));
+      expect(copyWith, isNot(contains('tag')));
+
+      final fromMap = generateDeserializeMethod('Item', 'fromMap', fields);
+      expect(fromMap, contains("id: map['id'] as int"));
+      expect(fromMap, isNot(contains('tag')));
+
+      final toString = generateToStringMethod('Item', fields);
+      expect(toString, contains('tag: \$tag'));
+    });
+  });
 }

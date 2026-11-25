@@ -87,6 +87,15 @@ base class OverrideEqualityMethods extends ResolvedCorrectionProducer {
         ).isInSync;
 
     await builder.addDartFileEdit(file, (fileEditBuilder) {
+      if (deepCollectionEquality != false &&
+          fields.any((f) => f.isCollectionType)) {
+        fileEditBuilder.importLibrary(
+          Uri.parse(
+            'package:analyzer_kit_annotation/analyzer_kit_annotation.dart',
+          ),
+        );
+      }
+
       if (existingHashCode != null &&
           (forceRegenerate ||
               !isBodyInSync(existingHashCode.body, fields) ||
