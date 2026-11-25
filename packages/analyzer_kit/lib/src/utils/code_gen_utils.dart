@@ -60,12 +60,30 @@ String generateHashCodeOverride(
   Iterable<ClassField> fields, {
   bool? deepCollectionEquality,
 }) {
-  final hashElements = fields
-      .map(
-        (f) =>
-            _hashExpression(f, deepCollectionEquality: deepCollectionEquality),
-      )
-      .join(', ');
+  final fieldList = fields is List<ClassField> ? fields : fields.toList();
+  final String bodyCode;
+
+  if (fieldList.isEmpty) {
+    bodyCode = '0;';
+  } else if (fieldList.length == 1) {
+    final expr = _hashExpression(
+      fieldList.first,
+      deepCollectionEquality: deepCollectionEquality,
+    );
+    bodyCode = '$expr.hashCode;';
+  } else {
+    final hashElements = fieldList
+        .map(
+          (f) => _hashExpression(
+            f,
+            deepCollectionEquality: deepCollectionEquality,
+          ),
+        )
+        .join(', ');
+    bodyCode = fieldList.length <= 20
+        ? 'Object.hash($hashElements);'
+        : 'Object.hashAll([$hashElements]);';
+  }
 
   final override = Method(
     (b) => b
@@ -74,7 +92,7 @@ String generateHashCodeOverride(
       ..returns = refer('int')
       ..name = FeatureMethod.overrideHashCode.name
       ..lambda = true
-      ..body = Code('Object.hashAll([$hashElements]);'),
+      ..body = Code(bodyCode),
   );
 
   return formatCode('${override.accept(_dartEmitter)}');

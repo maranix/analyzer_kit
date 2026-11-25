@@ -22,8 +22,7 @@ final class AddCopyWithMethod extends ResolvedCorrectionProducer {
   FixKind? get fixKind => _fix;
 
   @override
-  CorrectionApplicability get applicability =>
-      CorrectionApplicability.automatically;
+  CorrectionApplicability get applicability => .automatically;
 
   @override
   Future<void> compute(ChangeBuilder builder) async {

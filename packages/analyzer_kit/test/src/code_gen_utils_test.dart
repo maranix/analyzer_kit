@@ -1,6 +1,5 @@
 import 'package:analyzer_kit/src/types.dart';
 import 'package:analyzer_kit/src/utils/utils.dart';
-import 'package:dart_style/dart_style.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -31,16 +30,14 @@ void main() {
     });
 
     test(
-      'throws FormatException for already-nullable type fields (String? becomes String??)',
+      'preserves single ? for already-nullable type fields (String? stays String?)',
       () {
         const fields = [ClassField(name: 'nickname', type: 'String?')];
 
-        // copyWith wraps every param type with ?, so String? becomes String??
-        // which is invalid Dart syntax and cannot be formatted
-        expect(
-          () => generateCopyWithMethod('User', fields),
-          throwsA(isA<FormatterException>()),
-        );
+        final result = generateCopyWithMethod('User', fields);
+
+        expect(result, contains('String? nickname'));
+        expect(result, isNot(contains('String??')));
       },
     );
 
@@ -116,7 +113,7 @@ void main() {
       expect(result, contains('@override'));
       expect(result, contains('int'));
       expect(result, contains('hashCode'));
-      expect(result, contains('Object.hashAll'));
+      expect(result, contains('Object.hash'));
       expect(result, contains('name'));
       expect(result, contains('age'));
     });
@@ -317,7 +314,7 @@ void main() {
       );
 
       expect(result, contains('other.items.length == items.length'));
-      expect(result, contains('items.indexed.every'));
+      expect(result, contains('other.items[i] != items[i]'));
       expect(result, isNot(contains('deepEquals')));
     });
 

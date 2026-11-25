@@ -124,6 +124,200 @@ String? extractFeatureMethodName(
   return null;
 }
 
+/// Extracts `deepCollectionEquality` from `@OverrideEquality` or `@DataClass`
+/// annotations on [declaration] in a single pass.
+bool? extractDeepCollectionEquality(ClassDeclaration declaration) {
+  bool? result;
+  for (final annotation in declaration.metadata) {
+    final name = annotation.name.name;
+    if (stringEqualsIgnoreCaseByAscii(
+          name,
+          FeatureAnnotation.overrideEquality.name,
+        ) ||
+        stringEqualsIgnoreCaseByAscii(
+          name,
+          FeatureAnnotation.dataClass.name,
+        )) {
+      final arguments = annotation.arguments?.arguments;
+      if (arguments == null) continue;
+      for (final arg in arguments) {
+        if (arg is NamedArgument &&
+            arg.name.lexeme == 'deepCollectionEquality') {
+          final expression = arg.argumentExpression;
+          if (expression is BooleanLiteral) {
+            result = expression.value;
+          }
+        }
+      }
+    }
+  }
+  return result;
+}
+
+/// Parsed annotation configuration for a [ClassDeclaration] in a single pass.
+final class AnnotationConfig {
+  const AnnotationConfig({
+    this.hasDataClass = false,
+    this.copyWith = false,
+    this.overrideToString = false,
+    this.overrideEquality = false,
+    this.serialize = false,
+    this.deserialize = false,
+    this.serializeMethodName,
+    this.deserializeMethodName,
+    this.deepCollectionEquality,
+  });
+
+  final bool hasDataClass;
+  final bool copyWith;
+  final bool overrideToString;
+  final bool overrideEquality;
+  final bool serialize;
+  final bool deserialize;
+  final String? serializeMethodName;
+  final String? deserializeMethodName;
+  final bool? deepCollectionEquality;
+}
+
+/// Parses all analyzer_kit annotations on [node] in a single metadata pass.
+AnnotationConfig extractAnnotationConfig(ClassDeclaration node) {
+  var hasDataClass = false;
+  var dcCopyWith = true;
+  var dcToString = true;
+  var dcEquality = true;
+  var dcSerialize = true;
+  var dcDeserialize = true;
+  bool? dcDeepEquality;
+
+  var directCopyWith = false;
+  var directToString = false;
+  var directEquality = false;
+  bool? directDeepEquality;
+  var directSerialize = false;
+  String? directSerializeName;
+  var directDeserialize = false;
+  String? directDeserializeName;
+
+  for (final annotation in node.metadata) {
+    final name = annotation.name.name;
+    final arguments = annotation.arguments?.arguments;
+
+    if (stringEqualsIgnoreCaseByAscii(name, FeatureAnnotation.dataClass.name)) {
+      hasDataClass = true;
+      if (arguments != null) {
+        for (final arg in arguments) {
+          if (arg is! NamedArgument) continue;
+          final label = arg.name.lexeme;
+          final expr = arg.argumentExpression;
+          if (expr is BooleanLiteral) {
+            if (stringEqualsIgnoreCaseByAscii(
+              label,
+              FeatureAnnotation.copyWith.name,
+            )) {
+              dcCopyWith = expr.value;
+            } else if (stringEqualsIgnoreCaseByAscii(
+              label,
+              FeatureAnnotation.overrideToString.name,
+            )) {
+              dcToString = expr.value;
+            } else if (stringEqualsIgnoreCaseByAscii(
+              label,
+              FeatureAnnotation.overrideEquality.name,
+            )) {
+              dcEquality = expr.value;
+            } else if (stringEqualsIgnoreCaseByAscii(
+              label,
+              FeatureAnnotation.serialize.name,
+            )) {
+              dcSerialize = expr.value;
+            } else if (stringEqualsIgnoreCaseByAscii(
+              label,
+              FeatureAnnotation.deserialize.name,
+            )) {
+              dcDeserialize = expr.value;
+            } else if (label == 'deepCollectionEquality') {
+              dcDeepEquality = expr.value;
+            }
+          }
+        }
+      }
+    } else if (stringEqualsIgnoreCaseByAscii(
+      name,
+      FeatureAnnotation.copyWith.name,
+    )) {
+      directCopyWith = true;
+    } else if (stringEqualsIgnoreCaseByAscii(
+      name,
+      FeatureAnnotation.overrideToString.name,
+    )) {
+      directToString = true;
+    } else if (stringEqualsIgnoreCaseByAscii(
+      name,
+      FeatureAnnotation.overrideEquality.name,
+    )) {
+      directEquality = true;
+      if (arguments != null) {
+        for (final arg in arguments) {
+          if (arg is NamedArgument &&
+              arg.name.lexeme == 'deepCollectionEquality') {
+            final expr = arg.argumentExpression;
+            if (expr is BooleanLiteral) {
+              directDeepEquality = expr.value;
+            }
+          }
+        }
+      }
+    } else if (stringEqualsIgnoreCaseByAscii(
+      name,
+      FeatureAnnotation.serialize.name,
+    )) {
+      directSerialize = true;
+      if (arguments != null) {
+        for (final arg in arguments) {
+          if (arg is NamedArgument && arg.name.lexeme == 'name') {
+            directSerializeName = _extractMethodNameFromExpression(
+              arg.argumentExpression,
+            );
+          }
+        }
+      }
+    } else if (stringEqualsIgnoreCaseByAscii(
+      name,
+      FeatureAnnotation.deserialize.name,
+    )) {
+      directDeserialize = true;
+      if (arguments != null) {
+        for (final arg in arguments) {
+          if (arg is NamedArgument && arg.name.lexeme == 'name') {
+            directDeserializeName = _extractMethodNameFromExpression(
+              arg.argumentExpression,
+            );
+          }
+        }
+      }
+    }
+  }
+
+  final serialize = directSerialize || (hasDataClass && dcSerialize);
+  final deserialize = directDeserialize || (hasDataClass && dcDeserialize);
+
+  return AnnotationConfig(
+    hasDataClass: hasDataClass,
+    copyWith: directCopyWith || (hasDataClass && dcCopyWith),
+    overrideToString: directToString || (hasDataClass && dcToString),
+    overrideEquality: directEquality || (hasDataClass && dcEquality),
+    serialize: serialize,
+    deserialize: deserialize,
+    serializeMethodName: serialize
+        ? (directSerializeName ?? FeatureMethod.toMap.name)
+        : null,
+    deserializeMethodName: deserialize
+        ? (directDeserializeName ?? FeatureMethod.fromMap.name)
+        : null,
+    deepCollectionEquality: directDeepEquality ?? dcDeepEquality,
+  );
+}
+
 String? _extractMethodNameFromExpression(Object expression) {
   final (String? ctorName, ArgumentList? args) = switch (expression) {
     DotShorthandInvocation(:final memberName, :final argumentList) => (

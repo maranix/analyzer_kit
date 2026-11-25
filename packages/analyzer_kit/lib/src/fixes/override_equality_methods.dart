@@ -30,44 +30,20 @@ final class OverrideEqualityMethods extends ResolvedCorrectionProducer {
     if (declaration == null) return;
 
     if (hasFeatureEnabled(declaration, FeatureAnnotation.overrideEquality)) {
-      bool? deepCollectionEquality;
+      final deepCollectionEquality = extractDeepCollectionEquality(declaration);
 
-      // Extract deepCollectionEquality from either @OverrideEquality or @DataClass
-      for (final annotation in declaration.metadata) {
-        final name = annotation.name.name;
-        if (stringEqualsIgnoreCaseByAscii(
-              name,
-              FeatureAnnotation.overrideEquality.name,
-            ) ||
-            stringEqualsIgnoreCaseByAscii(
-              name,
-              FeatureAnnotation.dataClass.name,
-            )) {
-          final arguments = annotation.arguments?.arguments;
-          if (arguments != null) {
-            for (final arg in arguments) {
-              if (arg is NamedArgument &&
-                  arg.name.lexeme == 'deepCollectionEquality') {
-                final expression = arg.argumentExpression;
-                if (expression is BooleanLiteral) {
-                  deepCollectionEquality = expression.value;
-                }
-              }
-            }
+      var hasHashCodeOverride = false;
+      var hasEqualityOperatorOverride = false;
+      for (final m in declaration.body.members) {
+        if (m is MethodDeclaration) {
+          final name = m.name.lexeme;
+          if (name == FeatureMethod.overrideHashCode.name) {
+            hasHashCodeOverride = true;
+          } else if (name == FeatureMethod.operatorEquals.name) {
+            hasEqualityOperatorOverride = true;
           }
         }
       }
-
-      final hasHashCodeOverride = declaration.body.members.any(
-        (m) =>
-            m is MethodDeclaration &&
-            m.name.lexeme == FeatureMethod.overrideHashCode.name,
-      );
-      final hasEqualityOperatorOverride = declaration.body.members.any(
-        (m) =>
-            m is MethodDeclaration &&
-            m.name.lexeme == FeatureMethod.operatorEquals.name,
-      );
 
       final fields = extractGeneratableFields(declaration);
       if (fields.isEmpty) return;
