@@ -262,4 +262,23 @@ void main() {
       expect(deserialize.name.methodName, 'fromMap');
     });
   });
+
+  group('Ignore', () {
+    test('default constructor ignores all ClassAnnotation values', () {
+      const annotation = Ignore();
+      expect(annotation.annotations, ClassAnnotation.values.toSet());
+    });
+
+    test('convenience constant is identical to const Ignore()', () {
+      expect(identical(ignore, const Ignore()), isTrue);
+    });
+
+    test('accepts a custom set of ClassAnnotation values', () {
+      const annotation = Ignore({.serialize, .overrideToString});
+      expect(annotation.annotations, {
+        ClassAnnotation.serialize,
+        ClassAnnotation.overrideToString,
+      });
+    });
+  });
 }

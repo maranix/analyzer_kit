@@ -1,3 +1,7 @@
+## Unreleased
+
+- Added field-level `@Ignore` (`@ignore`) annotation accepting a `Set<ClassAnnotation>` (e.g. `@Ignore({.serialize, .overrideToString})`) for excluding fields per feature.
+
 ## 2.0.0
 
 - **Breaking:** Removed `DataClass` and `@dataClass` in favor of `CompositeAnnotation`, allowing users to compose reusable annotation bundles with custom configurations.

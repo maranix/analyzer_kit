@@ -134,6 +134,12 @@ List<ClassField> extractGeneratableFields(ClassDeclaration declaration) {
   return fields;
 }
 
+/// Filters [fields] to those not ignored for [feature].
+List<ClassField> fieldsForFeature(
+  List<ClassField> fields,
+  FeatureAnnotation feature,
+) => fields.where((f) => !f.ignoredFor.contains(feature)).toList();
+
 /// Returns the named primary constructor name for [declaration] (e.g. `'named'`
 /// for `class Foo.named(...)`), or `null` for unnamed or `.new` constructors.
 String? extractPrimaryConstructorName(ClassDeclaration declaration) {

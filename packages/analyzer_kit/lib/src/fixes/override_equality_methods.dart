@@ -38,7 +38,10 @@ base class OverrideEqualityMethods extends ResolvedCorrectionProducer {
       return;
     }
 
-    final fields = extractGeneratableFields(declaration);
+    final fields = fieldsForFeature(
+      extractGeneratableFields(declaration),
+      FeatureAnnotation.overrideEquality,
+    );
     if (fields.isEmpty) return;
 
     final deepCollectionEquality = config.deepCollectionEquality;

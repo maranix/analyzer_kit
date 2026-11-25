@@ -59,56 +59,70 @@ base class AddCompositeMethods extends ResolvedCorrectionProducer {
     }
 
     if (config.copyWith) {
-      final existing = findMethodDeclaration(
-        declaration,
-        FeatureMethod.copyWith.name,
-      );
-      handleMethod(
-        existing,
-        existing != null &&
-            isCopyWithInSync(
-              existing,
-              fields,
-              nullable: config.copyWithNullable,
-            ),
-        ({required bool format}) => generateCopyWithMethod(
-          className,
-          fields,
-          constructorName: constructorName,
-          typeArguments: typeArguments,
-          nullable: config.copyWithNullable,
-          format: format,
-        ),
-      );
+      final featureFields = fieldsForFeature(fields, FeatureAnnotation.copyWith);
+      if (featureFields.isNotEmpty) {
+        final existing = findMethodDeclaration(
+          declaration,
+          FeatureMethod.copyWith.name,
+        );
+        handleMethod(
+          existing,
+          existing != null &&
+              isCopyWithInSync(
+                existing,
+                featureFields,
+                nullable: config.copyWithNullable,
+              ),
+          ({required bool format}) => generateCopyWithMethod(
+            className,
+            featureFields,
+            constructorName: constructorName,
+            typeArguments: typeArguments,
+            nullable: config.copyWithNullable,
+            format: format,
+          ),
+        );
+      }
     }
 
     if (config.overrideToString) {
-      final existing = findMethodDeclaration(
-        declaration,
-        FeatureMethod.overrideToString.name,
+      final featureFields = fieldsForFeature(
+        fields,
+        FeatureAnnotation.overrideToString,
       );
-      handleMethod(
-        existing,
-        existing != null && isBodyInSync(existing.body, fields),
-        ({required bool format}) => generateToStringMethod(
-          className,
-          fields,
-          multiline: config.overrideToStringMultiline,
-          format: format,
-        ),
-      );
+      if (featureFields.isNotEmpty) {
+        final existing = findMethodDeclaration(
+          declaration,
+          FeatureMethod.overrideToString.name,
+        );
+        handleMethod(
+          existing,
+          existing != null && isBodyInSync(existing.body, featureFields),
+          ({required bool format}) => generateToStringMethod(
+            className,
+            featureFields,
+            multiline: config.overrideToStringMultiline,
+            format: format,
+          ),
+        );
+      }
     }
 
-    if (config.overrideEquality) {
+    final equalityFields = fieldsForFeature(
+      fields,
+      FeatureAnnotation.overrideEquality,
+    );
+    if (config.overrideEquality && equalityFields.isNotEmpty) {
       final existingHashCode = findMethodDeclaration(
         declaration,
         FeatureMethod.overrideHashCode.name,
       );
       handleMethod(
         existingHashCode,
-        existingHashCode != null && isBodyInSync(existingHashCode.body, fields),
+        existingHashCode != null &&
+            isBodyInSync(existingHashCode.body, equalityFields),
         ({required bool format}) => generateHashCodeOverride(
-          fields,
+          equalityFields,
           deepCollectionEquality: config.deepCollectionEquality,
           format: format,
         ),
@@ -124,7 +138,7 @@ base class AddCompositeMethods extends ResolvedCorrectionProducer {
           checkEqualitySync(
             existingEquals,
             existingHashCode,
-            fields,
+            equalityFields,
             className: className,
             typeArguments: typeArguments,
           ).isInSync;
@@ -133,7 +147,7 @@ base class AddCompositeMethods extends ResolvedCorrectionProducer {
         equalityInSync,
         ({required bool format}) => generateEqualityOperatorOverride(
           className,
-          fields,
+          equalityFields,
           typeArguments: typeArguments,
           deepCollectionEquality: config.deepCollectionEquality,
         ),
@@ -142,40 +156,53 @@ base class AddCompositeMethods extends ResolvedCorrectionProducer {
 
     final toMapName = config.serializeMethodName;
     if (config.serialize && toMapName != null) {
-      final existing = findMethodDeclaration(declaration, toMapName);
-      handleMethod(
-        existing,
-        existing != null && isBodyInSync(existing.body, fields),
-        ({required bool format}) =>
-            generateSerializeMethod(toMapName, fields, format: format),
+      final featureFields = fieldsForFeature(
+        fields,
+        FeatureAnnotation.serialize,
       );
+      if (featureFields.isNotEmpty) {
+        final existing = findMethodDeclaration(declaration, toMapName);
+        handleMethod(
+          existing,
+          existing != null && isBodyInSync(existing.body, featureFields),
+          ({required bool format}) =>
+              generateSerializeMethod(toMapName, featureFields, format: format),
+        );
+      }
     }
 
     final fromMapName = config.deserializeMethodName;
     if (config.deserialize && fromMapName != null) {
-      final existing = findDeserializeMember(declaration, fromMapName);
-      if (existing == null) {
-        toInsert.add(
-          generateDeserializeMethod(
-            className,
-            fromMapName,
-            fields,
-            constructorName: constructorName,
-            typeArguments: typeArguments,
-            format: false,
-          ),
-        );
-      } else if (forceRegenerate || !isDeserializeInSync(existing, fields)) {
-        toReplace.add((
-          existing,
-          generateDeserializeMethod(
-            className,
-            fromMapName,
-            fields,
-            constructorName: constructorName,
-            typeArguments: typeArguments,
-          ),
-        ));
+      final featureFields = fieldsForFeature(
+        fields,
+        FeatureAnnotation.deserialize,
+      );
+      if (featureFields.isNotEmpty) {
+        final existing = findDeserializeMember(declaration, fromMapName);
+        if (existing == null) {
+          toInsert.add(
+            generateDeserializeMethod(
+              className,
+              fromMapName,
+              featureFields,
+              constructorName: constructorName,
+              typeArguments: typeArguments,
+              format: false,
+            ),
+          );
+        } else if (forceRegenerate ||
+            !isDeserializeInSync(existing, featureFields)) {
+          toReplace.add((
+            existing,
+            generateDeserializeMethod(
+              className,
+              fromMapName,
+              featureFields,
+              constructorName: constructorName,
+              typeArguments: typeArguments,
+            ),
+          ));
+        }
       }
     }
 
@@ -188,7 +215,7 @@ base class AddCompositeMethods extends ResolvedCorrectionProducer {
     await builder.addDartFileEdit(file, (fileEditBuilder) {
       if (config.overrideEquality &&
           config.deepCollectionEquality != false &&
-          fields.any((f) => f.isCollectionType)) {
+          equalityFields.any((f) => f.isCollectionType)) {
         fileEditBuilder.importLibrary(
           Uri.parse(
             'package:analyzer_kit_annotation/analyzer_kit_annotation.dart',

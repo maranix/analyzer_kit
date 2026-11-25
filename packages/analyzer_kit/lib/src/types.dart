@@ -1,11 +1,20 @@
 import 'package:analyzer/dart/ast/ast.dart'
-    show FieldDeclaration, FormalParameter, VariableDeclaration;
+    show
+        Annotation,
+        DotShorthandPropertyAccess,
+        FieldDeclaration,
+        FormalParameter,
+        PrefixedIdentifier,
+        SetOrMapLiteral,
+        SimpleIdentifier,
+        VariableDeclaration;
 import 'package:analyzer/dart/constant/value.dart' show DartObject;
 import 'package:analyzer/dart/element/element.dart'
-    show ClassElement, EnumElement, FieldElement;
+    show ClassElement, ElementAnnotation, EnumElement, FieldElement;
 import 'package:analyzer/dart/element/nullability_suffix.dart'
     show NullabilitySuffix;
 import 'package:analyzer/dart/element/type.dart' show DartType, InterfaceType;
+import 'package:analyzer_kit/src/enums.dart' show FeatureAnnotation;
 
 /// Semantic type classification for a [ClassField], used by serialization and
 /// collection code generation.
@@ -44,6 +53,7 @@ final class ClassField {
     this.typeArguments = const [],
     this.serializeMethodName,
     this.deserializeMethodName,
+    this.ignoredFor = const {},
   });
 
   final String name;
@@ -79,6 +89,9 @@ final class ClassField {
   /// Deserialization factory/method name (e.g. `'fromMap'` or `'fromJson'`)
   /// when this field's type is a deserializable class, or `null` otherwise.
   final String? deserializeMethodName;
+
+  /// Class-level annotations for which this field is ignored.
+  final Set<FeatureAnnotation> ignoredFor;
 
   /// Whether this field should be included in generated methods.
   ///
@@ -187,6 +200,9 @@ final class ClassField {
     final isPrivate = name.startsWith('_');
     final dartType = element.type;
     final resolved = _resolveDartType(dartType);
+    final ignoredFor = _extractIgnoredForFromElements(
+      element.metadata.annotations,
+    );
     final suffix = dartType.nullabilitySuffix == NullabilitySuffix.question
         ? '?'
         : '';
@@ -211,6 +227,7 @@ final class ClassField {
       typeArguments: resolved.args,
       serializeMethodName: resolved.serializeMethodName,
       deserializeMethodName: resolved.deserializeMethodName,
+      ignoredFor: ignoredFor,
     );
   }
 
@@ -237,6 +254,7 @@ final class ClassField {
     typeArguments: typeArguments,
     serializeMethodName: serializeMethodName,
     deserializeMethodName: deserializeMethodName,
+    ignoredFor: ignoredFor,
   );
 
   /// Extracts a [ClassField] from a declaring [FormalParameter] in a
@@ -246,6 +264,7 @@ final class ClassField {
     final isPrivate = name.startsWith('_');
     final dartType = param.declaredFragment?.element.type;
     final resolved = _resolveDartType(dartType);
+    final ignoredFor = _extractIgnoredFor(param.metadata);
 
     return ClassField(
       keyword: param.constFinalOrVarKeyword?.lexeme,
@@ -260,6 +279,7 @@ final class ClassField {
       typeArguments: resolved.args,
       serializeMethodName: resolved.serializeMethodName,
       deserializeMethodName: resolved.deserializeMethodName,
+      ignoredFor: ignoredFor,
     );
   }
 
@@ -275,6 +295,7 @@ final class ClassField {
     final isPrivate = name.startsWith('_');
     final resolvedDartType = dartType ?? fd.fields.type?.type;
     final resolved = _resolveDartType(resolvedDartType);
+    final ignoredFor = _extractIgnoredFor(fd.metadata);
 
     return ClassField(
       keyword: keyword ?? fd.fields.keyword?.lexeme,
@@ -293,6 +314,7 @@ final class ClassField {
       typeArguments: resolved.args,
       serializeMethodName: resolved.serializeMethodName,
       deserializeMethodName: resolved.deserializeMethodName,
+      ignoredFor: ignoredFor,
     );
   }
 
@@ -507,4 +529,79 @@ final class ClassField {
       'initializer: $initializer, isConst: $isConst, isLate: $isLate, '
       'isFinal: $isFinal, isStatic: $isStatic, isSynthetic: $isSynthetic, '
       'isPublic: $isPublic, isPrivate: $isPrivate)';
+}
+
+FeatureAnnotation? _featureFromEnumName(String? name) => switch (name) {
+  'copyWith' => FeatureAnnotation.copyWith,
+  'overrideEquality' => FeatureAnnotation.overrideEquality,
+  'overrideToString' => FeatureAnnotation.overrideToString,
+  'serialize' => FeatureAnnotation.serialize,
+  'deserialize' => FeatureAnnotation.deserialize,
+  _ => null,
+};
+
+Set<FeatureAnnotation>? _ignoredForFromDartObject(DartObject? constant) {
+  if (constant == null) return null;
+  if (constant.type?.element?.name != 'Ignore') return null;
+  final setVal = constant.getField('annotations')?.toSetValue();
+  if (setVal == null) return const {};
+  return {
+    for (final item in setVal)
+      if (_featureFromEnumName(item.variable?.name) case final f?) f,
+  };
+}
+
+Set<FeatureAnnotation> _extractIgnoredForFromElements(
+  Iterable<ElementAnnotation> metadata,
+) {
+  final result = <FeatureAnnotation>{};
+  for (final meta in metadata) {
+    final parsed = _ignoredForFromDartObject(meta.computeConstantValue());
+    if (parsed != null) {
+      result.addAll(parsed);
+    }
+  }
+  return result;
+}
+
+Set<FeatureAnnotation> _extractIgnoredFor(Iterable<Annotation> metadata) {
+  final result = <FeatureAnnotation>{};
+  for (final annotation in metadata) {
+    final resolved = _ignoredForFromDartObject(
+      annotation.elementAnnotation?.computeConstantValue(),
+    );
+    if (resolved != null) {
+      result.addAll(resolved);
+      continue;
+    }
+
+    // Fallback for unresolved AST nodes (e.g. unit tests without resolution).
+    final rawName = switch (annotation.name) {
+      SimpleIdentifier(:final name) => name,
+      PrefixedIdentifier(:final identifier) => identifier.name,
+    };
+    if (rawName != 'ignore' && rawName != 'Ignore') continue;
+
+    final args = annotation.arguments?.arguments;
+    if (args == null || args.isEmpty) {
+      result.addAll(FeatureAnnotation.values);
+      continue;
+    }
+
+    final first = args.first;
+    if (first is SetOrMapLiteral) {
+      for (final element in first.elements) {
+        final enumName = switch (element) {
+          DotShorthandPropertyAccess(:final propertyName) => propertyName.name,
+          PrefixedIdentifier(:final identifier) => identifier.name,
+          SimpleIdentifier(:final name) => name,
+          _ => null,
+        };
+        if (_featureFromEnumName(enumName) case final f?) {
+          result.add(f);
+        }
+      }
+    }
+  }
+  return result;
 }

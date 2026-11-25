@@ -28,6 +28,7 @@ plugins:
 | `@OverrideToString()` | `@overrideToString` | `toString` method |
 | `@Serialize()` | `@serialize` | Serialization method (default: `toMap`) |
 | `@Deserialize()` | `@deserialize` | Deserialization factory (default: `fromMap`) |
+| `@Ignore()` | `@ignore` | Excludes a field from generated methods |
 
 Each feature annotation has a convenience `const` for concise usage (e.g., `@copyWith` is equivalent to `@CopyWith()`).
 
@@ -118,6 +119,26 @@ For classes with collection fields (`List`, `Set`, `Map`), the generated equalit
 
 ```dart
 @OverrideEquality(deepCollectionEquality: false)
+```
+
+### `@Ignore`
+
+Excludes a field (or primary constructor declaring parameter) from code generation:
+
+```dart
+@dataClass
+class Account {
+  final String id;
+
+  @ignore // Ignored in all generated methods
+  final String? cachedLabel;
+
+  @Ignore({.overrideToString, .serialize}) // Ignored only in toString & toMap
+  final String? token;
+
+  Account({required this.id, this.cachedLabel, this.token});
+}
+```
 class Inventory {
   final List<String> items;
 

@@ -33,7 +33,11 @@ base class OverrideToStringMethod extends ResolvedCorrectionProducer {
 
     final config = extractAnnotationConfig(declaration);
     if (config.overrideToString) {
-      final fields = extractGeneratableFields(declaration);
+      final fields = fieldsForFeature(
+        extractGeneratableFields(declaration),
+        FeatureAnnotation.overrideToString,
+      );
+      if (fields.isEmpty) return;
       final existing = findMethodDeclaration(
         declaration,
         FeatureMethod.overrideToString.name,
