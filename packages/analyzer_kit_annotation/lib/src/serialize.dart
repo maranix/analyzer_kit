@@ -30,12 +30,12 @@ final class _CustomSerializeMethod extends SerializeMethod {
 /// Marks a class for serialization generation.
 ///
 /// Use as `@Serialize()` or `@serialize` on a class declaration.
-final class Serialize {
+final class const Serialize({
+  /// The method name configuration for serializing the class. Defaults to `.toMap()`.
+  final SerializeMethod name = const .toMap(),
+}) {
   /// Creates a new instance of [Serialize].
-  const Serialize({this.name = const .toMap()});
-
-  /// The method name configuration for serializing the class.  Defaults to `.toMap()`.
-  final SerializeMethod name;
+  this;
 }
 
 /// Convenience constant for `@Serialize()`.

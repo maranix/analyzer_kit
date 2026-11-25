@@ -1,17 +1,11 @@
 part of 'utils.dart';
 
 /// Result of checking whether a generated member is in sync with class fields.
-final class FieldSyncResult {
-  const FieldSyncResult({
-    this.missingFields = const [],
-    this.extraFields = const [],
-    this.driftReasons = const [],
-  });
-
-  final List<String> missingFields;
-  final List<String> extraFields;
-  final List<String> driftReasons;
-
+final class const FieldSyncResult({
+  final List<String> missingFields = const [],
+  final List<String> extraFields = const [],
+  final List<String> driftReasons = const [],
+}) {
   bool get isInSync =>
       missingFields.isEmpty && extraFields.isEmpty && driftReasons.isEmpty;
 
@@ -169,10 +163,8 @@ FieldSyncResult checkBodySync(
   for (final f in fields) {
     if (checkRedaction &&
         f.redactedFor.contains(FeatureAnnotation.overrideToString)) {
-      final redactedPattern = RegExp(
-        '(?<![a-zA-Z0-9_\$])${RegExp.escape('${f.name}: ${f.redactPlaceholder}')}',
-      );
-      if (redactedPattern.hasMatch(stringContent)) {
+      final redactedSegment = '${f.name}: ${f.redactPlaceholder}';
+      if (_containsPrefixedSegment(stringContent, redactedSegment)) {
         if (collector.names.contains(f.name)) {
           driftReasons.add('unredacted field: ${f.name}');
         }
@@ -180,15 +172,10 @@ FieldSyncResult checkBodySync(
       }
       if (collector.names.contains(f.name)) {
         driftReasons.add('unredacted field: ${f.name}');
+      } else if (_containsPrefixedSegment(stringContent, '${f.name}: ')) {
+        driftReasons.add('redacted placeholder mismatch: ${f.name}');
       } else {
-        final labelPattern = RegExp(
-          '(?<![a-zA-Z0-9_\$])${RegExp.escape('${f.name}: ')}',
-        );
-        if (labelPattern.hasMatch(stringContent)) {
-          driftReasons.add('redacted placeholder mismatch: ${f.name}');
-        } else {
-          missingFields.add(f.name);
-        }
+        missingFields.add(f.name);
       }
     } else if (!collector.names.contains(f.name)) {
       missingFields.add(f.name);
@@ -386,3 +373,23 @@ final class _FieldReferenceCollector extends RecursiveAstVisitor<void> {
     super.visitIndexExpression(node);
   }
 }
+
+bool _containsPrefixedSegment(String content, String segment) {
+  var start = 0;
+  while (true) {
+    final idx = content.indexOf(segment, start);
+    if (idx == -1) return false;
+    if (idx == 0 || !_isIdentifierChar(content.codeUnitAt(idx - 1))) {
+      return true;
+    }
+    start = idx + 1;
+  }
+}
+
+@pragma('vm:prefer-inline')
+bool _isIdentifierChar(int code) =>
+    (code >= 0x30 && code <= 0x39) ||
+    (code >= 0x41 && code <= 0x5A) ||
+    (code >= 0x61 && code <= 0x7A) ||
+    code == 0x5F ||
+    code == 0x24;
