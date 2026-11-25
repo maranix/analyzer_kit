@@ -4,8 +4,9 @@
 final class OverrideEquality {
   /// Creates an [OverrideEquality] annotation.
   ///
-  /// If [deepCollectionEquality] is set, it overrides the global runtime fallback
-  /// [AnalyzerKit.deepCollectionEquality] for this specific class.
+  /// When [deepCollectionEquality] is `null` or `true`, generated equality and
+  /// `hashCode` overrides use `deepEquals` and `deepHash`. When `false`,
+  /// shallow collection equality is generated instead.
   const OverrideEquality({this.deepCollectionEquality});
 
   /// Whether to use deep recursive equality for collections in this class.

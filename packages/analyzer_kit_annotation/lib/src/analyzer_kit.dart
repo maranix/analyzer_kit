@@ -1,6 +1,6 @@
 import 'package:collection/collection.dart';
 
-const _equality = DeepCollectionEquality.unordered();
+const _equality = DeepCollectionEquality();
 
 /// Hashes a [value] using deep collection equality.
 int deepHash(Object? value) {
