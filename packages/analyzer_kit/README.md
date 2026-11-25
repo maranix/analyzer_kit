@@ -19,14 +19,14 @@ Add the annotation package to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  analyzer_kit_annotation: ^1.0.0+1
+  analyzer_kit_annotation: ^2.0.0
 ```
 
 Enable the plugin in your `analysis_options.yaml` (all rules are registered as warning rules and enabled by default):
 
 ```yaml
 plugins:
-  analyzer_kit: ^1.0.0+2
+  analyzer_kit: ^2.0.0
 ```
 
 ## How It Works

@@ -1,17 +1,17 @@
-## Unreleased
+## 2.0.0
 
 - **Breaking:** Removed `DataClassRule`, `AddDataClassMethods`, and `data_class_annotation` in favor of `CompositeAnnotation` bundles.
-- Registered all 5 rules as warning rules (`registerWarningRule`), so diagnostics are enabled by default without a `diagnostics:` block in `analysis_options.yaml`.
+- Registered all warning rules (`registerWarningRule`), so diagnostics are enabled by default without a `diagnostics:` block in `analysis_options.yaml`.
 - Added `AddCompositeMethods` quick fix to generate or update all bundled methods for a `CompositeAnnotation` in one pass.
 - Added support for Dart primary constructors (declaring positional and named parameters, named primary constructors, and empty `;` class bodies).
-- Added out-of-sync field detection across all rules with separate `*_out_of_sync` warning diagnostics (`copy_with_out_of_sync`, `override_equality_out_of_sync`, `override_to_string_out_of_sync`, `serialize_out_of_sync`, `deserialize_out_of_sync`) showing exact missing/extra fields, plus removed-field detection for `copyWith` and serialization methods.
+- Added out-of-sync field detection across all rules with separate `*_out_of_sync` warning diagnostics (`copy_with_out_of_sync`, `override_equality_out_of_sync`, `override_to_string_out_of_sync`, `serialize_out_of_sync`, `deserialize_out_of_sync`) showing exact missing/extra fields, plus removed-field, nullable-signature, and generic-type-argument drift detection.
 - Added in-place replacement in all quick fixes and registered 6 force-regenerate IDE assists (`RegenerateCompositeMethods`, `RegenerateCopyWithMethod`, `RegenerateToStringMethod`, `RegenerateEqualityMethods`, `RegenerateSerializeMethod`, `RegenerateDeserializeMethod`).
 - Updated SDK constraint to `^3.14.0` and bumped `analyzer`, `analyzer_plugin`, `analysis_server_plugin`, `code_builder`, and `dart_style`.
 - Consolidated all 5 warning rules into a single-pass `AnalyzerKitRule` with cached annotation nodes and single-pass `DartFormatter` formatting for batch edits.
-- Added nullable-aware `copyWith` generation (`@CopyWith(nullable: true)` using `T? Function()?` parameters) and out-of-sync signature drift detection.
+- Added nullable-aware `copyWith` generation (`@CopyWith(nullable: true)` using `T? Function()?` parameters) and multiline `toString()` generation (`@OverrideToString(multiline: true)`).
 - Added generic class support (`Box<T>`) across `copyWith`, `==`, `fromMap`, and equality sync checks.
-- Added rich serialization/deserialization for `DateTime`, `Uri`, `Duration`, `BigInt`, `Enum`, `List`, `Set`, `Iterable`, `Map`, and nested `@Serialize`/`@Deserialize` classes.
-- Added constructor parameter matching for non-primary constructors, inherited superclass field extraction, and automatic `analyzer_kit_annotation` import insertion for `deepHash`/`deepEquals`.
+- Added rich serialization/deserialization for `DateTime`, `Uri`, `Duration`, `BigInt`, `Enum` (using `asNameMap()` on nullable `Enum?` fields), `double`/`double?` (`num.toDouble()` coercion), `List`, `Set`, `Iterable`, `Map`, and nested `@Serialize`/`@Deserialize` classes.
+- Added constructor parameter matching for non-primary constructors, inherited superclass field extraction, automatic `analyzer_kit_annotation` import insertion for `deepHash`/`deepEquals`, prefixed annotation import support, and `abstract`/zero-field class guards.
 
 ## 1.0.0+2
 - Documentation:

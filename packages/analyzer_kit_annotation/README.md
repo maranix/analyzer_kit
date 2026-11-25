@@ -8,14 +8,14 @@ Add the annotation package to your `dependencies`:
 
 ```yaml
 dependencies:
-  analyzer_kit_annotation: ^1.0.0+1
+  analyzer_kit_annotation: ^2.0.0
 ```
 
 Then enable the plugin in your `analysis_options.yaml` (all rules are enabled by default):
 
 ```yaml
 plugins:
-  analyzer_kit: ^1.0.0+2
+  analyzer_kit: ^2.0.0
 ```
 
 ## Annotations
