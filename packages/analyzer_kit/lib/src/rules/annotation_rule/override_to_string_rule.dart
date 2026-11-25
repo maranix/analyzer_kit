@@ -15,7 +15,12 @@ final class _OverrideToStringVisitor extends AnnotationVisitor {
   _OverrideToStringVisitor(super.rule);
 
   @override
-  Iterable<String>? getExpectedMethodNames(ClassDeclaration node) {
-    return [FeatureMethod.overrideToString.name];
+  FieldSyncResult? checkSync(ClassDeclaration node) {
+    final method = findMethodDeclaration(
+      node,
+      FeatureMethod.overrideToString.name,
+    );
+    if (method == null) return null;
+    return checkBodySync(method.body, extractGeneratableFields(node));
   }
 }

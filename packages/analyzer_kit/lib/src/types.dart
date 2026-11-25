@@ -1,5 +1,5 @@
 import 'package:analyzer/dart/ast/ast.dart'
-    show FieldDeclaration, VariableDeclaration;
+    show FieldDeclaration, FormalParameter, VariableDeclaration;
 
 /// Represents a class field extracted from AST for code generation.
 final class ClassField {
@@ -16,6 +16,7 @@ final class ClassField {
     this.isSynthetic = false,
     this.isPublic = false,
     this.isPrivate = false,
+    this.isPositional = false,
   });
 
   final String name;
@@ -30,6 +31,7 @@ final class ClassField {
   final bool isSynthetic;
   final bool isPublic;
   final bool isPrivate;
+  final bool isPositional;
 
   /// Whether this field should be included in generated methods.
   ///
@@ -82,6 +84,24 @@ final class ClassField {
         keyword: keyword,
         isStatic: isStatic,
       ),
+    );
+  }
+
+  /// Extracts a [ClassField] from a declaring [FormalParameter] in a
+  /// `PrimaryConstructorDeclaration`.
+  static ClassField fromPrimaryConstructorParameter(FormalParameter param) {
+    final name = param.name!.lexeme;
+    final isPrivate = name.startsWith('_');
+
+    return ClassField(
+      keyword: param.constFinalOrVarKeyword?.lexeme,
+      type: param.type?.toSource() ?? 'dynamic',
+      name: name,
+      isConst: param.isConst,
+      isFinal: param.isFinal,
+      isPublic: !isPrivate,
+      isPrivate: isPrivate,
+      isPositional: param.isPositional,
     );
   }
 

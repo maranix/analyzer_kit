@@ -1,7 +1,12 @@
 part of 'utils.dart';
 
 /// Generates a `copyWith` method for the given [className] and [fields].
-String generateCopyWithMethod(String className, Iterable<ClassField> fields) {
+String generateCopyWithMethod(
+  String className,
+  Iterable<ClassField> fields, {
+  String? constructorName,
+}) {
+  final positionalArgs = <Expression>[];
   final namedArgs = <String, Expression>{};
   final functionParams = <Parameter>[];
 
@@ -16,16 +21,24 @@ String generateCopyWithMethod(String className, Iterable<ClassField> fields) {
       ),
     );
 
-    namedArgs[field.name] = refer(field.name)
-        .ifNullThen(refer('this.${field.name}'));
+    final argExpr = refer(field.name).ifNullThen(refer('this.${field.name}'));
+    if (field.isPositional) {
+      positionalArgs.add(argExpr);
+    } else {
+      namedArgs[field.name] = argExpr;
+    }
   }
+
+  final target = constructorName != null
+      ? '$className.$constructorName'
+      : className;
 
   final method = Method(
     (b) => b
       ..name = FeatureMethod.copyWith.name
       ..optionalParameters.addAll(functionParams)
       ..lambda = true
-      ..body = refer(className).call(const [], namedArgs).statement
+      ..body = refer(target).call(positionalArgs, namedArgs).statement
       ..returns = refer(className),
   );
 
@@ -240,16 +253,25 @@ String generateSerializeMethod(String methodName, Iterable<ClassField> fields) {
 String generateDeserializeMethod(
   String className,
   String methodName,
-  Iterable<ClassField> fields,
-) {
+  Iterable<ClassField> fields, {
+  String? constructorName,
+}) {
   final assignments = fields
-      .map((f) => '${f.name}: map[\'${f.name}\'] as ${f.type}')
+      .map(
+        (f) => f.isPositional
+            ? "map['${f.name}'] as ${f.type}"
+            : "${f.name}: map['${f.name}'] as ${f.type}",
+      )
       .join(',\n');
+
+  final target = constructorName != null
+      ? '$className.$constructorName'
+      : className;
 
   final code =
       '''
 factory $className.$methodName(Map<String, dynamic> map) {
-  return $className(
+  return $target(
     $assignments
   );
 }

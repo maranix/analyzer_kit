@@ -75,95 +75,39 @@ void main() {
     });
   });
 
-  group('DataClass', () {
-    test('instance can be created with no arguments (all defaults)', () {
-      const annotation = DataClass();
-      expect(annotation, isA<DataClass>());
+  group('CompositeAnnotation', () {
+    test('instance can be created with a list of annotations', () {
+      const annotation = CompositeAnnotation([
+        CopyWith(),
+        OverrideEquality(),
+        OverrideToString(),
+        Serialize(),
+        Deserialize(),
+      ]);
+      expect(annotation, isA<CompositeAnnotation>());
+      expect(annotation.annotations, hasLength(5));
     });
 
-    test('all features default to true', () {
-      const annotation = DataClass();
-      expect(annotation.copyWith, isTrue);
-      expect(annotation.overrideEquality, isTrue);
-      expect(annotation.overrideToString, isTrue);
-      expect(annotation.serialize, isTrue);
-      expect(annotation.deserialize, isTrue);
-    });
-
-    test('copyWith can be disabled', () {
-      const annotation = DataClass(copyWith: false);
-      expect(annotation.copyWith, isFalse);
-      expect(annotation.overrideEquality, isTrue);
-      expect(annotation.overrideToString, isTrue);
-      expect(annotation.serialize, isTrue);
-      expect(annotation.deserialize, isTrue);
-    });
-
-    test('overrideEquality can be disabled', () {
-      const annotation = DataClass(overrideEquality: false);
-      expect(annotation.copyWith, isTrue);
-      expect(annotation.overrideEquality, isFalse);
-      expect(annotation.overrideToString, isTrue);
-      expect(annotation.serialize, isTrue);
-      expect(annotation.deserialize, isTrue);
-    });
-
-    test('overrideToString can be disabled', () {
-      const annotation = DataClass(overrideToString: false);
-      expect(annotation.copyWith, isTrue);
-      expect(annotation.overrideEquality, isTrue);
-      expect(annotation.overrideToString, isFalse);
-      expect(annotation.serialize, isTrue);
-      expect(annotation.deserialize, isTrue);
-    });
-
-    test('serialize can be disabled', () {
-      const annotation = DataClass(serialize: false);
-      expect(annotation.copyWith, isTrue);
-      expect(annotation.overrideEquality, isTrue);
-      expect(annotation.overrideToString, isTrue);
-      expect(annotation.serialize, isFalse);
-      expect(annotation.deserialize, isTrue);
-    });
-
-    test('deserialize can be disabled', () {
-      const annotation = DataClass(deserialize: false);
-      expect(annotation.copyWith, isTrue);
-      expect(annotation.overrideEquality, isTrue);
-      expect(annotation.overrideToString, isTrue);
-      expect(annotation.serialize, isTrue);
-      expect(annotation.deserialize, isFalse);
-    });
-
-    test('all features can be disabled simultaneously', () {
-      const annotation = DataClass(
-        copyWith: false,
-        overrideEquality: false,
-        overrideToString: false,
-        serialize: false,
-        deserialize: false,
+    test('preserves nested and configured annotations', () {
+      const annotation = CompositeAnnotation([
+        CopyWith(),
+        OverrideEquality(deepCollectionEquality: false),
+        Serialize(name: SerializeMethod.toJson()),
+        Deserialize(name: DeserializeMethod.fromJson()),
+      ]);
+      expect(annotation.annotations[0], isA<CopyWith>());
+      expect(
+        (annotation.annotations[1] as OverrideEquality).deepCollectionEquality,
+        isFalse,
       );
-      expect(annotation.copyWith, isFalse);
-      expect(annotation.overrideEquality, isFalse);
-      expect(annotation.overrideToString, isFalse);
-      expect(annotation.serialize, isFalse);
-      expect(annotation.deserialize, isFalse);
-    });
-
-    test('convenience constant is available', () {
-      expect(dataClass, isA<DataClass>());
-    });
-
-    test('convenience constant is identical to const constructor', () {
-      expect(identical(dataClass, const DataClass()), isTrue);
-    });
-
-    test('convenience constant has all features enabled', () {
-      expect(dataClass.copyWith, isTrue);
-      expect(dataClass.overrideEquality, isTrue);
-      expect(dataClass.overrideToString, isTrue);
-      expect(dataClass.serialize, isTrue);
-      expect(dataClass.deserialize, isTrue);
+      expect(
+        (annotation.annotations[2] as Serialize).name.methodName,
+        'toJson',
+      );
+      expect(
+        (annotation.annotations[3] as Deserialize).name.methodName,
+        'fromJson',
+      );
     });
   });
 

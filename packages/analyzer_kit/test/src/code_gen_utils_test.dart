@@ -469,5 +469,34 @@ void main() {
 
       expect(result, contains('factory Empty.fromMap'));
     });
+
+    test(
+      'handles positional primary constructor fields and constructorName',
+      () {
+        const fields = [
+          ClassField(name: 'x', type: 'int', isPositional: true),
+          ClassField(name: 'y', type: 'int'),
+        ];
+
+        final copyWith = generateCopyWithMethod(
+          'Point',
+          fields,
+          constructorName: 'create',
+        );
+        expect(copyWith, contains('Point.create('));
+        expect(copyWith, contains('x ?? this.x'));
+        expect(copyWith, contains('y: y ?? this.y'));
+
+        final deserialize = generateDeserializeMethod(
+          'Point',
+          'fromMap',
+          fields,
+          constructorName: 'create',
+        );
+        expect(deserialize, contains('return Point.create('));
+        expect(deserialize, contains("map['x'] as int"));
+        expect(deserialize, contains("y: map['y'] as int"));
+      },
+    );
   });
 }

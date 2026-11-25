@@ -1,3 +1,9 @@
+## Unreleased
+
+- **Breaking:** Removed `DataClass` and `@dataClass` in favor of `CompositeAnnotation`, allowing users to compose reusable annotation bundles with custom configurations.
+- Added `deepCollectionEquality` option on `OverrideEquality` and switched `deepHash` / `deepEquals` to order-sensitive `DeepCollectionEquality()`.
+- Updated SDK constraint to `^3.14.0`.
+
 ## 1.0.0+1
 - Documentation:
     - Small documentation updates related to intializing and enabling the plugin

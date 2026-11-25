@@ -4,18 +4,20 @@ import 'package:analysis_server_plugin/edit/dart/dart_fix_kind_priority.dart'
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer_kit/src/enums.dart';
 import 'package:analyzer_kit/src/utils/utils.dart';
+import 'package:analyzer_plugin/utilities/assist/assist.dart';
 import 'package:analyzer_plugin/utilities/change_builder/change_builder_core.dart';
 import 'package:analyzer_plugin/utilities/fixes/fixes.dart';
+import 'package:analyzer_plugin/utilities/range_factory.dart';
 
-/// Quick fix that generates a serialization method for classes annotated
-/// with `@Serialize`.
-final class AddSerializeMethod extends ResolvedCorrectionProducer {
+/// Quick fix that generates or updates a serialization method for classes
+/// annotated with `@Serialize`.
+base class AddSerializeMethod extends ResolvedCorrectionProducer {
   AddSerializeMethod({required super.context});
 
   static const _fix = FixKind(
     'dart.fix.addSerializeMethod',
     DartFixKindPriority.standard,
-    'Add serialization method',
+    'Add or update serialization method',
   );
 
   @override
@@ -37,12 +39,36 @@ final class AddSerializeMethod extends ResolvedCorrectionProducer {
 
     if (methodName != null) {
       final fields = extractGeneratableFields(declaration);
+      final existing = findMethodDeclaration(declaration, methodName);
+      final generated = generateSerializeMethod(methodName, fields);
 
       await builder.addDartFileEdit(file, (fileEditBuilder) {
-        fileEditBuilder.insertMethod(declaration, (editBuilder) {
-          editBuilder.write(generateSerializeMethod(methodName, fields));
-        });
+        if (existing != null) {
+          fileEditBuilder.addSimpleReplacement(
+            range.node(existing),
+            generated.trimRight(),
+          );
+        } else {
+          fileEditBuilder.insertMethod(declaration, (editBuilder) {
+            editBuilder.write(generated);
+          });
+        }
       });
     }
   }
+}
+
+/// Assist that force-regenerates the serialization method on `@Serialize`
+/// classes.
+final class RegenerateSerializeMethod extends AddSerializeMethod {
+  RegenerateSerializeMethod({required super.context});
+
+  static const _assist = AssistKind(
+    'dart.assist.regenerateSerializeMethod',
+    30,
+    'Regenerate serialization method',
+  );
+
+  @override
+  AssistKind? get assistKind => _assist;
 }

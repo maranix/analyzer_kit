@@ -1,1 +1,5 @@
-include: ../../analysis_options.yaml
+include: package:lints/recommended.yaml
+
+plugins:
+  analyzer_kit:
+    path: ../../packages/analyzer_kit

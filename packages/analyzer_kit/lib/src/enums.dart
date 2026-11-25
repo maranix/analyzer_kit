@@ -3,7 +3,6 @@ import 'package:analyzer_kit/src/constants.dart';
 
 /// Annotation names recognized by the plugin.
 enum FeatureAnnotation {
-  dataClass('DataClass'),
   copyWith('CopyWith'),
   overrideToString('OverrideToString'),
   overrideEquality('OverrideEquality'),
@@ -30,16 +29,22 @@ enum FeatureMethod {
   final String name;
 }
 
-/// Maps each feature to its diagnostic code.
+/// Maps each feature to its missing-method and out-of-sync diagnostic codes.
 enum FeatureDiagnosticCode {
-  dataClass(LintCodes.dataClass),
-  copyWith(LintCodes.copyWith),
-  overrideToString(LintCodes.overrideToString),
-  overrideEquality(LintCodes.overrideEquality),
-  serialize(LintCodes.serialize),
-  deserialize(LintCodes.deserialize);
+  copyWith(LintCodes.copyWith, LintCodes.copyWithOutOfSync),
+  overrideToString(
+    LintCodes.overrideToString,
+    LintCodes.overrideToStringOutOfSync,
+  ),
+  overrideEquality(
+    LintCodes.overrideEquality,
+    LintCodes.overrideEqualityOutOfSync,
+  ),
+  serialize(LintCodes.serialize, LintCodes.serializeOutOfSync),
+  deserialize(LintCodes.deserialize, LintCodes.deserializeOutOfSync);
 
-  const FeatureDiagnosticCode(this.diag);
+  const FeatureDiagnosticCode(this.diag, this.outOfSyncDiag);
 
   final DiagnosticCode diag;
+  final DiagnosticCode outOfSyncDiag;
 }

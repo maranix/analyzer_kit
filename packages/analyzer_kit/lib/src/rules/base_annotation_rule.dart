@@ -1,13 +1,16 @@
-import 'package:analyzer/analysis_rule/analysis_rule.dart' show AnalysisRule;
+import 'package:analyzer/analysis_rule/analysis_rule.dart'
+    show MultiAnalysisRule;
 import 'package:analyzer/analysis_rule/rule_context.dart';
 import 'package:analyzer/analysis_rule/rule_visitor_registry.dart';
 import 'package:analyzer/dart/ast/ast.dart' show ClassDeclaration;
 import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:analyzer/error/error.dart' show DiagnosticCode;
 import 'package:analyzer_kit/src/enums.dart';
+import 'package:analyzer_kit/src/utils/utils.dart'
+    show annotationEnablesFeature;
 
-/// Base class for all analyzer kit lint rules.
-abstract base class BaseAnnotationRule extends AnalysisRule {
+/// Base class for all analyzer kit warning rules.
+abstract base class BaseAnnotationRule extends MultiAnalysisRule {
   BaseAnnotationRule({required this.featureDiagnosticCode})
     : super(
         name: featureDiagnosticCode.diag.lowerCaseName,
@@ -17,7 +20,10 @@ abstract base class BaseAnnotationRule extends AnalysisRule {
   final FeatureDiagnosticCode featureDiagnosticCode;
 
   @override
-  DiagnosticCode get diagnosticCode => featureDiagnosticCode.diag;
+  List<DiagnosticCode> get diagnosticCodes => [
+    featureDiagnosticCode.diag,
+    featureDiagnosticCode.outOfSyncDiag,
+  ];
 
   /// The feature annotation that triggers this rule.
   FeatureAnnotation get annotation;
@@ -34,7 +40,7 @@ abstract base class BaseAnnotationRule extends AnalysisRule {
   }
 }
 
-/// Base visitor class for analyzer kit lint rules.
+/// Base visitor class for analyzer kit warning rules.
 abstract base class BaseAnnotationVisitor extends RecursiveAstVisitor<void> {
   BaseAnnotationVisitor(this.rule);
 
@@ -42,11 +48,19 @@ abstract base class BaseAnnotationVisitor extends RecursiveAstVisitor<void> {
 
   FeatureAnnotation get annotation => rule.annotation;
 
-  /// Reports a lint error on the annotation Node if the condition fails.
-  void reportError(ClassDeclaration node) {
+  /// Reports a diagnostic on the matching annotation node.
+  void reportError(
+    ClassDeclaration node, {
+    required DiagnosticCode diagnosticCode,
+    List<Object> arguments = const [],
+  }) {
     for (final meta in node.metadata) {
-      if (meta.name.name.toLowerCase() == annotation.name.toLowerCase()) {
-        rule.reportAtNode(meta);
+      if (annotationEnablesFeature(meta, annotation)) {
+        rule.reportAtNode(
+          meta,
+          diagnosticCode: diagnosticCode,
+          arguments: arguments,
+        );
         return;
       }
     }
