@@ -15,12 +15,12 @@ final class _DeserializeVisitor extends AnnotationVisitor {
   _DeserializeVisitor(super.rule);
 
   @override
-  bool isSatisfied(ClassDeclaration node) {
+  FieldSyncResult? checkSync(ClassDeclaration node) {
     final expectedName = extractFeatureMethodName(node, annotation, 'fromMap');
-    if (expectedName == null) return true;
+    if (expectedName == null) return const FieldSyncResult();
 
     final member = findDeserializeMember(node, expectedName);
-    if (member == null) return false;
-    return isDeserializeInSync(member, extractGeneratableFields(node));
+    if (member == null) return null;
+    return checkDeserializeSync(member, extractGeneratableFields(node));
   }
 }

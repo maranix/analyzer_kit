@@ -4,20 +4,23 @@ import 'package:analysis_server_plugin/edit/dart/dart_fix_kind_priority.dart'
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer_kit/src/enums.dart';
 import 'package:analyzer_kit/src/utils/utils.dart';
+import 'package:analyzer_plugin/utilities/assist/assist.dart';
 import 'package:analyzer_plugin/utilities/change_builder/change_builder_core.dart';
 import 'package:analyzer_plugin/utilities/fixes/fixes.dart';
 import 'package:analyzer_plugin/utilities/range_factory.dart';
 
 /// Quick fix that generates or updates all missing/out-of-sync methods for
 /// classes annotated with a `CompositeAnnotation`.
-final class AddCompositeMethods extends ResolvedCorrectionProducer {
+base class AddCompositeMethods extends ResolvedCorrectionProducer {
   AddCompositeMethods({required super.context});
 
   static const _fix = FixKind(
     'dart.fix.addCompositeMethods',
     DartFixKindPriority.standard + 1,
-    'Add missing composite annotation methods',
+    'Add or update composite annotation methods',
   );
+
+  bool get forceRegenerate => false;
 
   @override
   FixKind? get fixKind => _fix;
@@ -49,7 +52,7 @@ final class AddCompositeMethods extends ResolvedCorrectionProducer {
     ) {
       if (existing == null) {
         toInsert.add(generated);
-      } else if (!inSync) {
+      } else if (forceRegenerate || !inSync) {
         toReplace.add((existing, generated));
       }
     }
@@ -132,7 +135,7 @@ final class AddCompositeMethods extends ResolvedCorrectionProducer {
       );
       if (existing == null) {
         toInsert.add(generated);
-      } else if (!isDeserializeInSync(existing, fields)) {
+      } else if (forceRegenerate || !isDeserializeInSync(existing, fields)) {
         toReplace.add((existing, generated));
       }
     }
@@ -156,4 +159,22 @@ final class AddCompositeMethods extends ResolvedCorrectionProducer {
       }
     });
   }
+}
+
+/// Assist that force-regenerates all methods for classes annotated with a
+/// `CompositeAnnotation`.
+final class RegenerateCompositeMethods extends AddCompositeMethods {
+  RegenerateCompositeMethods({required super.context});
+
+  static const _assist = AssistKind(
+    'dart.assist.regenerateCompositeMethods',
+    31,
+    'Regenerate composite annotation methods',
+  );
+
+  @override
+  bool get forceRegenerate => true;
+
+  @override
+  AssistKind? get assistKind => _assist;
 }

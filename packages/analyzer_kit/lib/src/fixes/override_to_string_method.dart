@@ -4,19 +4,20 @@ import 'package:analysis_server_plugin/edit/dart/dart_fix_kind_priority.dart'
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer_kit/src/enums.dart';
 import 'package:analyzer_kit/src/utils/utils.dart';
+import 'package:analyzer_plugin/utilities/assist/assist.dart';
 import 'package:analyzer_plugin/utilities/change_builder/change_builder_core.dart';
 import 'package:analyzer_plugin/utilities/fixes/fixes.dart';
 import 'package:analyzer_plugin/utilities/range_factory.dart';
 
-/// Quick fix that generates a `toString` override for classes annotated
-/// with `@OverrideToString`.
-final class OverrideToStringMethod extends ResolvedCorrectionProducer {
+/// Quick fix that generates or updates a `toString` override for classes
+/// annotated with `@OverrideToString`.
+base class OverrideToStringMethod extends ResolvedCorrectionProducer {
   OverrideToStringMethod({required super.context});
 
   static const _fix = FixKind(
     'dart.fix.overrideToString',
     DartFixKindPriority.standard,
-    'Override `toString` method',
+    'Add or update `toString` method',
   );
 
   @override
@@ -55,4 +56,18 @@ final class OverrideToStringMethod extends ResolvedCorrectionProducer {
       });
     }
   }
+}
+
+/// Assist that force-regenerates `toString` on `@OverrideToString` classes.
+final class RegenerateToStringMethod extends OverrideToStringMethod {
+  RegenerateToStringMethod({required super.context});
+
+  static const _assist = AssistKind(
+    'dart.assist.regenerateToStringMethod',
+    30,
+    'Regenerate `toString` method',
+  );
+
+  @override
+  AssistKind? get assistKind => _assist;
 }

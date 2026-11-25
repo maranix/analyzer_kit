@@ -50,7 +50,44 @@ class User {
 ''');
       final method = findMethodDeclaration(cls, 'copyWith')!;
       final fields = extractGeneratableFields(cls);
-      expect(isCopyWithInSync(method, fields), isFalse);
+      final sync = checkCopyWithSync(method, fields);
+      expect(sync.isInSync, isFalse);
+      expect(sync.missingFields, ['age']);
+      expect(sync.summary, 'missing: age');
+    });
+
+    test('checkCopyWithSync detects removed/extra field parameter', () {
+      final cls = _parseClass('''
+class User {
+  User({required this.name});
+  final String name;
+
+  User copyWith({String? name, int? removedAge}) =>
+      User(name: name ?? this.name);
+}
+''');
+      final method = findMethodDeclaration(cls, 'copyWith')!;
+      final fields = extractGeneratableFields(cls);
+      final sync = checkCopyWithSync(method, fields);
+      expect(sync.isInSync, isFalse);
+      expect(sync.extraFields, ['removedAge']);
+      expect(sync.summary, 'extra: removedAge');
+    });
+
+    test('checkSerializeSync detects removed/extra map key', () {
+      final cls = _parseClass('''
+class User {
+  User({required this.name});
+  final String name;
+
+  Map<String, dynamic> toMap() => {'name': name, 'oldField': 1};
+}
+''');
+      final method = findMethodDeclaration(cls, 'toMap')!;
+      final fields = extractGeneratableFields(cls);
+      final sync = checkSerializeSync(method.body, fields);
+      expect(sync.isInSync, isFalse);
+      expect(sync.extraFields, ['oldField']);
     });
 
     test('isCopyWithInSync returns true when all fields are parameters', () {

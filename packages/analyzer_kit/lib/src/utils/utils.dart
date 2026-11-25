@@ -11,6 +11,7 @@ import 'package:analyzer/dart/ast/ast.dart'
         FieldDeclaration,
         FunctionBody,
         InstanceCreationExpression,
+        MapLiteralEntry,
         MethodDeclaration,
         MethodInvocation,
         NamedArgument,

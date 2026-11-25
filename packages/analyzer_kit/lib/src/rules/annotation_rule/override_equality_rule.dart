@@ -15,7 +15,7 @@ final class _OverrideEqualityVisitor extends AnnotationVisitor {
   _OverrideEqualityVisitor(super.rule);
 
   @override
-  bool isSatisfied(ClassDeclaration node) {
+  FieldSyncResult? checkSync(ClassDeclaration node) {
     final equalsMethod = findMethodDeclaration(
       node,
       FeatureMethod.overrideEquals.name,
@@ -24,10 +24,15 @@ final class _OverrideEqualityVisitor extends AnnotationVisitor {
       node,
       FeatureMethod.overrideHashCode.name,
     );
-    if (equalsMethod == null || hashCodeGetter == null) return false;
+    if (equalsMethod == null || hashCodeGetter == null) return null;
 
     final fields = extractGeneratableFields(node);
-    return isBodyInSync(equalsMethod.body, fields) &&
-        isBodyInSync(hashCodeGetter.body, fields);
+    final eqSync = checkBodySync(equalsMethod.body, fields);
+    final hashSync = checkBodySync(hashCodeGetter.body, fields);
+    if (eqSync.isInSync && hashSync.isInSync) {
+      return const FieldSyncResult();
+    }
+    final missing = {...eqSync.missingFields, ...hashSync.missingFields};
+    return FieldSyncResult(missingFields: missing.toList());
   }
 }

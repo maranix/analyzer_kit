@@ -118,10 +118,15 @@ void main() {
     test('all codes have unique names', () {
       final names = [
         LintCodes.copyWith.lowerCaseName,
+        LintCodes.copyWithOutOfSync.lowerCaseName,
         LintCodes.overrideEquality.lowerCaseName,
+        LintCodes.overrideEqualityOutOfSync.lowerCaseName,
         LintCodes.overrideToString.lowerCaseName,
+        LintCodes.overrideToStringOutOfSync.lowerCaseName,
         LintCodes.serialize.lowerCaseName,
+        LintCodes.serializeOutOfSync.lowerCaseName,
         LintCodes.deserialize.lowerCaseName,
+        LintCodes.deserializeOutOfSync.lowerCaseName,
       ];
       expect(names.toSet().length, names.length);
     });

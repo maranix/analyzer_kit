@@ -4,19 +4,20 @@ import 'package:analysis_server_plugin/edit/dart/dart_fix_kind_priority.dart'
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer_kit/src/enums.dart';
 import 'package:analyzer_kit/src/utils/utils.dart';
+import 'package:analyzer_plugin/utilities/assist/assist.dart';
 import 'package:analyzer_plugin/utilities/change_builder/change_builder_core.dart';
 import 'package:analyzer_plugin/utilities/fixes/fixes.dart';
 import 'package:analyzer_plugin/utilities/range_factory.dart';
 
-/// Quick fix that generates a `copyWith` method for classes annotated
-/// with `@CopyWith`.
-final class AddCopyWithMethod extends ResolvedCorrectionProducer {
+/// Quick fix that generates or updates a `copyWith` method for classes
+/// annotated with `@CopyWith`.
+base class AddCopyWithMethod extends ResolvedCorrectionProducer {
   AddCopyWithMethod({required super.context});
 
   static const _fix = FixKind(
     'dart.fix.addCopyWithMethod',
     DartFixKindPriority.standard,
-    'Add `copyWith` method',
+    'Add or update `copyWith` method',
   );
 
   @override
@@ -58,4 +59,18 @@ final class AddCopyWithMethod extends ResolvedCorrectionProducer {
       });
     }
   }
+}
+
+/// Assist that force-regenerates `copyWith` on `@CopyWith` classes.
+final class RegenerateCopyWithMethod extends AddCopyWithMethod {
+  RegenerateCopyWithMethod({required super.context});
+
+  static const _assist = AssistKind(
+    'dart.assist.regenerateCopyWithMethod',
+    30,
+    'Regenerate `copyWith` method',
+  );
+
+  @override
+  AssistKind? get assistKind => _assist;
 }

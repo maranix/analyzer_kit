@@ -4,20 +4,23 @@ import 'package:analysis_server_plugin/edit/dart/dart_fix_kind_priority.dart'
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer_kit/src/enums.dart';
 import 'package:analyzer_kit/src/utils/utils.dart';
+import 'package:analyzer_plugin/utilities/assist/assist.dart';
 import 'package:analyzer_plugin/utilities/change_builder/change_builder_core.dart';
 import 'package:analyzer_plugin/utilities/fixes/fixes.dart';
 import 'package:analyzer_plugin/utilities/range_factory.dart';
 
 /// Quick fix that generates or updates `==` operator and `hashCode` overrides
 /// for classes annotated with `@OverrideEquality`.
-final class OverrideEqualityMethods extends ResolvedCorrectionProducer {
+base class OverrideEqualityMethods extends ResolvedCorrectionProducer {
   OverrideEqualityMethods({required super.context});
 
   static const _fix = FixKind(
     'dart.fix.overrideEquality',
     DartFixKindPriority.standard,
-    'Override `==` and `hashCode`',
+    'Add or update `==` and `hashCode`',
   );
+
+  bool get forceRegenerate => false;
 
   @override
   FixKind get fixKind => _fix;
@@ -62,7 +65,7 @@ final class OverrideEqualityMethods extends ResolvedCorrectionProducer {
 
     await builder.addDartFileEdit(file, (fileEditBuilder) {
       if (existingHashCode != null &&
-          !isBodyInSync(existingHashCode.body, fields)) {
+          (forceRegenerate || !isBodyInSync(existingHashCode.body, fields))) {
         fileEditBuilder.addSimpleReplacement(
           range.node(existingHashCode),
           hashCodeCode.trimRight(),
@@ -70,7 +73,7 @@ final class OverrideEqualityMethods extends ResolvedCorrectionProducer {
       }
 
       if (existingEquals != null &&
-          !isBodyInSync(existingEquals.body, fields)) {
+          (forceRegenerate || !isBodyInSync(existingEquals.body, fields))) {
         fileEditBuilder.addSimpleReplacement(
           range.node(existingEquals),
           equalsCode.trimRight(),
@@ -89,4 +92,22 @@ final class OverrideEqualityMethods extends ResolvedCorrectionProducer {
       }
     });
   }
+}
+
+/// Assist that force-regenerates `==` and `hashCode` on `@OverrideEquality`
+/// classes.
+final class RegenerateEqualityMethods extends OverrideEqualityMethods {
+  RegenerateEqualityMethods({required super.context});
+
+  static const _assist = AssistKind(
+    'dart.assist.regenerateEqualityMethods',
+    30,
+    'Regenerate `==` and `hashCode`',
+  );
+
+  @override
+  bool get forceRegenerate => true;
+
+  @override
+  AssistKind? get assistKind => _assist;
 }

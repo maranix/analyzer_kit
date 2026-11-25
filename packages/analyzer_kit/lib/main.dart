@@ -10,28 +10,11 @@ import 'package:analyzer_kit/src/fixes/override_to_string_method.dart';
 import 'package:analyzer_kit/src/rules/annotation_rule/annotation_rule.dart';
 
 /// The plugin singleton, instantiated by the Dart analysis server.
-///
-/// This is the entry point for the `analyzer_kit` plugin. The analysis server
-/// discovers and loads this top-level `plugin` variable to register all lint
-/// rules and quick fixes.
 final plugin = AnalyzerKit();
 
-/// Dart Analyzer plugin providing warning rules and quick fixes for
+/// Dart Analyzer plugin providing warning rules, quick fixes, and assists for
 /// [analyzer_kit_annotation](https://pub.dev/packages/analyzer_kit_annotation)
 /// annotations.
-///
-/// Registers 5 warning rules (one per feature annotation) and corresponding quick
-/// fixes, plus [AddCompositeMethods] for `CompositeAnnotation` bundles.
-///
-/// ## Registered Rules and Fixes
-///
-/// | Rule | Fix |
-/// |---|---|
-/// | [CopyWithRule] | [AddCopyWithMethod], [AddCompositeMethods] |
-/// | [OverrideToStringRule] | [OverrideToStringMethod], [AddCompositeMethods] |
-/// | [OverrideEqualityRule] | [OverrideEqualityMethods], [AddCompositeMethods] |
-/// | [SerializeRule] | [AddSerializeMethod], [AddCompositeMethods] |
-/// | [DeserializeRule] | [AddDeserializeMethod], [AddCompositeMethods] |
 class AnalyzerKit extends Plugin {
   @override
   String get name => 'Analyzer Kit';
@@ -41,13 +24,23 @@ class AnalyzerKit extends Plugin {
     registry
       ..registerWarningRule(CopyWithRule())
       ..registerFixForRule(LintCodes.copyWith, AddCompositeMethods.new)
-      ..registerFixForRule(LintCodes.copyWith, AddCopyWithMethod.new);
+      ..registerFixForRule(LintCodes.copyWithOutOfSync, AddCompositeMethods.new)
+      ..registerFixForRule(LintCodes.copyWith, AddCopyWithMethod.new)
+      ..registerFixForRule(LintCodes.copyWithOutOfSync, AddCopyWithMethod.new);
 
     registry
       ..registerWarningRule(OverrideToStringRule())
       ..registerFixForRule(LintCodes.overrideToString, AddCompositeMethods.new)
       ..registerFixForRule(
+        LintCodes.overrideToStringOutOfSync,
+        AddCompositeMethods.new,
+      )
+      ..registerFixForRule(
         LintCodes.overrideToString,
+        OverrideToStringMethod.new,
+      )
+      ..registerFixForRule(
+        LintCodes.overrideToStringOutOfSync,
         OverrideToStringMethod.new,
       );
 
@@ -55,18 +48,50 @@ class AnalyzerKit extends Plugin {
       ..registerWarningRule(OverrideEqualityRule())
       ..registerFixForRule(LintCodes.overrideEquality, AddCompositeMethods.new)
       ..registerFixForRule(
+        LintCodes.overrideEqualityOutOfSync,
+        AddCompositeMethods.new,
+      )
+      ..registerFixForRule(
         LintCodes.overrideEquality,
+        OverrideEqualityMethods.new,
+      )
+      ..registerFixForRule(
+        LintCodes.overrideEqualityOutOfSync,
         OverrideEqualityMethods.new,
       );
 
     registry
       ..registerWarningRule(SerializeRule())
       ..registerFixForRule(LintCodes.serialize, AddCompositeMethods.new)
-      ..registerFixForRule(LintCodes.serialize, AddSerializeMethod.new);
+      ..registerFixForRule(
+        LintCodes.serializeOutOfSync,
+        AddCompositeMethods.new,
+      )
+      ..registerFixForRule(LintCodes.serialize, AddSerializeMethod.new)
+      ..registerFixForRule(
+        LintCodes.serializeOutOfSync,
+        AddSerializeMethod.new,
+      );
 
     registry
       ..registerWarningRule(DeserializeRule())
       ..registerFixForRule(LintCodes.deserialize, AddCompositeMethods.new)
-      ..registerFixForRule(LintCodes.deserialize, AddDeserializeMethod.new);
+      ..registerFixForRule(
+        LintCodes.deserializeOutOfSync,
+        AddCompositeMethods.new,
+      )
+      ..registerFixForRule(LintCodes.deserialize, AddDeserializeMethod.new)
+      ..registerFixForRule(
+        LintCodes.deserializeOutOfSync,
+        AddDeserializeMethod.new,
+      );
+
+    registry
+      ..registerAssist(RegenerateCompositeMethods.new)
+      ..registerAssist(RegenerateCopyWithMethod.new)
+      ..registerAssist(RegenerateToStringMethod.new)
+      ..registerAssist(RegenerateEqualityMethods.new)
+      ..registerAssist(RegenerateSerializeMethod.new)
+      ..registerAssist(RegenerateDeserializeMethod.new);
   }
 }

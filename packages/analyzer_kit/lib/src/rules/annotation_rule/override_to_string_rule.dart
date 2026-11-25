@@ -15,12 +15,12 @@ final class _OverrideToStringVisitor extends AnnotationVisitor {
   _OverrideToStringVisitor(super.rule);
 
   @override
-  bool isSatisfied(ClassDeclaration node) {
+  FieldSyncResult? checkSync(ClassDeclaration node) {
     final method = findMethodDeclaration(
       node,
       FeatureMethod.overrideToString.name,
     );
-    if (method == null) return false;
-    return isBodyInSync(method.body, extractGeneratableFields(node));
+    if (method == null) return null;
+    return checkBodySync(method.body, extractGeneratableFields(node));
   }
 }
