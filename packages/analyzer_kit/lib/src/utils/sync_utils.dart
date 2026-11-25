@@ -5,18 +5,22 @@ final class FieldSyncResult {
   const FieldSyncResult({
     this.missingFields = const [],
     this.extraFields = const [],
+    this.driftReasons = const [],
   });
 
   final List<String> missingFields;
   final List<String> extraFields;
+  final List<String> driftReasons;
 
-  bool get isInSync => missingFields.isEmpty && extraFields.isEmpty;
+  bool get isInSync =>
+      missingFields.isEmpty && extraFields.isEmpty && driftReasons.isEmpty;
 
   /// Human-readable summary of out-of-sync fields for diagnostic messages.
   String get summary {
     final parts = <String>[
       if (missingFields.isNotEmpty) 'missing: ${missingFields.join(', ')}',
       if (extraFields.isNotEmpty) 'extra: ${extraFields.join(', ')}',
+      ...driftReasons,
     ];
     return parts.join('; ');
   }
@@ -50,17 +54,33 @@ ClassMember? findDeserializeMember(ClassDeclaration node, String name) {
   return null;
 }
 
-/// Checks whether `copyWith` [method] has exact 1:1 parameters for [fields].
+/// Checks whether `copyWith` [method] has exact 1:1 parameters for [fields]
+/// and matches the configured [nullable] signature mode.
 FieldSyncResult checkCopyWithSync(
   MethodDeclaration method,
-  Iterable<ClassField> fields,
-) {
-  final fieldNames = [for (final f in fields) f.name];
-  final fieldSet = fieldNames.toSet();
-  final paramNames = <String>[
-    for (final param in method.parameters?.parameters ?? const [])
-      ?param.name?.lexeme,
-  ];
+  Iterable<ClassField> fields, {
+  bool nullable = false,
+}) {
+  final fieldMap = {for (final f in fields) f.name: f};
+  final fieldNames = fieldMap.keys.toList();
+  final paramNames = <String>[];
+  final driftReasons = <String>[];
+
+  for (final param
+      in method.parameters?.parameters ?? const <FormalParameter>[]) {
+    final name = param.name?.lexeme;
+    if (name == null) continue;
+    paramNames.add(name);
+
+    final field = fieldMap[name];
+    if (field != null && field.isNullableType) {
+      final TypeAnnotation? typeNode = param.type;
+      final isFunctionType = typeNode is GenericFunctionType;
+      if (nullable != isFunctionType) {
+        driftReasons.add('nullable signature mismatch: $name');
+      }
+    }
+  }
   final paramSet = paramNames.toSet();
 
   return FieldSyncResult(
@@ -70,14 +90,61 @@ FieldSyncResult checkCopyWithSync(
     ],
     extraFields: [
       for (final name in paramNames)
-        if (!fieldSet.contains(name)) name,
+        if (!fieldMap.containsKey(name)) name,
     ],
+    driftReasons: driftReasons,
   );
 }
 
 /// Returns whether [method] (`copyWith`) is in sync with [fields].
-bool isCopyWithInSync(MethodDeclaration method, Iterable<ClassField> fields) =>
-    checkCopyWithSync(method, fields).isInSync;
+bool isCopyWithInSync(
+  MethodDeclaration method,
+  Iterable<ClassField> fields, {
+  bool nullable = false,
+}) => checkCopyWithSync(method, fields, nullable: nullable).isInSync;
+
+/// Checks whether `==` and `hashCode` are in sync with [fields], including
+/// removed `other.<field>` references and generic [typeArguments] in `==`.
+FieldSyncResult checkEqualitySync(
+  MethodDeclaration equalsMethod,
+  MethodDeclaration hashCodeMethod,
+  Iterable<ClassField> fields, {
+  String? className,
+  String typeArguments = '',
+}) {
+  final fieldSet = {for (final f in fields) f.name};
+  final equalsCollector = _FieldReferenceCollector(collectOtherFields: true);
+  equalsMethod.body.accept(equalsCollector);
+
+  final hashCollector = _FieldReferenceCollector();
+  hashCodeMethod.body.accept(hashCollector);
+
+  final missing = <String>{
+    for (final f in fields)
+      if (!equalsCollector.names.contains(f.name) ||
+          !hashCollector.names.contains(f.name))
+        f.name,
+  }.toList();
+
+  final extra = <String>[
+    for (final otherField in equalsCollector.otherFields)
+      if (!fieldSet.contains(otherField)) otherField,
+  ];
+
+  final driftReasons = <String>[];
+  if (className != null &&
+      typeArguments.isNotEmpty &&
+      equalsCollector.isTypeSource != null &&
+      equalsCollector.isTypeSource != '$className$typeArguments') {
+    driftReasons.add('missing type arguments: $typeArguments');
+  }
+
+  return FieldSyncResult(
+    missingFields: missing,
+    extraFields: extra,
+    driftReasons: driftReasons,
+  );
+}
 
 /// Checks whether [body] references every field name in [fields].
 FieldSyncResult checkBodySync(FunctionBody body, Iterable<ClassField> fields) {
@@ -134,12 +201,20 @@ FieldSyncResult checkDeserializeSync(
     return FieldSyncResult(missingFields: [for (final f in fields) f.name]);
   }
 
-  final collector = _FieldReferenceCollector(includeStringLiterals: true);
+  final collector = _FieldReferenceCollector(
+    includeStringLiterals: true,
+    collectMapIndexKeys: true,
+  );
   body.accept(collector);
+  final fieldSet = {for (final f in fields) f.name};
   return FieldSyncResult(
     missingFields: [
       for (final f in fields)
         if (!collector.names.contains(f.name)) f.name,
+    ],
+    extraFields: [
+      for (final key in collector.mapIndexKeys)
+        if (!fieldSet.contains(key)) key,
     ],
   );
 }
@@ -152,12 +227,19 @@ final class _FieldReferenceCollector extends RecursiveAstVisitor<void> {
   _FieldReferenceCollector({
     this.includeStringLiterals = false,
     this.collectMapKeys = false,
+    this.collectOtherFields = false,
+    this.collectMapIndexKeys = false,
   });
 
   final bool includeStringLiterals;
   final bool collectMapKeys;
+  final bool collectOtherFields;
+  final bool collectMapIndexKeys;
   final Set<String> names = {};
   final Set<String> mapKeys = {};
+  final Set<String> otherFields = {};
+  final Set<String> mapIndexKeys = {};
+  String? isTypeSource;
 
   @override
   void visitSimpleIdentifier(SimpleIdentifier node) {
@@ -181,5 +263,35 @@ final class _FieldReferenceCollector extends RecursiveAstVisitor<void> {
       }
     }
     super.visitMapLiteralEntry(node);
+  }
+
+  @override
+  void visitPrefixedIdentifier(PrefixedIdentifier node) {
+    if (collectOtherFields &&
+        node.prefix.name == 'other' &&
+        node.identifier.name != 'runtimeType') {
+      otherFields.add(node.identifier.name);
+    }
+    super.visitPrefixedIdentifier(node);
+  }
+
+  @override
+  void visitIsExpression(IsExpression node) {
+    if (collectOtherFields) {
+      isTypeSource ??= node.type.toSource();
+    }
+    super.visitIsExpression(node);
+  }
+
+  @override
+  void visitIndexExpression(IndexExpression node) {
+    if (collectMapIndexKeys) {
+      if (node.target case SimpleIdentifier(name: 'map')) {
+        if (node.index case final SimpleStringLiteral keyLiteral) {
+          mapIndexKeys.add(keyLiteral.value);
+        }
+      }
+    }
+    super.visitIndexExpression(node);
   }
 }

@@ -61,10 +61,15 @@ final class _AnalyzerKitVisitor extends RecursiveAstVisitor<void> {
 
     if (config.copyWith) {
       final method = findMethodDeclaration(node, FeatureMethod.copyWith.name);
-      final sync = method == null ? null : checkCopyWithSync(method, fields);
+      final sync = method == null
+          ? null
+          : checkCopyWithSync(
+              method,
+              fields,
+              nullable: config.copyWithNullable,
+            );
       _report(
-        node,
-        FeatureAnnotation.copyWith,
+        config.annotationNodes[FeatureAnnotation.copyWith],
         FeatureDiagnosticCode.copyWith,
         sync,
       );
@@ -77,8 +82,7 @@ final class _AnalyzerKitVisitor extends RecursiveAstVisitor<void> {
       );
       final sync = method == null ? null : checkBodySync(method.body, fields);
       _report(
-        node,
-        FeatureAnnotation.overrideToString,
+        config.annotationNodes[FeatureAnnotation.overrideToString],
         FeatureDiagnosticCode.overrideToString,
         sync,
       );
@@ -97,18 +101,16 @@ final class _AnalyzerKitVisitor extends RecursiveAstVisitor<void> {
       if (equals == null || hashCode == null) {
         sync = null;
       } else {
-        final equalsSync = checkBodySync(equals.body, fields);
-        final hashSync = checkBodySync(hashCode.body, fields);
-        sync = FieldSyncResult(
-          missingFields: {
-            ...equalsSync.missingFields,
-            ...hashSync.missingFields,
-          }.toList(),
+        sync = checkEqualitySync(
+          equals,
+          hashCode,
+          fields,
+          className: node.namePart.typeName.lexeme,
+          typeArguments: extractTypeArguments(node),
         );
       }
       _report(
-        node,
-        FeatureAnnotation.overrideEquality,
+        config.annotationNodes[FeatureAnnotation.overrideEquality],
         FeatureDiagnosticCode.overrideEquality,
         sync,
       );
@@ -121,8 +123,7 @@ final class _AnalyzerKitVisitor extends RecursiveAstVisitor<void> {
           ? null
           : checkSerializeSync(method.body, fields);
       _report(
-        node,
-        FeatureAnnotation.serialize,
+        config.annotationNodes[FeatureAnnotation.serialize],
         FeatureDiagnosticCode.serialize,
         sync,
       );
@@ -133,8 +134,7 @@ final class _AnalyzerKitVisitor extends RecursiveAstVisitor<void> {
       final member = findDeserializeMember(node, fromMapName);
       final sync = member == null ? null : checkDeserializeSync(member, fields);
       _report(
-        node,
-        FeatureAnnotation.deserialize,
+        config.annotationNodes[FeatureAnnotation.deserialize],
         FeatureDiagnosticCode.deserialize,
         sync,
       );
@@ -142,48 +142,19 @@ final class _AnalyzerKitVisitor extends RecursiveAstVisitor<void> {
   }
 
   void _report(
-    ClassDeclaration node,
-    FeatureAnnotation feature,
+    Annotation? target,
     FeatureDiagnosticCode codes,
     FieldSyncResult? sync,
   ) {
+    if (target == null) return;
     if (sync == null) {
-      _reportAtAnnotation(node, feature, codes.diag);
+      rule.reportAtNode(target, diagnosticCode: codes.diag);
     } else if (!sync.isInSync) {
-      _reportAtAnnotation(
-        node,
-        feature,
-        codes.outOfSyncDiag,
+      rule.reportAtNode(
+        target,
+        diagnosticCode: codes.outOfSyncDiag,
         arguments: [sync.summary],
       );
     }
-  }
-
-  void _reportAtAnnotation(
-    ClassDeclaration node,
-    FeatureAnnotation feature,
-    DiagnosticCode diagnosticCode, {
-    List<Object> arguments = const [],
-  }) {
-    final Annotation? target = _findAnnotation(node, feature);
-    if (target != null) {
-      rule.reportAtNode(
-        target,
-        diagnosticCode: diagnosticCode,
-        arguments: arguments,
-      );
-    }
-  }
-
-  Annotation? _findAnnotation(
-    ClassDeclaration node,
-    FeatureAnnotation feature,
-  ) {
-    for (final meta in node.metadata) {
-      if (annotationEnablesFeature(meta, feature)) {
-        return meta;
-      }
-    }
-    return null;
   }
 }

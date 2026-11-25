@@ -65,7 +65,12 @@ base class AddCompositeMethods extends ResolvedCorrectionProducer {
       );
       handleMethod(
         existing,
-        existing != null && isCopyWithInSync(existing, fields),
+        existing != null &&
+            isCopyWithInSync(
+              existing,
+              fields,
+              nullable: config.copyWithNullable,
+            ),
         ({required bool format}) => generateCopyWithMethod(
           className,
           fields,
@@ -109,9 +114,19 @@ base class AddCompositeMethods extends ResolvedCorrectionProducer {
         declaration,
         FeatureMethod.overrideEquals.name,
       );
+      final equalityInSync =
+          existingEquals != null &&
+          existingHashCode != null &&
+          checkEqualitySync(
+            existingEquals,
+            existingHashCode,
+            fields,
+            className: className,
+            typeArguments: typeArguments,
+          ).isInSync;
       handleMethod(
         existingEquals,
-        existingEquals != null && isBodyInSync(existingEquals.body, fields),
+        equalityInSync,
         ({required bool format}) => generateEqualityOperatorOverride(
           className,
           fields,

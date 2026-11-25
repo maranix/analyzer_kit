@@ -1,0 +1,266 @@
+import 'dart:io';
+
+import 'package:analysis_server_plugin/edit/dart/correction_producer.dart'
+    show CorrectionProducerContext;
+import 'package:analyzer/dart/analysis/analysis_context_collection.dart';
+import 'package:analyzer/dart/analysis/results.dart';
+import 'package:analyzer/dart/ast/ast.dart' show ClassDeclaration;
+import 'package:analyzer_kit/src/enums.dart';
+import 'package:analyzer_kit/src/fixes/add_composite_methods.dart';
+import 'package:analyzer_kit/src/utils/utils.dart';
+import 'package:analyzer_plugin/utilities/change_builder/change_builder_core.dart';
+import 'package:test/test.dart';
+
+void main() {
+  late Directory tempDir;
+  late AnalysisContextCollection collection;
+
+  setUpAll(() {
+    tempDir = Directory.systemTemp.createTempSync('analyzer_kit_resolved_');
+    final pkgConfigDir = Directory('${tempDir.path}/.dart_tool')..createSync();
+    final annotationLibUri = Directory(
+      '${Directory.current.path}/../analyzer_kit_annotation',
+    ).uri;
+
+    File('${pkgConfigDir.path}/package_config.json').writeAsStringSync('''
+{
+  "configVersion": 2,
+  "packages": [
+    {
+      "name": "analyzer_kit_annotation",
+      "rootUri": "$annotationLibUri",
+      "packageUri": "lib/",
+      "languageVersion": "3.10"
+    },
+    {
+      "name": "test_pkg",
+      "rootUri": "../",
+      "packageUri": "lib/",
+      "languageVersion": "3.14"
+    }
+  ]
+}
+''');
+    File('${tempDir.path}/pubspec.yaml').writeAsStringSync('''
+name: test_pkg
+environment:
+  sdk: ^3.14.0
+''');
+    Directory('${tempDir.path}/lib').createSync();
+  });
+
+  tearDownAll(() async {
+    await collection.dispose();
+    if (tempDir.existsSync()) {
+      tempDir.deleteSync(recursive: true);
+    }
+  });
+
+  Future<ResolvedUnitResult> resolveCode(String fileName, String code) async {
+    final filePath = '${tempDir.path}/lib/$fileName';
+    File(filePath).writeAsStringSync(code);
+    collection = AnalysisContextCollection(includedPaths: [tempDir.path]);
+    final result = await collection
+        .contextFor(filePath)
+        .currentSession
+        .getResolvedUnit(filePath);
+    return result as ResolvedUnitResult;
+  }
+
+  test('extractAnnotationConfig caches annotationNodes and resolves CompositeAnnotation', () async {
+    final unitResult = await resolveCode('composite.dart', '''
+import 'package:analyzer_kit_annotation/analyzer_kit_annotation.dart';
+
+const dataClass = CompositeAnnotation([
+  CopyWith(nullable: true),
+  OverrideEquality(),
+  OverrideToString(),
+  Serialize(),
+  Deserialize(),
+]);
+
+@dataClass
+class User {
+  final String name;
+  final String? bio;
+  const User({required this.name, this.bio});
+}
+''');
+
+    final cls = unitResult.unit.declarations
+        .whereType<ClassDeclaration>()
+        .single;
+    final config = extractAnnotationConfig(cls);
+
+    expect(config.hasCompositeAnnotation, isTrue);
+    expect(config.copyWith, isTrue);
+    expect(config.copyWithNullable, isTrue);
+    expect(config.overrideEquality, isTrue);
+    expect(config.overrideToString, isTrue);
+    expect(config.serialize, isTrue);
+    expect(config.deserialize, isTrue);
+    expect(
+      config.annotationNodes[FeatureAnnotation.copyWith],
+      same(cls.metadata.single),
+    );
+    expect(
+      config.annotationNodes[FeatureAnnotation.serialize],
+      same(cls.metadata.single),
+    );
+  });
+
+  test('AddCompositeMethods generates nested class, enum, DateTime, and generic code on resolved AST', () async {
+    final unitResult = await resolveCode('nested_and_generic.dart', '''
+import 'package:analyzer_kit_annotation/analyzer_kit_annotation.dart';
+
+enum Role { admin, member }
+
+const dataClass = CompositeAnnotation([
+  CopyWith(nullable: true),
+  OverrideEquality(),
+  OverrideToString(),
+  Serialize(),
+  Deserialize(),
+]);
+
+@Serialize(name: .toJson)
+@Deserialize(name: .fromJson)
+class Address {
+  final String city;
+  const Address({required this.city});
+
+  Map<String, dynamic> toJson() => {'city': city};
+  factory Address.fromJson(Map<String, dynamic> map) =>
+      Address(city: map['city'] as String);
+}
+
+@dataClass
+class Account<T> {
+  final T payload;
+  final Role role;
+  final DateTime createdAt;
+  final Address address;
+  final List<Address> history;
+  final String? nickname;
+
+  const Account({
+    required this.payload,
+    required this.role,
+    required this.createdAt,
+    required this.address,
+    required this.history,
+    this.nickname,
+  });
+}
+''');
+
+    final accountClass = unitResult.unit.declarations
+        .whereType<ClassDeclaration>()
+        .firstWhere((c) => c.namePart.typeName.lexeme == 'Account');
+
+    final fields = extractGeneratableFields(accountClass);
+    expect(fields.map((f) => f.name), [
+      'payload',
+      'role',
+      'createdAt',
+      'address',
+      'history',
+      'nickname',
+    ]);
+    expect(fields[1].isEnumType, isTrue);
+    expect(fields[2].isDateTimeType, isTrue);
+    expect(fields[3].serializeMethodName, 'toJson');
+    expect(fields[3].deserializeMethodName, 'fromJson');
+    expect(fields[4].isListType, isTrue);
+    expect(fields[4].typeArguments.single.serializeMethodName, 'toJson');
+
+    final context = CorrectionProducerContext.createResolved(
+      libraryResult: unitResult.libraryElement.session == unitResult.session
+          ? await unitResult.session.getResolvedLibraryByElement(
+              unitResult.libraryElement,
+            ) as ResolvedLibraryResult
+          : throw StateError('Unexpected session'),
+      unitResult: unitResult,
+      selectionOffset: accountClass.offset,
+    );
+
+    final builder = ChangeBuilder(session: unitResult.session);
+    await AddCompositeMethods(context: context).compute(builder);
+
+    final edits = builder.sourceChange.edits.single.edits;
+    expect(edits, isNotEmpty);
+    final inserted = edits.map((e) => e.replacement).join('\n');
+
+    expect(inserted, contains('Account<T> copyWith('));
+    expect(inserted, contains('String? Function()? nickname'));
+    expect(inserted, contains('other is Account<T>'));
+    expect(inserted, contains("'role': role.name"));
+    expect(inserted, contains("'createdAt': createdAt.toIso8601String()"));
+    expect(inserted, contains("'address': address.toJson()"));
+    expect(inserted, contains('e.toJson()'));
+    expect(inserted, contains('Address.fromJson'));
+    expect(inserted, contains('Role.values.byName'));
+    expect(inserted, contains('DateTime.parse'));
+  });
+
+  test('sync checks detect removed fields, nullable drift, and generic type argument drift', () async {
+    final unitResult = await resolveCode('sync_drift.dart', '''
+import 'package:analyzer_kit_annotation/analyzer_kit_annotation.dart';
+
+@CopyWith(nullable: true)
+@OverrideEquality()
+@Deserialize()
+class Box<T> {
+  final T value;
+  final String? label;
+
+  const Box({required this.value, this.label});
+
+  Box<T> copyWith({T? value, String? label}) =>
+      Box<T>(value: value ?? this.value, label: label ?? this.label);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Box && other.value == value && other.label == label && other.removed == removed);
+
+  @override
+  int get hashCode => Object.hash(value, label);
+
+  factory Box.fromMap(Map<String, dynamic> map) => Box<T>(
+    value: map['value'] as T,
+    label: map['label'] as String?,
+    stale: map['stale'] as int,
+  );
+}
+''');
+
+    final cls = unitResult.unit.declarations
+        .whereType<ClassDeclaration>()
+        .single;
+    final fields = extractGeneratableFields(cls);
+
+    final copyWithMethod = findMethodDeclaration(cls, 'copyWith')!;
+    final copySync = checkCopyWithSync(copyWithMethod, fields, nullable: true);
+    expect(copySync.isInSync, isFalse);
+    expect(copySync.summary, contains('nullable signature mismatch: label'));
+
+    final equalsMethod = findMethodDeclaration(cls, '==')!;
+    final hashMethod = findMethodDeclaration(cls, 'hashCode')!;
+    final eqSync = checkEqualitySync(
+      equalsMethod,
+      hashMethod,
+      fields,
+      className: 'Box',
+      typeArguments: '<T>',
+    );
+    expect(eqSync.isInSync, isFalse);
+    expect(eqSync.extraFields, contains('removed'));
+    expect(eqSync.driftReasons, contains('missing type arguments: <T>'));
+
+    final fromMap = findDeserializeMember(cls, 'fromMap')!;
+    final deserSync = checkDeserializeSync(fromMap, fields);
+    expect(deserSync.isInSync, isFalse);
+    expect(deserSync.extraFields, contains('stale'));
+  });
+}

@@ -316,7 +316,11 @@ factory $className.$methodName(Map<String, dynamic> map) {
 
 bool _needsElementTransform(ClassField? field) =>
     field != null &&
-    (field.isDateTimeType || field.isEnumType || field.isCollectionType);
+    (field.isDateTimeType ||
+        field.isEnumType ||
+        field.isCollectionType ||
+        field.serializeMethodName != null ||
+        field.deserializeMethodName != null);
 
 String _serializeExpression(ClassField field, String expr) {
   final nullable = field.isNullableType;
@@ -327,6 +331,9 @@ String _serializeExpression(ClassField field, String expr) {
   }
   if (field.isEnumType) {
     return '$expr$q.name';
+  }
+  if (field.serializeMethodName case final serMethod?) {
+    return '$expr$q.$serMethod()';
   }
   if (field.isListOrIterableType || field.isSetType) {
     final elem = field.resolvedTypeArguments.firstOrNull;
@@ -370,6 +377,12 @@ String _deserializeExpression(ClassField field, String expr) {
     return nullable
         ? '$expr != null ? $enumType.values.byName($expr as String) : null'
         : '$enumType.values.byName($expr as String)';
+  }
+  if (field.deserializeMethodName case final deserMethod?) {
+    final targetType = field.nonNullableType;
+    return nullable
+        ? '$expr != null ? $targetType.$deserMethod($expr as Map<String, dynamic>) : null'
+        : '$targetType.$deserMethod($expr as Map<String, dynamic>)';
   }
   if (field.isListOrIterableType || field.isSetType) {
     final elem = field.resolvedTypeArguments.firstOrNull;

@@ -1,6 +1,8 @@
 import 'package:analyzer/dart/ast/ast.dart'
     show FieldDeclaration, FormalParameter, VariableDeclaration;
-import 'package:analyzer/dart/element/element.dart' show EnumElement;
+import 'package:analyzer/dart/constant/value.dart' show DartObject;
+import 'package:analyzer/dart/element/element.dart'
+    show ClassElement, EnumElement;
 import 'package:analyzer/dart/element/nullability_suffix.dart'
     show NullabilitySuffix;
 import 'package:analyzer/dart/element/type.dart' show DartType, InterfaceType;
@@ -27,6 +29,8 @@ final class ClassField {
     this.isPositional = false,
     this.typeKind,
     this.typeArguments = const [],
+    this.serializeMethodName,
+    this.deserializeMethodName,
   });
 
   final String name;
@@ -50,6 +54,14 @@ final class ClassField {
   /// Resolved generic type arguments for collection types (e.g. `[T]` for
   /// `List<T>`, `[K, V]` for `Map<K, V>`).
   final List<ClassField> typeArguments;
+
+  /// Serialization method name (e.g. `'toMap'` or `'toJson'`) when this field's
+  /// type is a serializable class, or `null` otherwise.
+  final String? serializeMethodName;
+
+  /// Deserialization factory/method name (e.g. `'fromMap'` or `'fromJson'`)
+  /// when this field's type is a deserializable class, or `null` otherwise.
+  final String? deserializeMethodName;
 
   /// Whether this field should be included in generated methods.
   ///
@@ -139,7 +151,7 @@ final class ClassField {
     final name = param.name!.lexeme;
     final isPrivate = name.startsWith('_');
     final dartType = param.declaredFragment?.element.type;
-    final (kind, args) = _classifyDartType(dartType);
+    final resolved = _resolveDartType(dartType);
 
     return ClassField(
       keyword: param.constFinalOrVarKeyword?.lexeme,
@@ -150,8 +162,10 @@ final class ClassField {
       isPublic: !isPrivate,
       isPrivate: isPrivate,
       isPositional: param.isPositional,
-      typeKind: kind,
-      typeArguments: args,
+      typeKind: resolved.kind,
+      typeArguments: resolved.args,
+      serializeMethodName: resolved.serializeMethodName,
+      deserializeMethodName: resolved.deserializeMethodName,
     );
   }
 
@@ -166,7 +180,7 @@ final class ClassField {
     final name = variable.name.lexeme;
     final isPrivate = name.startsWith('_');
     final resolvedDartType = dartType ?? fd.fields.type?.type;
-    final (kind, args) = _classifyDartType(resolvedDartType);
+    final resolved = _resolveDartType(resolvedDartType);
 
     return ClassField(
       keyword: keyword ?? fd.fields.keyword?.lexeme,
@@ -181,37 +195,173 @@ final class ClassField {
       isSynthetic: variable.isSynthetic,
       isPublic: !isPrivate,
       isPrivate: isPrivate,
-      typeKind: kind,
-      typeArguments: args,
+      typeKind: resolved.kind,
+      typeArguments: resolved.args,
+      serializeMethodName: resolved.serializeMethodName,
+      deserializeMethodName: resolved.deserializeMethodName,
     );
   }
 
-  static (FieldTypeKind?, List<ClassField>) _classifyDartType(
-    DartType? dartType,
-  ) {
-    if (dartType == null) return (null, const []);
+  static ({
+    FieldTypeKind? kind,
+    List<ClassField> args,
+    String? serializeMethodName,
+    String? deserializeMethodName,
+  })
+  _resolveDartType(DartType? dartType) {
+    if (dartType == null) {
+      return (
+        kind: null,
+        args: const [],
+        serializeMethodName: null,
+        deserializeMethodName: null,
+      );
+    }
     final element = dartType.element;
     if (element?.name == 'DateTime' &&
         (element?.library?.isDartCore ?? false)) {
-      return (FieldTypeKind.dateTime, const []);
+      return (
+        kind: FieldTypeKind.dateTime,
+        args: const [],
+        serializeMethodName: null,
+        deserializeMethodName: null,
+      );
     }
     if (element is EnumElement) {
-      return (FieldTypeKind.enumType, const []);
+      return (
+        kind: FieldTypeKind.enumType,
+        args: const [],
+        serializeMethodName: null,
+        deserializeMethodName: null,
+      );
     }
     if (dartType is InterfaceType) {
       final args = [
         for (final arg in dartType.typeArguments) _fromDartType(arg),
       ];
-      if (dartType.isDartCoreList) return (FieldTypeKind.list, args);
-      if (dartType.isDartCoreIterable) return (FieldTypeKind.iterable, args);
-      if (dartType.isDartCoreSet) return (FieldTypeKind.set, args);
-      if (dartType.isDartCoreMap) return (FieldTypeKind.map, args);
+      if (dartType.isDartCoreList) {
+        return (
+          kind: FieldTypeKind.list,
+          args: args,
+          serializeMethodName: null,
+          deserializeMethodName: null,
+        );
+      }
+      if (dartType.isDartCoreIterable) {
+        return (
+          kind: FieldTypeKind.iterable,
+          args: args,
+          serializeMethodName: null,
+          deserializeMethodName: null,
+        );
+      }
+      if (dartType.isDartCoreSet) {
+        return (
+          kind: FieldTypeKind.set,
+          args: args,
+          serializeMethodName: null,
+          deserializeMethodName: null,
+        );
+      }
+      if (dartType.isDartCoreMap) {
+        return (
+          kind: FieldTypeKind.map,
+          args: args,
+          serializeMethodName: null,
+          deserializeMethodName: null,
+        );
+      }
+
+      if (element is ClassElement && !(element.library.isDartCore)) {
+        final (ser, deser) = _resolveClassSerialization(element);
+        return (
+          kind: FieldTypeKind.other,
+          args: const [],
+          serializeMethodName: ser,
+          deserializeMethodName: deser,
+        );
+      }
     }
-    return (FieldTypeKind.other, const []);
+    return (
+      kind: FieldTypeKind.other,
+      args: const [],
+      serializeMethodName: null,
+      deserializeMethodName: null,
+    );
+  }
+
+  static (String?, String?) _resolveClassSerialization(ClassElement element) {
+    String? serializeName;
+    String? deserializeName;
+
+    for (final meta in element.metadata.annotations) {
+      final constant = meta.computeConstantValue();
+      if (constant == null) continue;
+      for (final item in _expandConstant(constant)) {
+        final typeName = item.type?.element?.name;
+        if (typeName == 'Serialize') {
+          serializeName ??= _extractNameFromMethodObj(item) ?? 'toMap';
+        } else if (typeName == 'Deserialize') {
+          deserializeName ??= _extractNameFromMethodObj(item) ?? 'fromMap';
+        }
+      }
+    }
+
+    if (serializeName == null) {
+      for (final m in element.methods) {
+        if (!m.isStatic && (m.name == 'toMap' || m.name == 'toJson')) {
+          serializeName = m.name;
+          break;
+        }
+      }
+    }
+
+    if (deserializeName == null) {
+      for (final c in element.constructors) {
+        if (c.isFactory && (c.name == 'fromMap' || c.name == 'fromJson')) {
+          deserializeName = c.name;
+          break;
+        }
+      }
+    }
+    if (deserializeName == null) {
+      for (final m in element.methods) {
+        if (m.isStatic && (m.name == 'fromMap' || m.name == 'fromJson')) {
+          deserializeName = m.name;
+          break;
+        }
+      }
+    }
+
+    return (serializeName, deserializeName);
+  }
+
+  static Iterable<DartObject> _expandConstant(
+    DartObject root, {
+    int depth = 0,
+  }) sync* {
+    if (depth > 16) return;
+    if (root.type?.element?.name == 'CompositeAnnotation') {
+      final items = root.getField('annotations')?.toListValue();
+      if (items == null) return;
+      for (final item in items) {
+        yield* _expandConstant(item, depth: depth + 1);
+      }
+    } else {
+      yield root;
+    }
+  }
+
+  static String? _extractNameFromMethodObj(DartObject obj) {
+    final nameObj = obj.getField('name');
+    if (nameObj == null) return null;
+    return (nameObj.getField('methodName') ??
+            nameObj.getField('(super)')?.getField('methodName'))
+        ?.toStringValue();
   }
 
   static ClassField _fromDartType(DartType dartType) {
-    final (kind, args) = _classifyDartType(dartType);
+    final resolved = _resolveDartType(dartType);
     final suffix = dartType.nullabilitySuffix == NullabilitySuffix.question
         ? '?'
         : '';
@@ -222,8 +372,10 @@ final class ClassField {
     return ClassField(
       name: 'e',
       type: typeStr,
-      typeKind: kind,
-      typeArguments: args,
+      typeKind: resolved.kind,
+      typeArguments: resolved.args,
+      serializeMethodName: resolved.serializeMethodName,
+      deserializeMethodName: resolved.deserializeMethodName,
     );
   }
 

@@ -75,9 +75,22 @@ base class OverrideEqualityMethods extends ResolvedCorrectionProducer {
         ? formatClassMembers(toInsert)
         : null;
 
+    final equalityDrift =
+        existingEquals != null &&
+        existingHashCode != null &&
+        !checkEqualitySync(
+          existingEquals,
+          existingHashCode,
+          fields,
+          className: className,
+          typeArguments: typeArguments,
+        ).isInSync;
+
     await builder.addDartFileEdit(file, (fileEditBuilder) {
       if (existingHashCode != null &&
-          (forceRegenerate || !isBodyInSync(existingHashCode.body, fields))) {
+          (forceRegenerate ||
+              !isBodyInSync(existingHashCode.body, fields) ||
+              equalityDrift)) {
         fileEditBuilder.addSimpleReplacement(
           range.node(existingHashCode),
           generateHashCodeOverride(
@@ -87,8 +100,7 @@ base class OverrideEqualityMethods extends ResolvedCorrectionProducer {
         );
       }
 
-      if (existingEquals != null &&
-          (forceRegenerate || !isBodyInSync(existingEquals.body, fields))) {
+      if (existingEquals != null && (forceRegenerate || equalityDrift)) {
         fileEditBuilder.addSimpleReplacement(
           range.node(existingEquals),
           formatCode(

@@ -9,15 +9,21 @@ import 'package:analyzer/dart/ast/ast.dart'
         DotShorthandConstructorInvocation,
         DotShorthandInvocation,
         FieldDeclaration,
+        FormalParameter,
         FunctionBody,
+        GenericFunctionType,
+        IndexExpression,
         InstanceCreationExpression,
+        IsExpression,
         MapLiteralEntry,
         MethodDeclaration,
         MethodInvocation,
         NamedArgument,
+        PrefixedIdentifier,
         PrimaryConstructorDeclaration,
         SimpleIdentifier,
-        SimpleStringLiteral;
+        SimpleStringLiteral,
+        TypeAnnotation;
 import 'package:analyzer/dart/ast/visitor.dart' show RecursiveAstVisitor;
 import 'package:analyzer/dart/constant/value.dart' show DartObject;
 import 'package:analyzer_kit/src/enums.dart';
@@ -149,6 +155,7 @@ final class AnnotationConfig {
     this.serializeMethodName,
     this.deserializeMethodName,
     this.deepCollectionEquality,
+    this.annotationNodes = const {},
   });
 
   final bool hasCompositeAnnotation;
@@ -161,6 +168,11 @@ final class AnnotationConfig {
   final String? serializeMethodName;
   final String? deserializeMethodName;
   final bool? deepCollectionEquality;
+
+  /// First metadata [Annotation] node enabling each [FeatureAnnotation] on the
+  /// class, populated during [extractAnnotationConfig] to avoid re-evaluating
+  /// constant values when reporting diagnostics.
+  final Map<FeatureAnnotation, Annotation> annotationNodes;
 
   bool get hasAnyFeature =>
       copyWith ||
@@ -183,6 +195,7 @@ AnnotationConfig extractAnnotationConfig(ClassDeclaration node) {
   String? serializeMethodName;
   var deserialize = false;
   String? deserializeMethodName;
+  final annotationNodes = <FeatureAnnotation, Annotation>{};
 
   for (final annotation in node.metadata) {
     final name = annotation.name.name;
@@ -190,6 +203,7 @@ AnnotationConfig extractAnnotationConfig(ClassDeclaration node) {
 
     if (stringEqualsIgnoreCaseByAscii(name, FeatureAnnotation.copyWith.name)) {
       copyWith = true;
+      annotationNodes.putIfAbsent(.copyWith, () => annotation);
       if (arguments != null) {
         for (final arg in arguments) {
           if (arg is NamedArgument && arg.name.lexeme == 'nullable') {
@@ -207,6 +221,7 @@ AnnotationConfig extractAnnotationConfig(ClassDeclaration node) {
       FeatureAnnotation.overrideToString.name,
     )) {
       overrideToString = true;
+      annotationNodes.putIfAbsent(.overrideToString, () => annotation);
       continue;
     }
     if (stringEqualsIgnoreCaseByAscii(
@@ -214,6 +229,7 @@ AnnotationConfig extractAnnotationConfig(ClassDeclaration node) {
       FeatureAnnotation.overrideEquality.name,
     )) {
       overrideEquality = true;
+      annotationNodes.putIfAbsent(.overrideEquality, () => annotation);
       if (arguments != null) {
         for (final arg in arguments) {
           if (arg is NamedArgument &&
@@ -229,6 +245,7 @@ AnnotationConfig extractAnnotationConfig(ClassDeclaration node) {
     }
     if (stringEqualsIgnoreCaseByAscii(name, FeatureAnnotation.serialize.name)) {
       serialize = true;
+      annotationNodes.putIfAbsent(.serialize, () => annotation);
       if (arguments != null) {
         for (final arg in arguments) {
           if (arg is NamedArgument && arg.name.lexeme == 'name') {
@@ -245,6 +262,7 @@ AnnotationConfig extractAnnotationConfig(ClassDeclaration node) {
       FeatureAnnotation.deserialize.name,
     )) {
       deserialize = true;
+      annotationNodes.putIfAbsent(.deserialize, () => annotation);
       if (arguments != null) {
         for (final arg in arguments) {
           if (arg is NamedArgument && arg.name.lexeme == 'name') {
@@ -275,6 +293,7 @@ AnnotationConfig extractAnnotationConfig(ClassDeclaration node) {
         FeatureAnnotation.copyWith.name,
       )) {
         copyWith = true;
+        annotationNodes.putIfAbsent(.copyWith, () => annotation);
         final nullableVal = item.getField('nullable')?.toBoolValue();
         if (nullableVal == true) {
           copyWithNullable = true;
@@ -284,11 +303,13 @@ AnnotationConfig extractAnnotationConfig(ClassDeclaration node) {
         FeatureAnnotation.overrideToString.name,
       )) {
         overrideToString = true;
+        annotationNodes.putIfAbsent(.overrideToString, () => annotation);
       } else if (stringEqualsIgnoreCaseByAscii(
         typeName,
         FeatureAnnotation.overrideEquality.name,
       )) {
         overrideEquality = true;
+        annotationNodes.putIfAbsent(.overrideEquality, () => annotation);
         deepCollectionEquality ??= item
             .getField('deepCollectionEquality')
             ?.toBoolValue();
@@ -297,12 +318,14 @@ AnnotationConfig extractAnnotationConfig(ClassDeclaration node) {
         FeatureAnnotation.serialize.name,
       )) {
         serialize = true;
+        annotationNodes.putIfAbsent(.serialize, () => annotation);
         serializeMethodName ??= _extractConstantMethodName(item);
       } else if (stringEqualsIgnoreCaseByAscii(
         typeName,
         FeatureAnnotation.deserialize.name,
       )) {
         deserialize = true;
+        annotationNodes.putIfAbsent(.deserialize, () => annotation);
         deserializeMethodName ??= _extractConstantMethodName(item);
       }
     }
@@ -323,6 +346,7 @@ AnnotationConfig extractAnnotationConfig(ClassDeclaration node) {
         ? (deserializeMethodName ?? FeatureMethod.fromMap.name)
         : null,
     deepCollectionEquality: deepCollectionEquality,
+    annotationNodes: annotationNodes,
   );
 }
 
