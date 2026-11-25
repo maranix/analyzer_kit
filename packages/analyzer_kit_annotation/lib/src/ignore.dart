@@ -23,22 +23,18 @@ enum ClassAnnotation {
 ///
 /// Pass a set of [ClassAnnotation] values to ignore the field only for
 /// specific features, e.g. `@Ignore({.serialize, .overrideToString})`.
-final class Ignore {
-  /// Creates an [Ignore] annotation for the given [annotations].
-  ///
-  /// Defaults to ignoring all [ClassAnnotation] values.
-  const Ignore([
-    this.annotations = const {
-      ClassAnnotation.copyWith,
-      ClassAnnotation.overrideEquality,
-      ClassAnnotation.overrideToString,
-      ClassAnnotation.serialize,
-      ClassAnnotation.deserialize,
-    },
-  ]);
-
+final class const Ignore([
   /// The class-level annotations for which this field is ignored.
-  final Set<ClassAnnotation> annotations;
+  final Set<ClassAnnotation> annotations = const {
+    .copyWith,
+    .overrideEquality,
+    .overrideToString,
+    .serialize,
+    .deserialize,
+  },
+]) {
+  /// Creates an [Ignore] annotation for the given [annotations].
+  this;
 }
 
 /// Convenience constant for `@Ignore()`.
