@@ -116,42 +116,37 @@ final class ClassField {
       isNullableType ? type.substring(0, type.length - 1) : type;
 
   /// Whether this field's type is `DateTime` or `DateTime?`.
-  bool get isDateTimeType =>
-      typeKind == FieldTypeKind.dateTime || _isType('DateTime');
+  bool get isDateTimeType => typeKind == .dateTime || _isType('DateTime');
 
   /// Whether this field's type is `Uri` or `Uri?`.
-  bool get isUriType => typeKind == FieldTypeKind.uri || _isType('Uri');
+  bool get isUriType => typeKind == .uri || _isType('Uri');
 
   /// Whether this field's type is `Duration` or `Duration?`.
-  bool get isDurationType =>
-      typeKind == FieldTypeKind.duration || _isType('Duration');
+  bool get isDurationType => typeKind == .duration || _isType('Duration');
 
   /// Whether this field's type is `BigInt` or `BigInt?`.
-  bool get isBigIntType =>
-      typeKind == FieldTypeKind.bigInt || _isType('BigInt');
+  bool get isBigIntType => typeKind == .bigInt || _isType('BigInt');
 
   /// Whether this field's type is `double` or `double?`.
-  bool get isDoubleType =>
-      typeKind == FieldTypeKind.doubleType || _isType('double');
+  bool get isDoubleType => typeKind == .doubleType || _isType('double');
 
   /// Whether this field's type is an `enum` (requires resolved [typeKind]).
-  bool get isEnumType => typeKind == FieldTypeKind.enumType;
+  bool get isEnumType => typeKind == .enumType;
 
   /// Whether this field's type is a `List`.
-  bool get isListType => typeKind == FieldTypeKind.list || _isType('List');
+  bool get isListType => typeKind == .list || _isType('List');
 
   /// Whether this field's type is an `Iterable`.
-  bool get isIterableType =>
-      typeKind == FieldTypeKind.iterable || _isType('Iterable');
+  bool get isIterableType => typeKind == .iterable || _isType('Iterable');
 
   /// Whether this field's type is a `List` or `Iterable` (ordered collection).
   bool get isListOrIterableType => isListType || isIterableType;
 
   /// Whether this field's type is a `Set` (unordered collection).
-  bool get isSetType => typeKind == FieldTypeKind.set || _isType('Set');
+  bool get isSetType => typeKind == .set || _isType('Set');
 
   /// Whether this field's type is a `Map`.
-  bool get isMapType => typeKind == FieldTypeKind.map || _isType('Map');
+  bool get isMapType => typeKind == .map || _isType('Map');
 
   /// Whether this field's type is any collection type.
   bool get isCollectionType => isListOrIterableType || isSetType || isMapType;
@@ -443,12 +438,12 @@ final class ClassField {
     for (final meta in element.metadata.annotations) {
       final constant = meta.computeConstantValue();
       if (constant == null) continue;
-      for (final item in _expandConstant(constant)) {
+      for (final item in expandAnnotationConstant(constant)) {
         final typeName = item.type?.element?.name;
         if (typeName == 'Serialize') {
-          serializeName ??= _extractNameFromMethodObj(item) ?? 'toMap';
+          serializeName ??= extractConstantMethodName(item) ?? 'toMap';
         } else if (typeName == 'Deserialize') {
-          deserializeName ??= _extractNameFromMethodObj(item) ?? 'fromMap';
+          deserializeName ??= extractConstantMethodName(item) ?? 'fromMap';
         }
       }
     }
@@ -480,30 +475,6 @@ final class ClassField {
     }
 
     return (serializeName, deserializeName);
-  }
-
-  static Iterable<DartObject> _expandConstant(
-    DartObject root, {
-    int depth = 0,
-  }) sync* {
-    if (depth > 16) return;
-    if (root.type?.element?.name == 'CompositeAnnotation') {
-      final items = root.getField('annotations')?.toListValue();
-      if (items == null) return;
-      for (final item in items) {
-        yield* _expandConstant(item, depth: depth + 1);
-      }
-    } else {
-      yield root;
-    }
-  }
-
-  static String? _extractNameFromMethodObj(DartObject obj) {
-    final nameObj = obj.getField('name');
-    if (nameObj == null) return null;
-    return (nameObj.getField('methodName') ??
-            nameObj.getField('(super)')?.getField('methodName'))
-        ?.toStringValue();
   }
 
   static ClassField _fromDartType(DartType dartType) {
@@ -550,6 +521,34 @@ final class ClassField {
       'initializer: $initializer, isConst: $isConst, isLate: $isLate, '
       'isFinal: $isFinal, isStatic: $isStatic, isSynthetic: $isSynthetic, '
       'isPublic: $isPublic, isPrivate: $isPrivate)';
+}
+
+/// Recursively expands any `CompositeAnnotation` constant into its constituent
+/// annotation [DartObject]s.
+Iterable<DartObject> expandAnnotationConstant(
+  DartObject root, {
+  int depth = 0,
+}) sync* {
+  if (depth > 16) return;
+  if (root.type?.element?.name == 'CompositeAnnotation') {
+    final items = root.getField('annotations')?.toListValue();
+    if (items == null) return;
+    for (final item in items) {
+      yield* expandAnnotationConstant(item, depth: depth + 1);
+    }
+  } else {
+    yield root;
+  }
+}
+
+/// Extracts `methodName` from a `Serialize` or `Deserialize` [DartObject]'s
+/// `name` field.
+String? extractConstantMethodName(DartObject obj) {
+  final nameObj = obj.getField('name');
+  if (nameObj == null) return null;
+  return (nameObj.getField('methodName') ??
+          nameObj.getField('(super)')?.getField('methodName'))
+      ?.toStringValue();
 }
 
 const _defaultRedactPlaceholder = '[REDACTED]';

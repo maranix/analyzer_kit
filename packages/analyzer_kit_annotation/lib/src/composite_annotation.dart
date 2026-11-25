@@ -20,10 +20,10 @@
 ///   User({required this.name, required this.age});
 /// }
 /// ```
-final class CompositeAnnotation {
-  /// Creates a [CompositeAnnotation] containing [annotations].
-  const CompositeAnnotation(this.annotations);
-
+final class const CompositeAnnotation(
   /// The annotations included in this composite bundle.
-  final List<Object> annotations;
+  final List<Object> annotations,
+) {
+  /// Creates a [CompositeAnnotation] containing [annotations].
+  this;
 }

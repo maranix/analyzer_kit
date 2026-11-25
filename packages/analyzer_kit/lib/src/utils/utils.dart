@@ -193,7 +193,7 @@ bool annotationEnablesFeature(
   final constant = annotation.elementAnnotation?.computeConstantValue();
   if (constant == null) return false;
 
-  for (final item in _expandAnnotationConstant(constant)) {
+  for (final item in expandAnnotationConstant(constant)) {
     final typeName = item.type?.element?.name;
     if (typeName != null &&
         stringEqualsIgnoreCaseByAscii(typeName, feature.name)) {
@@ -220,44 +220,26 @@ String? extractFeatureMethodName(
   };
 }
 
-/// Extracts `deepCollectionEquality` from `@OverrideEquality` or any
-/// `CompositeAnnotation` containing `OverrideEquality` on [declaration].
-bool? extractDeepCollectionEquality(ClassDeclaration declaration) =>
-    extractAnnotationConfig(declaration).deepCollectionEquality;
-
 /// Parsed annotation configuration for a [ClassDeclaration] in a single pass.
-final class AnnotationConfig {
-  const AnnotationConfig({
-    this.hasCompositeAnnotation = false,
-    this.copyWith = false,
-    this.copyWithNullable = false,
-    this.overrideToString = false,
-    this.overrideToStringMultiline = false,
-    this.overrideEquality = false,
-    this.serialize = false,
-    this.deserialize = false,
-    this.serializeMethodName,
-    this.deserializeMethodName,
-    this.deepCollectionEquality,
-    this.annotationNodes = const {},
-  });
-
-  final bool hasCompositeAnnotation;
-  final bool copyWith;
-  final bool copyWithNullable;
-  final bool overrideToString;
-  final bool overrideToStringMultiline;
-  final bool overrideEquality;
-  final bool serialize;
-  final bool deserialize;
-  final String? serializeMethodName;
-  final String? deserializeMethodName;
-  final bool? deepCollectionEquality;
+final class const AnnotationConfig({
+  final bool hasCompositeAnnotation = false,
+  final bool copyWith = false,
+  final bool copyWithNullable = false,
+  final bool overrideToString = false,
+  final bool overrideToStringMultiline = false,
+  final bool overrideEquality = false,
+  final bool serialize = false,
+  final bool deserialize = false,
+  final String? serializeMethodName,
+  final String? deserializeMethodName,
+  final bool? deepCollectionEquality,
 
   /// First metadata [Annotation] node enabling each [FeatureAnnotation] on the
   /// class, populated during [extractAnnotationConfig] to avoid re-evaluating
   /// constant values when reporting diagnostics.
-  final Map<FeatureAnnotation, Annotation> annotationNodes;
+  final Map<FeatureAnnotation, Annotation> annotationNodes = const {},
+}) {
+  this;
 
   bool get hasAnyFeature =>
       copyWith ||
@@ -380,7 +362,7 @@ AnnotationConfig extractAnnotationConfig(ClassDeclaration node) {
       hasCompositeAnnotation = true;
     }
 
-    for (final item in _expandAnnotationConstant(constant)) {
+    for (final item in expandAnnotationConstant(constant)) {
       final typeName = item.type?.element?.name;
       if (typeName == null) continue;
 
@@ -419,14 +401,14 @@ AnnotationConfig extractAnnotationConfig(ClassDeclaration node) {
       )) {
         serialize = true;
         annotationNodes.putIfAbsent(.serialize, () => annotation);
-        serializeMethodName ??= _extractConstantMethodName(item);
+        serializeMethodName ??= extractConstantMethodName(item);
       } else if (stringEqualsIgnoreCaseByAscii(
         typeName,
         FeatureAnnotation.deserialize.name,
       )) {
         deserialize = true;
         annotationNodes.putIfAbsent(.deserialize, () => annotation);
-        deserializeMethodName ??= _extractConstantMethodName(item);
+        deserializeMethodName ??= extractConstantMethodName(item);
       }
     }
   }
@@ -459,30 +441,6 @@ String _annotationSimpleName(Annotation annotation) =>
 
 bool _isCompositeAnnotation(DartObject obj) =>
     obj.type?.element?.name == 'CompositeAnnotation';
-
-Iterable<DartObject> _expandAnnotationConstant(
-  DartObject root, {
-  int depth = 0,
-}) sync* {
-  if (depth > 16) return;
-  if (_isCompositeAnnotation(root)) {
-    final items = root.getField('annotations')?.toListValue();
-    if (items == null) return;
-    for (final item in items) {
-      yield* _expandAnnotationConstant(item, depth: depth + 1);
-    }
-  } else {
-    yield root;
-  }
-}
-
-String? _extractConstantMethodName(DartObject obj) {
-  final nameObj = obj.getField('name');
-  if (nameObj == null) return null;
-  return (nameObj.getField('methodName') ??
-          nameObj.getField('(super)')?.getField('methodName'))
-      ?.toStringValue();
-}
 
 String? _extractMethodNameFromExpression(Object expression) {
   final (String? ctorName, ArgumentList? args) = switch (expression) {

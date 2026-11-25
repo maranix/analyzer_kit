@@ -30,12 +30,12 @@ final class _CustomDeserializeMethod extends DeserializeMethod {
 /// Marks a class for deserialization generation.
 ///
 /// Use as `@Deserialize()` or `@deserialize` on a class declaration.
-final class Deserialize {
-  /// Creates a new instance of [Deserialize].
-  const Deserialize({this.name = const .fromMap()});
-
+final class const Deserialize({
   /// The method name configuration for deserializing the class. Defaults to `.fromMap()`.
-  final DeserializeMethod name;
+  final DeserializeMethod name = const .fromMap(),
+}) {
+  /// Creates a new instance of [Deserialize].
+  this;
 }
 
 /// Convenience constant for `@Deserialize()`.

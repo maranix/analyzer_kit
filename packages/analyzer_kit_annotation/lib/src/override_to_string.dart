@@ -2,12 +2,12 @@
 ///
 /// Use as `@OverrideToString()` or `@overrideToString` on a class declaration.
 /// Set [multiline] to `true` to format each field on its own indented line.
-final class OverrideToString {
-  /// Creates an [OverrideToString] annotation.
-  const OverrideToString({this.multiline = false});
-
+final class const OverrideToString({
   /// Whether to format each field on its own indented line in `toString()`.
-  final bool multiline;
+  final bool multiline = false,
+}) {
+  /// Creates an [OverrideToString] annotation.
+  this;
 }
 
 /// Convenience constant for `@OverrideToString()`.
