@@ -15,6 +15,7 @@ enum FieldTypeKind {
   uri,
   duration,
   bigInt,
+  doubleType,
   enumType,
   list,
   iterable,
@@ -105,6 +106,10 @@ final class ClassField {
   /// Whether this field's type is `BigInt` or `BigInt?`.
   bool get isBigIntType =>
       typeKind == FieldTypeKind.bigInt || _isType('BigInt');
+
+  /// Whether this field's type is `double` or `double?`.
+  bool get isDoubleType =>
+      typeKind == FieldTypeKind.doubleType || _isType('double');
 
   /// Whether this field's type is an `enum` (requires resolved [typeKind]).
   bool get isEnumType => typeKind == FieldTypeKind.enumType;
@@ -313,6 +318,7 @@ final class ClassField {
         'Uri' => FieldTypeKind.uri,
         'Duration' => FieldTypeKind.duration,
         'BigInt' => FieldTypeKind.bigInt,
+        'double' => FieldTypeKind.doubleType,
         _ => null,
       };
       if (kind != null) {

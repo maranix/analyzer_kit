@@ -66,18 +66,26 @@ String generateCopyWithMethod(
 String generateToStringMethod(
   String className,
   Iterable<ClassField> fields, {
+  bool multiline = false,
   bool format = true,
 }) {
-  final body = literalString(
-    '$className(${fields.map((f) => '${f.name}: \$${f.name}').join(', ')})',
-  );
+  final fieldList = fields is List<ClassField> ? fields : fields.toList();
+  final String content;
+  if (multiline && fieldList.isNotEmpty) {
+    final lines = fieldList.map((f) => '  ${f.name}: \$${f.name},').join('\\n');
+    content = '$className(\\n$lines\\n)';
+  } else {
+    content =
+        '$className(${fieldList.map((f) => '${f.name}: \$${f.name}').join(', ')})';
+  }
+  final body = Code("'$content';");
 
   final method = Method(
     (b) => b
       ..name = FeatureMethod.overrideToString.name
       ..lambda = true
       ..annotations.add(refer('override'))
-      ..body = body.statement
+      ..body = body
       ..returns = refer('String'),
   );
 
@@ -315,7 +323,7 @@ factory $className.$methodName(Map<String, dynamic> map) {
   return format ? formatConstructor(code) : code;
 }
 
-bool _needsElementTransform(ClassField? field) =>
+bool _needsSerializeTransform(ClassField? field) =>
     field != null &&
     (field.isDateTimeType ||
         field.isUriType ||
@@ -323,7 +331,17 @@ bool _needsElementTransform(ClassField? field) =>
         field.isBigIntType ||
         field.isEnumType ||
         field.isCollectionType ||
-        field.serializeMethodName != null ||
+        field.serializeMethodName != null);
+
+bool _needsDeserializeTransform(ClassField? field) =>
+    field != null &&
+    (field.isDateTimeType ||
+        field.isUriType ||
+        field.isDurationType ||
+        field.isBigIntType ||
+        field.isDoubleType ||
+        field.isEnumType ||
+        field.isCollectionType ||
         field.deserializeMethodName != null);
 
 String _serializeExpression(ClassField field, String expr) {
@@ -347,7 +365,7 @@ String _serializeExpression(ClassField field, String expr) {
   }
   if (field.isListOrIterableType || field.isSetType) {
     final elem = field.resolvedTypeArguments.firstOrNull;
-    if (_needsElementTransform(elem)) {
+    if (_needsSerializeTransform(elem)) {
       return '$expr$q.map((e) => ${_serializeExpression(elem!, 'e')}).toList()';
     }
     if (field.isSetType || field.isIterableType) {
@@ -359,11 +377,12 @@ String _serializeExpression(ClassField field, String expr) {
     final args = field.resolvedTypeArguments;
     final keyField = args.elementAtOrNull(0);
     final valField = args.elementAtOrNull(1);
-    if (_needsElementTransform(keyField) || _needsElementTransform(valField)) {
-      final kExpr = keyField != null && _needsElementTransform(keyField)
+    if (_needsSerializeTransform(keyField) ||
+        _needsSerializeTransform(valField)) {
+      final kExpr = keyField != null && _needsSerializeTransform(keyField)
           ? _serializeExpression(keyField, 'k')
           : 'k';
-      final vExpr = valField != null && _needsElementTransform(valField)
+      final vExpr = valField != null && _needsSerializeTransform(valField)
           ? _serializeExpression(valField, 'v')
           : 'v';
       return '$expr$q.map((k, v) => MapEntry($kExpr, $vExpr))';
@@ -377,6 +396,11 @@ String _deserializeExpression(ClassField field, String expr) {
   final nullable = field.isNullableType;
   final q = nullable ? '?' : '';
 
+  if (field.isDoubleType) {
+    return nullable
+        ? '($expr as num?)?.toDouble()'
+        : '($expr as num).toDouble()';
+  }
   if (field.isDateTimeType) {
     return nullable
         ? '$expr != null ? DateTime.parse($expr as String) : null'
@@ -400,7 +424,7 @@ String _deserializeExpression(ClassField field, String expr) {
   if (field.isEnumType) {
     final enumType = field.nonNullableType;
     return nullable
-        ? '$expr != null ? $enumType.values.byName($expr as String) : null'
+        ? '$enumType.values.asNameMap()[$expr]'
         : '$enumType.values.byName($expr as String)';
   }
   if (field.deserializeMethodName case final deserMethod?) {
@@ -412,7 +436,7 @@ String _deserializeExpression(ClassField field, String expr) {
   if (field.isListOrIterableType || field.isSetType) {
     final elem = field.resolvedTypeArguments.firstOrNull;
     final listBase = '($expr as List<dynamic>$q)$q';
-    if (_needsElementTransform(elem)) {
+    if (_needsDeserializeTransform(elem)) {
       final mapped =
           '$listBase.map((e) => ${_deserializeExpression(elem!, 'e')})';
       if (field.isSetType) return '$mapped.toSet()';
@@ -430,13 +454,14 @@ String _deserializeExpression(ClassField field, String expr) {
     final keyField = args.elementAtOrNull(0);
     final valField = args.elementAtOrNull(1);
     final mapBase = '($expr as Map<String, dynamic>$q)$q';
-    if (_needsElementTransform(keyField) || _needsElementTransform(valField)) {
-      final kExpr = keyField != null && _needsElementTransform(keyField)
+    if (_needsDeserializeTransform(keyField) ||
+        _needsDeserializeTransform(valField)) {
+      final kExpr = keyField != null && _needsDeserializeTransform(keyField)
           ? _deserializeExpression(keyField, 'k')
           : (keyField != null && keyField.type != 'dynamic'
                 ? 'k as ${keyField.type}'
                 : 'k');
-      final vExpr = valField != null && _needsElementTransform(valField)
+      final vExpr = valField != null && _needsDeserializeTransform(valField)
           ? _deserializeExpression(valField, 'v')
           : (valField != null && valField.type != 'dynamic'
                 ? 'v as ${valField.type}'

@@ -31,7 +31,8 @@ base class OverrideToStringMethod extends ResolvedCorrectionProducer {
     final declaration = node.thisOrAncestorOfType<ClassDeclaration>();
     if (declaration == null) return;
 
-    if (hasFeatureEnabled(declaration, .overrideToString)) {
+    final config = extractAnnotationConfig(declaration);
+    if (config.overrideToString) {
       final fields = extractGeneratableFields(declaration);
       final existing = findMethodDeclaration(
         declaration,
@@ -40,6 +41,7 @@ base class OverrideToStringMethod extends ResolvedCorrectionProducer {
       final generated = generateToStringMethod(
         declaration.namePart.typeName.lexeme,
         fields,
+        multiline: config.overrideToStringMultiline,
       );
 
       await builder.addDartFileEdit(file, (fileEditBuilder) {

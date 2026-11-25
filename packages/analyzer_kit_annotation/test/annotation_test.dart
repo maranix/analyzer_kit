@@ -44,6 +44,11 @@ void main() {
       const annotation = OverrideToString();
       expect(annotation.runtimeType.toString(), 'OverrideToString');
     });
+
+    test('multiline defaults to false and can be set to true', () {
+      expect(const OverrideToString().multiline, isFalse);
+      expect(const OverrideToString(multiline: true).multiline, isTrue);
+    });
   });
 
   group('OverrideEquality', () {

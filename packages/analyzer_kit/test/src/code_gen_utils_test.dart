@@ -619,9 +619,7 @@ void main() {
       );
       expect(
         fromMap,
-        contains(
-          "prevStatus: map['prevStatus'] != null ? Status.values.byName(map['prevStatus'] as String) : null",
-        ),
+        contains("prevStatus: Status.values.asNameMap()[map['prevStatus']]"),
       );
     });
 
@@ -805,6 +803,43 @@ void main() {
 
       final toString = generateToStringMethod('Item', fields);
       expect(toString, contains('tag: \$tag'));
+    });
+  });
+
+  group('multiline toString and double coercion', () {
+    test('generates multiline toString when multiline is true', () {
+      const fields = [
+        ClassField(name: 'name', type: 'String'),
+        ClassField(name: 'age', type: 'int'),
+      ];
+
+      final result = generateToStringMethod('User', fields, multiline: true);
+
+      expect(result, contains(r'User(\n  name: $name,\n  age: $age,\n)'));
+    });
+
+    test('coerces int to double for double and double? in fromMap', () {
+      const fields = [
+        ClassField(
+          name: 'price',
+          type: 'double',
+          typeKind: FieldTypeKind.doubleType,
+        ),
+        ClassField(
+          name: 'discount',
+          type: 'double?',
+          typeKind: FieldTypeKind.doubleType,
+        ),
+      ];
+
+      final fromMap = _norm(
+        generateDeserializeMethod('Product', 'fromMap', fields),
+      );
+      expect(fromMap, contains("price: (map['price'] as num).toDouble()"));
+      expect(
+        fromMap,
+        contains("discount: (map['discount'] as num?)?.toDouble()"),
+      );
     });
   });
 }

@@ -222,6 +222,7 @@ final class AnnotationConfig {
     this.copyWith = false,
     this.copyWithNullable = false,
     this.overrideToString = false,
+    this.overrideToStringMultiline = false,
     this.overrideEquality = false,
     this.serialize = false,
     this.deserialize = false,
@@ -235,6 +236,7 @@ final class AnnotationConfig {
   final bool copyWith;
   final bool copyWithNullable;
   final bool overrideToString;
+  final bool overrideToStringMultiline;
   final bool overrideEquality;
   final bool serialize;
   final bool deserialize;
@@ -262,6 +264,7 @@ AnnotationConfig extractAnnotationConfig(ClassDeclaration node) {
   var copyWith = false;
   var copyWithNullable = false;
   var overrideToString = false;
+  var overrideToStringMultiline = false;
   var overrideEquality = false;
   bool? deepCollectionEquality;
   var serialize = false;
@@ -295,6 +298,16 @@ AnnotationConfig extractAnnotationConfig(ClassDeclaration node) {
     )) {
       overrideToString = true;
       annotationNodes.putIfAbsent(.overrideToString, () => annotation);
+      if (arguments != null) {
+        for (final arg in arguments) {
+          if (arg is NamedArgument && arg.name.lexeme == 'multiline') {
+            final expr = arg.argumentExpression;
+            if (expr is BooleanLiteral) {
+              overrideToStringMultiline = expr.value;
+            }
+          }
+        }
+      }
       continue;
     }
     if (stringEqualsIgnoreCaseByAscii(
@@ -377,6 +390,10 @@ AnnotationConfig extractAnnotationConfig(ClassDeclaration node) {
       )) {
         overrideToString = true;
         annotationNodes.putIfAbsent(.overrideToString, () => annotation);
+        final multilineVal = item.getField('multiline')?.toBoolValue();
+        if (multilineVal == true) {
+          overrideToStringMultiline = true;
+        }
       } else if (stringEqualsIgnoreCaseByAscii(
         typeName,
         FeatureAnnotation.overrideEquality.name,
@@ -409,6 +426,7 @@ AnnotationConfig extractAnnotationConfig(ClassDeclaration node) {
     copyWith: copyWith,
     copyWithNullable: copyWithNullable,
     overrideToString: overrideToString,
+    overrideToStringMultiline: overrideToStringMultiline,
     overrideEquality: overrideEquality,
     serialize: serialize,
     deserialize: deserialize,

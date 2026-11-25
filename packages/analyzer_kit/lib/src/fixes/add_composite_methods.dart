@@ -90,8 +90,12 @@ base class AddCompositeMethods extends ResolvedCorrectionProducer {
       handleMethod(
         existing,
         existing != null && isBodyInSync(existing.body, fields),
-        ({required bool format}) =>
-            generateToStringMethod(className, fields, format: format),
+        ({required bool format}) => generateToStringMethod(
+          className,
+          fields,
+          multiline: config.overrideToStringMultiline,
+          format: format,
+        ),
       );
     }
 
