@@ -6,8 +6,6 @@ final class const FieldSyncResult({
   final List<String> extraFields = const [],
   final List<String> driftReasons = const [],
 }) {
-  this;
-
   bool get isInSync =>
       missingFields.isEmpty && extraFields.isEmpty && driftReasons.isEmpty;
 

@@ -239,8 +239,6 @@ final class const AnnotationConfig({
   /// constant values when reporting diagnostics.
   final Map<FeatureAnnotation, Annotation> annotationNodes = const {},
 }) {
-  this;
-
   bool get hasAnyFeature =>
       copyWith ||
       overrideToString ||
