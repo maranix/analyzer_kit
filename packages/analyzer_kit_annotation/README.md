@@ -120,6 +120,13 @@ For classes with collection fields (`List`, `Set`, `Map`), the generated equalit
 
 ```dart
 @OverrideEquality(deepCollectionEquality: false)
+class Inventory {
+  final List<String> items;
+
+  Inventory({required this.items});
+
+  // Generated: uses Object.hashAll/indexed.every instead of deepHash/deepEquals
+}
 ```
 
 ### `@Ignore`
@@ -138,14 +145,6 @@ class Account {
   final String? token;
 
   Account({required this.id, this.cachedLabel, this.token});
-}
-```
-class Inventory {
-  final List<String> items;
-
-  Inventory({required this.items});
-
-  // Generated: uses Object.hashAll/indexed.every instead of deepHash/deepEquals
 }
 ```
 

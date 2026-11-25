@@ -1,16 +1,17 @@
-## Unreleased
-
-- Added `FieldRename` (`none`, `snake`, `kebab`, `pascal`, `screamingSnake`) to `@Serialize` and `@Deserialize` for configuring serialized/deserialized map key casing.
-- Added field-level `@Redact` (`@redact`) annotation accepting `Set<ClassAnnotation>` (defaulting to `{.overrideToString}`) and an optional `placeholder` (defaulting to `'[REDACTED]'`) for masking sensitive fields in generated output.
-- Added field-level `@Ignore` (`@ignore`) annotation accepting a `Set<ClassAnnotation>` (e.g. `@Ignore({.serialize, .overrideToString})`) for excluding fields per feature.
-
 ## 2.0.0
 
-- **Breaking:** Removed `DataClass` and `@dataClass` in favor of `CompositeAnnotation`, allowing users to compose reusable annotation bundles with custom configurations.
-- Added `deepCollectionEquality` option on `OverrideEquality` and switched `deepHash` / `deepEquals` to order-sensitive `DeepCollectionEquality()`.
-- Added `nullable` option on `CopyWith` (`@CopyWith(nullable: true)`) for resetting nullable fields to `null`.
-- Added `multiline` option on `OverrideToString` (`@OverrideToString(multiline: true)`) for multi-line `toString()` formatting.
-- Updated SDK constraint to `^3.14.0`.
+- **Breaking:**
+  - Removed `DataClass` and `@dataClass` in favor of `CompositeAnnotation`, allowing users to compose reusable annotation bundles with custom configurations.
+  - Updated Dart SDK constraint to `^3.14.0` (adopting primary constructors and dot-shorthand across annotation classes).
+- **New Annotations & Options:**
+  - Added `CompositeAnnotation([...])` for bundling any combination of class-level annotations (`CopyWith`, `OverrideEquality`, `OverrideToString`, `Serialize`, `Deserialize`, or nested `CompositeAnnotation`s).
+  - Added field-level `@Ignore` (`@ignore`) accepting a `Set<ClassAnnotation>` (e.g. `@Ignore({.serialize, .overrideToString})`) to exclude fields per feature.
+  - Added field-level `@Redact` (`@redact`) accepting a `Set<ClassAnnotation>` (defaulting to `{.overrideToString}`) and an optional `placeholder` (defaulting to `'[REDACTED]'`) to mask sensitive field values in generated output.
+  - Added `FieldRename` (`none`, `snake`, `kebab`, `pascal`, `screamingSnake`) to `@Serialize` and `@Deserialize` for configuring map key casing.
+  - Added `ClassAnnotation` enum (`copyWith`, `overrideEquality`, `overrideToString`, `serialize`, `deserialize`) shared by `@Ignore` and `@Redact`.
+  - Added `nullable` option on `CopyWith` (`@CopyWith(nullable: true)`) for resetting nullable fields to `null`.
+  - Added `multiline` option on `OverrideToString` (`@OverrideToString(multiline: true)`) for multi-line `toString()` formatting.
+  - Added `deepCollectionEquality` option on `OverrideEquality` and switched `deepHash` / `deepEquals` to order-sensitive `DeepCollectionEquality()`.
 
 ## 1.0.0+1
 - Documentation:
