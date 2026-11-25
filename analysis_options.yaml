@@ -3,10 +3,3 @@ include: package:lints/recommended.yaml
 plugins:
   analyzer_kit:
     path: packages/analyzer_kit
-    diagnostics:
-      copy_with_annotation: true
-      override_to_string_annotation: true
-      override_equality_annotation: true
-      serialize_annotation: true
-      deserialize_annotation: true
-      data_class_annotation: true
