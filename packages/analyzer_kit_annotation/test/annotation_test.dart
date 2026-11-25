@@ -281,4 +281,25 @@ void main() {
       });
     });
   });
+
+  group('Redact', () {
+    test('defaults to overrideToString and [REDACTED] placeholder', () {
+      const annotation = Redact();
+      expect(annotation.annotations, {ClassAnnotation.overrideToString});
+      expect(annotation.placeholder, '[REDACTED]');
+    });
+
+    test('convenience constant is identical to const Redact()', () {
+      expect(identical(redact, const Redact()), isTrue);
+    });
+
+    test('accepts custom ClassAnnotation set and custom placeholder', () {
+      const annotation = Redact({.overrideToString, .serialize}, '***');
+      expect(annotation.annotations, {
+        ClassAnnotation.overrideToString,
+        ClassAnnotation.serialize,
+      });
+      expect(annotation.placeholder, '***');
+    });
+  });
 }

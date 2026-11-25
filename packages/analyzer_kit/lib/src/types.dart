@@ -4,9 +4,11 @@ import 'package:analyzer/dart/ast/ast.dart'
         DotShorthandPropertyAccess,
         FieldDeclaration,
         FormalParameter,
+        NamedArgument,
         PrefixedIdentifier,
         SetOrMapLiteral,
         SimpleIdentifier,
+        SimpleStringLiteral,
         VariableDeclaration;
 import 'package:analyzer/dart/constant/value.dart' show DartObject;
 import 'package:analyzer/dart/element/element.dart'
@@ -54,6 +56,8 @@ final class ClassField {
     this.serializeMethodName,
     this.deserializeMethodName,
     this.ignoredFor = const {},
+    this.redactedFor = const {},
+    this.redactPlaceholder = '[REDACTED]',
   });
 
   final String name;
@@ -92,6 +96,12 @@ final class ClassField {
 
   /// Class-level annotations for which this field is ignored.
   final Set<FeatureAnnotation> ignoredFor;
+
+  /// Class-level annotations for which this field's value is redacted.
+  final Set<FeatureAnnotation> redactedFor;
+
+  /// Placeholder string rendered in place of the field's value when redacted.
+  final String redactPlaceholder;
 
   /// Whether this field should be included in generated methods.
   ///
@@ -203,6 +213,7 @@ final class ClassField {
     final ignoredFor = _extractIgnoredForFromElements(
       element.metadata.annotations,
     );
+    final redacted = _extractRedactedFromElements(element.metadata.annotations);
     final suffix = dartType.nullabilitySuffix == NullabilitySuffix.question
         ? '?'
         : '';
@@ -228,6 +239,8 @@ final class ClassField {
       serializeMethodName: resolved.serializeMethodName,
       deserializeMethodName: resolved.deserializeMethodName,
       ignoredFor: ignoredFor,
+      redactedFor: redacted.annotations,
+      redactPlaceholder: redacted.placeholder,
     );
   }
 
@@ -255,6 +268,8 @@ final class ClassField {
     serializeMethodName: serializeMethodName,
     deserializeMethodName: deserializeMethodName,
     ignoredFor: ignoredFor,
+    redactedFor: redactedFor,
+    redactPlaceholder: redactPlaceholder,
   );
 
   /// Extracts a [ClassField] from a declaring [FormalParameter] in a
@@ -265,6 +280,7 @@ final class ClassField {
     final dartType = param.declaredFragment?.element.type;
     final resolved = _resolveDartType(dartType);
     final ignoredFor = _extractIgnoredFor(param.metadata);
+    final redacted = _extractRedacted(param.metadata);
 
     return ClassField(
       keyword: param.constFinalOrVarKeyword?.lexeme,
@@ -280,6 +296,8 @@ final class ClassField {
       serializeMethodName: resolved.serializeMethodName,
       deserializeMethodName: resolved.deserializeMethodName,
       ignoredFor: ignoredFor,
+      redactedFor: redacted.annotations,
+      redactPlaceholder: redacted.placeholder,
     );
   }
 
@@ -296,6 +314,7 @@ final class ClassField {
     final resolvedDartType = dartType ?? fd.fields.type?.type;
     final resolved = _resolveDartType(resolvedDartType);
     final ignoredFor = _extractIgnoredFor(fd.metadata);
+    final redacted = _extractRedacted(fd.metadata);
 
     return ClassField(
       keyword: keyword ?? fd.fields.keyword?.lexeme,
@@ -315,6 +334,8 @@ final class ClassField {
       serializeMethodName: resolved.serializeMethodName,
       deserializeMethodName: resolved.deserializeMethodName,
       ignoredFor: ignoredFor,
+      redactedFor: redacted.annotations,
+      redactPlaceholder: redacted.placeholder,
     );
   }
 
@@ -531,6 +552,8 @@ final class ClassField {
       'isPublic: $isPublic, isPrivate: $isPrivate)';
 }
 
+const _defaultRedactPlaceholder = '[REDACTED]';
+
 FeatureAnnotation? _featureFromEnumName(String? name) => switch (name) {
   'copyWith' => FeatureAnnotation.copyWith,
   'overrideEquality' => FeatureAnnotation.overrideEquality,
@@ -540,15 +563,40 @@ FeatureAnnotation? _featureFromEnumName(String? name) => switch (name) {
   _ => null,
 };
 
-Set<FeatureAnnotation>? _ignoredForFromDartObject(DartObject? constant) {
-  if (constant == null) return null;
-  if (constant.type?.element?.name != 'Ignore') return null;
-  final setVal = constant.getField('annotations')?.toSetValue();
+Set<FeatureAnnotation> _featureSetFromDartObject(DartObject? setField) {
+  final setVal = setField?.toSetValue();
   if (setVal == null) return const {};
   return {
-    for (final item in setVal)
-      if (_featureFromEnumName(item.variable?.name) case final f?) f,
+    for (final item in setVal) ?_featureFromEnumName(item.variable?.name),
   };
+}
+
+Set<FeatureAnnotation> _featureSetFromLiteral(SetOrMapLiteral literal) {
+  final result = <FeatureAnnotation>{};
+  for (final element in literal.elements) {
+    final enumName = switch (element) {
+      DotShorthandPropertyAccess(:final propertyName) => propertyName.name,
+      PrefixedIdentifier(:final identifier) => identifier.name,
+      SimpleIdentifier(:final name) => name,
+      _ => null,
+    };
+    if (_featureFromEnumName(enumName) case final f?) {
+      result.add(f);
+    }
+  }
+  return result;
+}
+
+String _annotationRawName(Annotation annotation) => switch (annotation.name) {
+  SimpleIdentifier(:final name) => name,
+  PrefixedIdentifier(:final identifier) => identifier.name,
+};
+
+Set<FeatureAnnotation>? _ignoredForFromDartObject(DartObject? constant) {
+  if (constant == null || constant.type?.element?.name != 'Ignore') {
+    return null;
+  }
+  return _featureSetFromDartObject(constant.getField('annotations'));
 }
 
 Set<FeatureAnnotation> _extractIgnoredForFromElements(
@@ -576,10 +624,7 @@ Set<FeatureAnnotation> _extractIgnoredFor(Iterable<Annotation> metadata) {
     }
 
     // Fallback for unresolved AST nodes (e.g. unit tests without resolution).
-    final rawName = switch (annotation.name) {
-      SimpleIdentifier(:final name) => name,
-      PrefixedIdentifier(:final identifier) => identifier.name,
-    };
+    final rawName = _annotationRawName(annotation);
     if (rawName != 'ignore' && rawName != 'Ignore') continue;
 
     final args = annotation.arguments?.arguments;
@@ -590,18 +635,85 @@ Set<FeatureAnnotation> _extractIgnoredFor(Iterable<Annotation> metadata) {
 
     final first = args.first;
     if (first is SetOrMapLiteral) {
-      for (final element in first.elements) {
-        final enumName = switch (element) {
-          DotShorthandPropertyAccess(:final propertyName) => propertyName.name,
-          PrefixedIdentifier(:final identifier) => identifier.name,
-          SimpleIdentifier(:final name) => name,
-          _ => null,
-        };
-        if (_featureFromEnumName(enumName) case final f?) {
-          result.add(f);
-        }
-      }
+      result.addAll(_featureSetFromLiteral(first));
     }
   }
   return result;
+}
+
+({Set<FeatureAnnotation> annotations, String placeholder})?
+_redactFromDartObject(DartObject? constant) {
+  if (constant == null || constant.type?.element?.name != 'Redact') {
+    return null;
+  }
+  return (
+    annotations: _featureSetFromDartObject(constant.getField('annotations')),
+    placeholder:
+        constant.getField('placeholder')?.toStringValue() ??
+        _defaultRedactPlaceholder,
+  );
+}
+
+({Set<FeatureAnnotation> annotations, String placeholder})
+_extractRedactedFromElements(Iterable<ElementAnnotation> metadata) {
+  final annotations = <FeatureAnnotation>{};
+  var placeholder = _defaultRedactPlaceholder;
+  for (final meta in metadata) {
+    final parsed = _redactFromDartObject(meta.computeConstantValue());
+    if (parsed != null) {
+      annotations.addAll(parsed.annotations);
+      placeholder = parsed.placeholder;
+    }
+  }
+  return (annotations: annotations, placeholder: placeholder);
+}
+
+({Set<FeatureAnnotation> annotations, String placeholder}) _extractRedacted(
+  Iterable<Annotation> metadata,
+) {
+  final annotations = <FeatureAnnotation>{};
+  var placeholder = _defaultRedactPlaceholder;
+  for (final annotation in metadata) {
+    final resolved = _redactFromDartObject(
+      annotation.elementAnnotation?.computeConstantValue(),
+    );
+    if (resolved != null) {
+      annotations.addAll(resolved.annotations);
+      placeholder = resolved.placeholder;
+      continue;
+    }
+
+    // Fallback for unresolved AST nodes (e.g. unit tests without resolution).
+    final rawName = _annotationRawName(annotation);
+    if (rawName != 'redact' && rawName != 'Redact') continue;
+
+    final args = annotation.arguments?.arguments;
+    if (args == null || args.isEmpty) {
+      annotations.add(FeatureAnnotation.overrideToString);
+      continue;
+    }
+
+    var hasExplicitAnnotations = false;
+    for (final arg in args) {
+      if (arg is NamedArgument) {
+        final expr = arg.argumentExpression;
+        if (arg.name.lexeme == 'annotations' && expr is SetOrMapLiteral) {
+          hasExplicitAnnotations = true;
+          annotations.addAll(_featureSetFromLiteral(expr));
+        } else if (arg.name.lexeme == 'placeholder' &&
+            expr is SimpleStringLiteral) {
+          placeholder = expr.value;
+        }
+      } else if (arg is SetOrMapLiteral) {
+        hasExplicitAnnotations = true;
+        annotations.addAll(_featureSetFromLiteral(arg));
+      } else if (arg is SimpleStringLiteral) {
+        placeholder = arg.value;
+      }
+    }
+    if (!hasExplicitAnnotations) {
+      annotations.add(FeatureAnnotation.overrideToString);
+    }
+  }
+  return (annotations: annotations, placeholder: placeholder);
 }

@@ -1,20 +1,4 @@
-/// Class-level codegen annotations supported by `analyzer_kit`.
-enum ClassAnnotation {
-  /// Excludes the field from generated `copyWith` methods.
-  copyWith,
-
-  /// Excludes the field from generated `==` and `hashCode` overrides.
-  overrideEquality,
-
-  /// Excludes the field from generated `toString` overrides.
-  overrideToString,
-
-  /// Excludes the field from generated serialization methods.
-  serialize,
-
-  /// Excludes the field from generated deserialization factories.
-  deserialize,
-}
+import 'class_annotation.dart';
 
 /// Marks a field to be ignored by `analyzer_kit` code generation.
 ///

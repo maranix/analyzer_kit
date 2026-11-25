@@ -1,5 +1,7 @@
 import 'package:analyzer/dart/analysis/utilities.dart';
 import 'package:analyzer/dart/ast/ast.dart';
+import 'package:analyzer_kit/src/enums.dart';
+import 'package:analyzer_kit/src/types.dart';
 import 'package:analyzer_kit/src/utils/utils.dart';
 import 'package:test/test.dart';
 
@@ -175,6 +177,125 @@ final class Point(final int x, final int y) {
       final member = findDeserializeMember(cls, 'fromMap')!;
       final fields = extractGeneratableFields(cls);
       expect(isDeserializeInSync(member, fields), isTrue);
+    });
+
+    test('checkBodySync and checkSerializeSync handle redacted fields', () {
+      final cls = _parseClass('''
+class Secret {
+  Secret({required this.id, required this.userId, required this.password});
+  final String id;
+  @Redact({.overrideToString, .serialize})
+  final String userId;
+  @Redact({.overrideToString, .serialize}, '***')
+  final String password;
+
+  @override
+  String toString() =>
+      'Secret(id: \$id, userId: [REDACTED], password: ***)';
+
+  Map<String, dynamic> toMap() => {
+    'id': id,
+    'userId': '[REDACTED]',
+    'password': '***',
+  };
+}
+''');
+      final fields = extractGeneratableFields(cls);
+      final toStringMethod = findMethodDeclaration(cls, 'toString')!;
+      final toMapMethod = findMethodDeclaration(cls, 'toMap')!;
+
+      expect(
+        checkBodySync(
+          toStringMethod.body,
+          fields,
+          feature: FeatureAnnotation.overrideToString,
+        ).isInSync,
+        isTrue,
+      );
+      expect(checkSerializeSync(toMapMethod.body, fields).isInSync, isTrue);
+
+      // Unredacted methods fail sync check
+      final unredactedCls = _parseClass('''
+class Secret {
+  Secret({required this.id, required this.password});
+  final String id;
+  @redact
+  final String password;
+
+  @override
+  String toString() => 'Secret(id: \$id, password: \$password)';
+
+  Map<String, dynamic> toMap() => {'id': id, 'password': password};
+}
+''');
+      final unredactedToString = findMethodDeclaration(
+        unredactedCls,
+        'toString',
+      )!;
+      final toStringSync = checkBodySync(
+        unredactedToString.body,
+        extractGeneratableFields(unredactedCls),
+        feature: FeatureAnnotation.overrideToString,
+      );
+      expect(toStringSync.isInSync, isFalse);
+      expect(toStringSync.driftReasons, contains('unredacted field: password'));
+
+      // Check serialize drift when field is redacted for serialize
+      final serializeFields = [
+        const ClassField(name: 'id', type: 'String'),
+        const ClassField(
+          name: 'password',
+          type: 'String',
+          redactedFor: {FeatureAnnotation.serialize},
+        ),
+      ];
+      final unredactedToMap = findMethodDeclaration(unredactedCls, 'toMap')!;
+      final serSync = checkSerializeSync(unredactedToMap.body, serializeFields);
+      expect(serSync.isInSync, isFalse);
+      expect(serSync.driftReasons, contains('unredacted field: password'));
+
+      // Placeholder mismatch in toString and toMap
+      const customPlaceholderFields = [
+        ClassField(name: 'id', type: 'String'),
+        ClassField(
+          name: 'userId',
+          type: 'String',
+          redactedFor: {
+            FeatureAnnotation.overrideToString,
+            FeatureAnnotation.serialize,
+          },
+          redactPlaceholder: 'MASKED',
+        ),
+        ClassField(
+          name: 'password',
+          type: 'String',
+          redactedFor: {
+            FeatureAnnotation.overrideToString,
+            FeatureAnnotation.serialize,
+          },
+          redactPlaceholder: '***',
+        ),
+      ];
+      final toStringMismatch = checkBodySync(
+        toStringMethod.body,
+        customPlaceholderFields,
+        feature: FeatureAnnotation.overrideToString,
+      );
+      expect(toStringMismatch.isInSync, isFalse);
+      expect(
+        toStringMismatch.driftReasons,
+        contains('redacted placeholder mismatch: userId'),
+      );
+
+      final toMapMismatch = checkSerializeSync(
+        toMapMethod.body,
+        customPlaceholderFields,
+      );
+      expect(toMapMismatch.isInSync, isFalse);
+      expect(
+        toMapMismatch.driftReasons,
+        contains('redacted placeholder mismatch: userId'),
+      );
     });
   });
 }

@@ -61,7 +61,10 @@ final class _AnalyzerKitVisitor extends RecursiveAstVisitor<void> {
     if (fields.isEmpty) return;
 
     if (config.copyWith) {
-      final featureFields = fieldsForFeature(fields, FeatureAnnotation.copyWith);
+      final featureFields = fieldsForFeature(
+        fields,
+        FeatureAnnotation.copyWith,
+      );
       if (featureFields.isNotEmpty) {
         final method = findMethodDeclaration(node, FeatureMethod.copyWith.name);
         final sync = method == null
@@ -91,7 +94,11 @@ final class _AnalyzerKitVisitor extends RecursiveAstVisitor<void> {
         );
         final sync = method == null
             ? null
-            : checkBodySync(method.body, featureFields);
+            : checkBodySync(
+                method.body,
+                featureFields,
+                feature: FeatureAnnotation.overrideToString,
+              );
         _report(
           config.annotationNodes[FeatureAnnotation.overrideToString],
           FeatureDiagnosticCode.overrideToString,

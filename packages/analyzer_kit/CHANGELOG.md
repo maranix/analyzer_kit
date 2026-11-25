@@ -1,5 +1,6 @@
 ## Unreleased
 
+- Added support for field-level `@redact`, `@Redact()`, and `@Redact({...}, placeholder)` annotations across `AnalyzerKitRule` sync checks (`checkBodySync` / `checkSerializeSync`), `OverrideToStringMethod`, `AddSerializeMethod`, and `AddCompositeMethods` (including primary constructor parameters, body fields, and inherited fields).
 - Added support for field-level `@ignore`, `@Ignore()`, and `@Ignore({...})` annotations across `AnalyzerKitRule` sync checks and all code generation quick fixes / assists (including primary constructor parameters and inherited fields).
 
 ## 2.0.0
