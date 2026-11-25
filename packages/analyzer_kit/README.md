@@ -4,14 +4,14 @@ A Dart Analyzer plugin that provides warning rules and quick fixes for [analyzer
 
 ## Features
 
-| Annotation | Diagnostic Rule | Quick Fix |
+| Annotation | Diagnostic Rules | Quick Fixes & Assists |
 |---|---|---|
-| `CompositeAnnotation` | Triggers all bundled rules | `AddCompositeMethods` — generates/updates all bundled methods in one pass |
-| `@CopyWith` | `copy_with_annotation` | Generates or updates `copyWith` method |
-| `@OverrideEquality` | `override_equality_annotation` | Generates or updates `==` operator and `hashCode` getter |
-| `@OverrideToString` | `override_to_string_annotation` | Generates or updates `toString` override |
-| `@Serialize` | `serialize_annotation` | Generates or updates serialization method (`toMap`, `toJson`, or custom) |
-| `@Deserialize` | `deserialize_annotation` | Generates or updates deserialization factory (`fromMap`, `fromJson`, or custom) |
+| `CompositeAnnotation` | Triggers all bundled rules | `AddCompositeMethods` / `RegenerateCompositeMethods` — generates, updates, or force-regenerates all bundled methods in one pass |
+| `@CopyWith` | `copy_with_annotation` / `copy_with_out_of_sync` | Generates, updates, or force-regenerates `copyWith` method |
+| `@OverrideEquality` | `override_equality_annotation` / `override_equality_out_of_sync` | Generates, updates, or force-regenerates `==` operator and `hashCode` getter |
+| `@OverrideToString` | `override_to_string_annotation` / `override_to_string_out_of_sync` | Generates, updates, or force-regenerates `toString` override |
+| `@Serialize` | `serialize_annotation` / `serialize_out_of_sync` | Generates, updates, or force-regenerates serialization method (`toMap`, `toJson`, or custom) |
+| `@Deserialize` | `deserialize_annotation` / `deserialize_out_of_sync` | Generates, updates, or force-regenerates deserialization factory (`fromMap`, `fromJson`, or custom) |
 
 ## Installation
 
@@ -101,10 +101,10 @@ class Inventory {
 
 The plugin is built on the Dart analysis server plugin API:
 
-- **`BaseAnnotationRule`** — Abstract base for all warning rules, handling visitor registration and reporting on direct or `CompositeAnnotation` metadata.
-- **`AnnotationRule`** / **`AnnotationVisitor`** — Base classes for rules that detect missing or out-of-sync methods on annotated classes.
-- **5 concrete warning rules** — One per feature annotation, each verifying method presence and field synchronization.
-- **6 concrete fixes** — One per feature annotation plus `AddCompositeMethods`, inserting missing methods or replacing out-of-sync ones in-place.
+- **`BaseAnnotationRule`** — `MultiAnalysisRule` base for all warning rules, handling visitor registration and reporting on direct or `CompositeAnnotation` metadata.
+- **`AnnotationRule`** / **`AnnotationVisitor`** — Base classes for rules that emit `*_annotation` errors when methods are missing and `*_out_of_sync` warnings (with field diffs) when methods are out of sync.
+- **5 concrete warning rules** — One per feature annotation, each verifying method presence and field synchronization (including removed fields in `copyWith` and serialization).
+- **6 quick fixes & 6 force-regenerate assists** — One pair per feature annotation plus `AddCompositeMethods` / `RegenerateCompositeMethods`, inserting missing methods, replacing out-of-sync ones, or force-regenerating via IDE assists at any time.
 - **Code generation** — Uses [`code_builder`](https://pub.dev/packages/code_builder) for AST construction and [`dart_style`](https://pub.dev/packages/dart_style) for formatting.
 
 ## Requirements
