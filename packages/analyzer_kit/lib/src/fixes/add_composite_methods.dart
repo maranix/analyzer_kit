@@ -59,7 +59,10 @@ base class AddCompositeMethods extends ResolvedCorrectionProducer {
     }
 
     if (config.copyWith) {
-      final featureFields = fieldsForFeature(fields, FeatureAnnotation.copyWith);
+      final featureFields = fieldsForFeature(
+        fields,
+        FeatureAnnotation.copyWith,
+      );
       if (featureFields.isNotEmpty) {
         final existing = findMethodDeclaration(
           declaration,
@@ -97,7 +100,12 @@ base class AddCompositeMethods extends ResolvedCorrectionProducer {
         );
         handleMethod(
           existing,
-          existing != null && isBodyInSync(existing.body, featureFields),
+          existing != null &&
+              isBodyInSync(
+                existing.body,
+                featureFields,
+                feature: FeatureAnnotation.overrideToString,
+              ),
           ({required bool format}) => generateToStringMethod(
             className,
             featureFields,
@@ -164,7 +172,8 @@ base class AddCompositeMethods extends ResolvedCorrectionProducer {
         final existing = findMethodDeclaration(declaration, toMapName);
         handleMethod(
           existing,
-          existing != null && isBodyInSync(existing.body, featureFields),
+          existing != null &&
+              checkSerializeSync(existing.body, featureFields).isInSync,
           ({required bool format}) =>
               generateSerializeMethod(toMapName, featureFields, format: format),
         );

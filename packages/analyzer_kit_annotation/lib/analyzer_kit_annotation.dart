@@ -16,6 +16,7 @@
 /// | [Serialize] | [serialize] | Serialization method (configurable via [SerializeMethod]) |
 /// | [Deserialize] | [deserialize] | Deserialization factory (configurable via [DeserializeMethod]) |
 /// | [Ignore] | [ignore] | Excludes a field from generated methods |
+/// | [Redact] | [redact] | Redacts a sensitive field's value in generated output |
 ///
 /// ## Usage
 ///
@@ -46,10 +47,12 @@
 library;
 
 export 'src/analyzer_kit.dart';
+export 'src/class_annotation.dart';
 export 'src/composite_annotation.dart';
 export 'src/copy_with.dart';
 export 'src/deserialize.dart';
 export 'src/ignore.dart';
 export 'src/override_equality.dart';
 export 'src/override_to_string.dart';
+export 'src/redact.dart';
 export 'src/serialize.dart';

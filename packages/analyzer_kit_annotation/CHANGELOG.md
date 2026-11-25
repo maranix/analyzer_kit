@@ -1,5 +1,6 @@
 ## Unreleased
 
+- Added field-level `@Redact` (`@redact`) annotation accepting `Set<ClassAnnotation>` (defaulting to `{.overrideToString}`) and an optional `placeholder` (defaulting to `'[REDACTED]'`) for masking sensitive fields in generated output.
 - Added field-level `@Ignore` (`@ignore`) annotation accepting a `Set<ClassAnnotation>` (e.g. `@Ignore({.serialize, .overrideToString})`) for excluding fields per feature.
 
 ## 2.0.0

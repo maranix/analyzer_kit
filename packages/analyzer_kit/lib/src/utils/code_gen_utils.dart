@@ -62,6 +62,14 @@ String generateCopyWithMethod(
   return format ? formatCode(raw) : raw;
 }
 
+String _escapeSingleQuotedString(String value) => value
+    .replaceAll(r'\', r'\\')
+    .replaceAll("'", r"\'")
+    .replaceAll(r'$', r'\$')
+    .replaceAll('\n', r'\n')
+    .replaceAll('\r', r'\r')
+    .replaceAll('\t', r'\t');
+
 /// Generates a `toString` override for the given [className] and [fields].
 String generateToStringMethod(
   String className,
@@ -70,13 +78,19 @@ String generateToStringMethod(
   bool format = true,
 }) {
   final fieldList = fields is List<ClassField> ? fields : fields.toList();
+  String renderField(ClassField f) {
+    final value = f.redactedFor.contains(FeatureAnnotation.overrideToString)
+        ? _escapeSingleQuotedString(f.redactPlaceholder)
+        : '\$${f.name}';
+    return '${f.name}: $value';
+  }
+
   final String content;
   if (multiline && fieldList.isNotEmpty) {
-    final lines = fieldList.map((f) => '  ${f.name}: \$${f.name},').join('\\n');
+    final lines = fieldList.map((f) => '  ${renderField(f)},').join('\\n');
     content = '$className(\\n$lines\\n)';
   } else {
-    content =
-        '$className(${fieldList.map((f) => '${f.name}: \$${f.name}').join(', ')})';
+    content = '$className(${fieldList.map(renderField).join(', ')})';
   }
   final body = Code("'$content';");
 
@@ -274,7 +288,12 @@ String generateSerializeMethod(
   bool format = true,
 }) {
   final entries = fields
-      .map((f) => "'${f.name}': ${_serializeExpression(f, f.name)}")
+      .map((f) {
+        final valueExpr = f.redactedFor.contains(FeatureAnnotation.serialize)
+            ? "'${_escapeSingleQuotedString(f.redactPlaceholder)}'"
+            : _serializeExpression(f, f.name);
+        return "'${f.name}': $valueExpr";
+      })
       .join(', ');
 
   final method = Method(

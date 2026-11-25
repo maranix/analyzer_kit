@@ -1,3 +1,4 @@
+import 'package:analyzer_kit/src/enums.dart';
 import 'package:analyzer_kit/src/types.dart';
 import 'package:analyzer_kit/src/utils/utils.dart';
 import 'package:test/test.dart';
@@ -840,6 +841,71 @@ void main() {
         fromMap,
         contains("discount: (map['discount'] as num?)?.toDouble()"),
       );
+    });
+  });
+
+  group('redacted fields in toString and serialize', () {
+    test('renders placeholder in single-line and multiline toString', () {
+      const fields = [
+        ClassField(name: 'username', type: 'String'),
+        ClassField(
+          name: 'password',
+          type: 'String',
+          redactedFor: {FeatureAnnotation.overrideToString},
+        ),
+        ClassField(
+          name: 'apiKey',
+          type: 'String?',
+          redactedFor: {FeatureAnnotation.overrideToString},
+          redactPlaceholder: '***',
+        ),
+      ];
+
+      final single = _norm(generateToStringMethod('Credentials', fields));
+      expect(
+        single,
+        contains(
+          "toString() => 'Credentials(username: \$username, password: [REDACTED], apiKey: ***)';",
+        ),
+      );
+
+      final multi = generateToStringMethod(
+        'Credentials',
+        fields,
+        multiline: true,
+      );
+      expect(
+        multi,
+        contains(
+          r'Credentials(\n  username: $username,\n  password: [REDACTED],\n  apiKey: ***,\n)',
+        ),
+      );
+    });
+
+    test('renders placeholder in serialize and escapes special characters', () {
+      const fields = [
+        ClassField(name: 'username', type: 'String'),
+        ClassField(
+          name: 'password',
+          type: 'String',
+          redactedFor: {FeatureAnnotation.serialize},
+        ),
+        ClassField(
+          name: 'token',
+          type: 'DateTime',
+          typeKind: FieldTypeKind.dateTime,
+          redactedFor: {FeatureAnnotation.serialize},
+          redactPlaceholder: r"can't $show",
+        ),
+      ];
+
+      final toMap = _norm(generateSerializeMethod('toMap', fields));
+      expect(toMap, contains("'username': username"));
+      expect(toMap, contains("'password': '[REDACTED]'"));
+      expect(toMap, contains(r"'token': 'can\'t \$show'"));
+
+      final toString = generateToStringMethod('Auth', [fields[2]]);
+      expect(toString, isNot(contains(r"can\'t")));
     });
   });
 }

@@ -138,6 +138,25 @@ class Account {
 }
 ```
 
+### Redacting Sensitive Fields (`@Redact`)
+
+Mask sensitive field values in `toString()` and/or serialization methods using `@redact`, `@Redact()`, or `@Redact({...}, placeholder)` while preserving the field in `copyWith`, `==`, `hashCode`, and `fromMap`:
+
+```dart
+@dataClass
+class Account {
+  final String id;
+
+  @redact
+  final String password;
+
+  @Redact({.overrideToString, .serialize}, '***')
+  final String apiKey;
+
+  Account({required this.id, required this.password, required this.apiKey});
+}
+```
+
 ## Architecture
 
 The plugin is built on the Dart analysis server plugin API:

@@ -29,6 +29,7 @@ plugins:
 | `@Serialize()` | `@serialize` | Serialization method (default: `toMap`) |
 | `@Deserialize()` | `@deserialize` | Deserialization factory (default: `fromMap`) |
 | `@Ignore()` | `@ignore` | Excludes a field from generated methods |
+| `@Redact()` | `@redact` | Masks a sensitive field's value in generated output |
 
 Each feature annotation has a convenience `const` for concise usage (e.g., `@copyWith` is equivalent to `@CopyWith()`).
 
@@ -145,6 +146,25 @@ class Inventory {
   Inventory({required this.items});
 
   // Generated: uses Object.hashAll/indexed.every instead of deepHash/deepEquals
+}
+```
+
+### `@Redact`
+
+Masks a sensitive field's value with a placeholder in generated output while keeping the field in the class and all other generated methods (`copyWith`, `==`, `hashCode`, `fromMap`):
+
+```dart
+@dataClass
+class Account {
+  final String id;
+
+  @redact // Renders '[REDACTED]' in toString()
+  final String password;
+
+  @Redact({.overrideToString, .serialize}, '***') // Renders '***' in toString() & toMap()
+  final String apiKey;
+
+  Account({required this.id, required this.password, required this.apiKey});
 }
 ```
 

@@ -7,6 +7,8 @@ import 'package:analyzer/dart/analysis/results.dart';
 import 'package:analyzer/dart/ast/ast.dart' show ClassDeclaration;
 import 'package:analyzer_kit/src/enums.dart';
 import 'package:analyzer_kit/src/fixes/add_composite_methods.dart';
+import 'package:analyzer_kit/src/fixes/add_serialize_method.dart';
+import 'package:analyzer_kit/src/fixes/override_to_string_method.dart';
 import 'package:analyzer_kit/src/utils/utils.dart';
 import 'package:analyzer_plugin/utilities/change_builder/change_builder_core.dart';
 import 'package:test/test.dart';
@@ -392,10 +394,8 @@ abstract class AbstractBase {
     },
   );
 
-  test(
-    'supports field-level @ignore, @Ignore(), and @Ignore({...}) across all features',
-    () async {
-      final unitResult = await resolveCode('ignore_fields.dart', '''
+  test('supports field-level @ignore, @Ignore(), and @Ignore({...}) across all features', () async {
+    final unitResult = await resolveCode('ignore_fields.dart', '''
 import 'package:analyzer_kit_annotation/analyzer_kit_annotation.dart';
 
 const dataClass = CompositeAnnotation([
@@ -419,74 +419,290 @@ class Account({
 }
 ''');
 
-      final cls = unitResult.unit.declarations
-          .whereType<ClassDeclaration>()
-          .single;
-      final fields = extractGeneratableFields(cls);
+    final cls = unitResult.unit.declarations
+        .whereType<ClassDeclaration>()
+        .single;
+    final fields = extractGeneratableFields(cls);
 
-      final idField = fields.firstWhere((f) => f.name == 'id');
-      expect(idField.ignoredFor, isEmpty);
+    final idField = fields.firstWhere((f) => f.name == 'id');
+    expect(idField.ignoredFor, isEmpty);
 
-      final tokenField = fields.firstWhere((f) => f.name == 'token');
-      expect(tokenField.ignoredFor, {
+    final tokenField = fields.firstWhere((f) => f.name == 'token');
+    expect(tokenField.ignoredFor, {
+      FeatureAnnotation.overrideToString,
+      FeatureAnnotation.serialize,
+    });
+
+    final cachedField = fields.firstWhere((f) => f.name == 'cachedLabel');
+    expect(cachedField.ignoredFor, FeatureAnnotation.values.toSet());
+
+    final legacyField = fields.firstWhere((f) => f.name == 'legacyNote');
+    expect(legacyField.ignoredFor, {
+      FeatureAnnotation.copyWith,
+      FeatureAnnotation.overrideEquality,
+      FeatureAnnotation.overrideToString,
+      FeatureAnnotation.serialize,
+    });
+
+    expect(
+      fieldsForFeature(fields, FeatureAnnotation.copyWith).map((f) => f.name),
+      ['id', 'token'],
+    );
+    expect(
+      fieldsForFeature(
+        fields,
         FeatureAnnotation.overrideToString,
-        FeatureAnnotation.serialize,
-      });
+      ).map((f) => f.name),
+      ['id'],
+    );
+    expect(
+      fieldsForFeature(fields, FeatureAnnotation.serialize).map((f) => f.name),
+      ['id'],
+    );
+    expect(
+      fieldsForFeature(
+        fields,
+        FeatureAnnotation.deserialize,
+      ).map((f) => f.name),
+      ['id', 'token', 'legacyNote'],
+    );
 
-      final cachedField = fields.firstWhere((f) => f.name == 'cachedLabel');
-      expect(cachedField.ignoredFor, FeatureAnnotation.values.toSet());
+    final libraryResult = await unitResult.session.getResolvedLibraryByElement(
+      unitResult.libraryElement,
+    ) as ResolvedLibraryResult;
+    final context = CorrectionProducerContext.createResolved(
+      libraryResult: libraryResult,
+      unitResult: unitResult,
+      selectionOffset: cls.offset,
+    );
 
-      final legacyField = fields.firstWhere((f) => f.name == 'legacyNote');
-      expect(legacyField.ignoredFor, {
-        FeatureAnnotation.copyWith,
-        FeatureAnnotation.overrideEquality,
-        FeatureAnnotation.overrideToString,
-        FeatureAnnotation.serialize,
-      });
+    final builder = ChangeBuilder(session: unitResult.session);
+    await AddCompositeMethods(context: context).compute(builder);
 
-      expect(
-        fieldsForFeature(fields, FeatureAnnotation.copyWith).map((f) => f.name),
-        ['id', 'token'],
-      );
-      expect(
-        fieldsForFeature(fields, FeatureAnnotation.overrideToString)
-            .map((f) => f.name),
-        ['id'],
-      );
-      expect(
-        fieldsForFeature(fields, FeatureAnnotation.serialize)
-            .map((f) => f.name),
-        ['id'],
-      );
-      expect(
-        fieldsForFeature(fields, FeatureAnnotation.deserialize)
-            .map((f) => f.name),
-        ['id', 'token', 'legacyNote'],
-      );
+    final generated = builder.sourceChange.edits.single.edits
+        .map((e) => e.replacement)
+        .join('\n');
 
-      final libraryResult = await unitResult.session.getResolvedLibraryByElement(
-        unitResult.libraryElement,
-      ) as ResolvedLibraryResult;
-      final context = CorrectionProducerContext.createResolved(
-        libraryResult: libraryResult,
-        unitResult: unitResult,
-        selectionOffset: cls.offset,
-      );
+    // cachedLabel is ignored everywhere
+    expect(generated, isNot(contains('cachedLabel')));
+    // token is in copyWith & equality & fromMap, but not in toString or toMap
+    expect(generated, contains('String? token'));
+    expect(generated, contains('other.token == token'));
+    expect(generated, contains("toString() => 'Account(id: \$id)'"));
+    expect(generated, contains("toMap() => {'id': id}"));
+  });
 
-      final builder = ChangeBuilder(session: unitResult.session);
-      await AddCompositeMethods(context: context).compute(builder);
+  test('supports field-level @redact and @Redact across primary params, body fields, and inherited fields', () async {
+    await resolveCode('redact_base.dart', '''
+import 'package:analyzer_kit_annotation/analyzer_kit_annotation.dart';
 
-      final generated = builder.sourceChange.edits.single.edits
-          .map((e) => e.replacement)
-          .join('\n');
+class BaseCredentials {
+  @Redact({.overrideToString, .serialize})
+  final String masterKey;
 
-      // cachedLabel is ignored everywhere
-      expect(generated, isNot(contains('cachedLabel')));
-      // token is in copyWith & equality & fromMap, but not in toString or toMap
-      expect(generated, contains('String? token'));
-      expect(generated, contains('other.token == token'));
-      expect(generated, contains("toString() => 'Account(id: \$id)'"));
-      expect(generated, contains("toMap() => {'id': id}"));
-    },
-  );
+  const BaseCredentials({required this.masterKey});
+}
+''');
+
+    final unitResult = await resolveCode('redact_fields.dart', '''
+import 'package:analyzer_kit_annotation/analyzer_kit_annotation.dart';
+import 'redact_base.dart';
+
+const dataClass = CompositeAnnotation([
+  CopyWith(),
+  OverrideEquality(),
+  OverrideToString(),
+  Serialize(),
+  Deserialize(),
+]);
+
+@dataClass
+class PrimaryAccount({
+  required final String id,
+  @redact final String password,
+});
+
+@dataClass
+class ServiceAccount extends BaseCredentials {
+  @Redact({.overrideToString, .serialize}, '***')
+  final String apiToken;
+
+  const ServiceAccount({
+    required this.apiToken,
+    required super.masterKey,
+  });
+}
+''');
+
+    final classes = unitResult.unit.declarations
+        .whereType<ClassDeclaration>()
+        .toList();
+    final primaryCls = classes.firstWhere(
+      (c) => c.namePart.typeName.lexeme == 'PrimaryAccount',
+    );
+    final serviceCls = classes.firstWhere(
+      (c) => c.namePart.typeName.lexeme == 'ServiceAccount',
+    );
+
+    final primaryFields = extractGeneratableFields(primaryCls);
+    final idField = primaryFields.firstWhere((f) => f.name == 'id');
+    expect(idField.redactedFor, isEmpty);
+
+    final passwordField = primaryFields.firstWhere((f) => f.name == 'password');
+    expect(passwordField.redactedFor, {FeatureAnnotation.overrideToString});
+    expect(passwordField.redactPlaceholder, '[REDACTED]');
+
+    final serviceFields = extractGeneratableFields(serviceCls);
+    final apiTokenField = serviceFields.firstWhere((f) => f.name == 'apiToken');
+    expect(apiTokenField.redactedFor, {
+      FeatureAnnotation.overrideToString,
+      FeatureAnnotation.serialize,
+    });
+    expect(apiTokenField.redactPlaceholder, '***');
+
+    final masterKeyField = serviceFields.firstWhere(
+      (f) => f.name == 'masterKey',
+    );
+    expect(masterKeyField.redactedFor, {
+      FeatureAnnotation.overrideToString,
+      FeatureAnnotation.serialize,
+    });
+    expect(masterKeyField.redactPlaceholder, '[REDACTED]');
+
+    final libraryResult = await unitResult.session.getResolvedLibraryByElement(
+      unitResult.libraryElement,
+    ) as ResolvedLibraryResult;
+
+    final primaryContext = CorrectionProducerContext.createResolved(
+      libraryResult: libraryResult,
+      unitResult: unitResult,
+      selectionOffset: primaryCls.offset,
+    );
+    final primaryBuilder = ChangeBuilder(session: unitResult.session);
+    await AddCompositeMethods(context: primaryContext).compute(primaryBuilder);
+    final primaryGenerated = primaryBuilder.sourceChange.edits.single.edits
+        .map((e) => e.replacement)
+        .join('\n');
+
+    expect(primaryGenerated, contains('String? password'));
+    expect(primaryGenerated, contains('other.password == password'));
+    expect(
+      primaryGenerated,
+      contains(
+        "toString() => 'PrimaryAccount(id: \$id, password: [REDACTED])'",
+      ),
+    );
+    expect(primaryGenerated, contains("'password': password"));
+
+    final context = CorrectionProducerContext.createResolved(
+      libraryResult: libraryResult,
+      unitResult: unitResult,
+      selectionOffset: serviceCls.offset,
+    );
+
+    final compositeBuilder = ChangeBuilder(session: unitResult.session);
+    await AddCompositeMethods(context: context).compute(compositeBuilder);
+    final generated = compositeBuilder.sourceChange.edits.single.edits
+        .map((e) => e.replacement)
+        .join('\n');
+
+    // All fields remain in copyWith, ==, hashCode, and fromMap
+    expect(generated, contains('String? apiToken'));
+    expect(generated, contains('String? masterKey'));
+    expect(generated, contains('other.apiToken == apiToken'));
+    expect(generated, contains("map['apiToken'] as String"));
+    expect(generated, contains("map['masterKey'] as String"));
+
+    // toString and toMap render placeholders for apiToken and masterKey
+    expect(
+      generated,
+      contains(
+        "toString() => 'ServiceAccount(apiToken: ***, masterKey: [REDACTED])'",
+      ),
+    );
+    expect(generated, contains("'apiToken': '***'"));
+    expect(generated, contains("'masterKey': '[REDACTED]'"));
+
+    // Single-feature quick fixes also respect @Redact
+    final toStringBuilder = ChangeBuilder(session: unitResult.session);
+    await OverrideToStringMethod(context: context).compute(toStringBuilder);
+    final toStringEdit = toStringBuilder.sourceChange.edits.single.edits
+        .map((e) => e.replacement)
+        .join('\n');
+    expect(
+      toStringEdit,
+      contains('ServiceAccount(apiToken: ***, masterKey: [REDACTED])'),
+    );
+
+    final serializeBuilder = ChangeBuilder(session: unitResult.session);
+    await AddSerializeMethod(context: context).compute(serializeBuilder);
+    final serializeEdit = serializeBuilder.sourceChange.edits.single.edits
+        .map((e) => e.replacement)
+        .join('\n');
+    expect(serializeEdit, contains("'apiToken': '***'"));
+    expect(serializeEdit, contains("'masterKey': '[REDACTED]'"));
+  });
+
+  test('AddCompositeMethods replaces unredacted toString and toMap when @Redact is present', () async {
+    final unitResult = await resolveCode('redact_sync_fix.dart', '''
+import 'package:analyzer_kit_annotation/analyzer_kit_annotation.dart';
+
+const dataClass = CompositeAnnotation([
+  OverrideToString(),
+  Serialize(),
+]);
+
+@dataClass
+class Credentials {
+  final String user;
+  @Redact({.overrideToString, .serialize})
+  final String secret;
+
+  const Credentials({required this.user, required this.secret});
+
+  @override
+  String toString() => 'Credentials(user: \$user, secret: \$secret)';
+
+  Map<String, dynamic> toMap() => {'user': user, 'secret': secret};
+}
+''');
+
+    final cls = unitResult.unit.declarations
+        .whereType<ClassDeclaration>()
+        .single;
+    final fields = extractGeneratableFields(cls);
+    final toStringMethod = findMethodDeclaration(cls, 'toString')!;
+    final toMapMethod = findMethodDeclaration(cls, 'toMap')!;
+
+    expect(
+      checkBodySync(
+        toStringMethod.body,
+        fields,
+        feature: FeatureAnnotation.overrideToString,
+      ).isInSync,
+      isFalse,
+    );
+    expect(checkSerializeSync(toMapMethod.body, fields).isInSync, isFalse);
+
+    final libraryResult = await unitResult.session.getResolvedLibraryByElement(
+      unitResult.libraryElement,
+    ) as ResolvedLibraryResult;
+    final context = CorrectionProducerContext.createResolved(
+      libraryResult: libraryResult,
+      unitResult: unitResult,
+      selectionOffset: cls.offset,
+    );
+
+    final builder = ChangeBuilder(session: unitResult.session);
+    await AddCompositeMethods(context: context).compute(builder);
+    final updated = builder.sourceChange.edits.single.edits
+        .map((e) => e.replacement)
+        .join('\n');
+
+    expect(
+      updated,
+      contains("toString() => 'Credentials(user: \$user, secret: [REDACTED])'"),
+    );
+    expect(updated, contains("'secret': '[REDACTED]'"));
+  });
 }

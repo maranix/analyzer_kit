@@ -149,24 +149,67 @@ FieldSyncResult checkEqualitySync(
   );
 }
 
-/// Checks whether [body] references every field name in [fields].
-FieldSyncResult checkBodySync(FunctionBody body, Iterable<ClassField> fields) {
-  final collector = _FieldReferenceCollector();
+/// Checks whether [body] references every field name in [fields], accounting
+/// for redacted fields when [feature] is [FeatureAnnotation.overrideToString].
+FieldSyncResult checkBodySync(
+  FunctionBody body,
+  Iterable<ClassField> fields, {
+  FeatureAnnotation? feature,
+}) {
+  final checkRedaction = feature == FeatureAnnotation.overrideToString;
+  final collector = _FieldReferenceCollector(
+    collectStringContent: checkRedaction,
+  );
   body.accept(collector);
+
+  final missingFields = <String>[];
+  final driftReasons = <String>[];
+  final stringContent = checkRedaction ? collector.stringContent : '';
+
+  for (final f in fields) {
+    if (checkRedaction &&
+        f.redactedFor.contains(FeatureAnnotation.overrideToString)) {
+      final redactedPattern = RegExp(
+        '(?<![a-zA-Z0-9_\$])${RegExp.escape('${f.name}: ${f.redactPlaceholder}')}',
+      );
+      if (redactedPattern.hasMatch(stringContent)) {
+        if (collector.names.contains(f.name)) {
+          driftReasons.add('unredacted field: ${f.name}');
+        }
+        continue;
+      }
+      if (collector.names.contains(f.name)) {
+        driftReasons.add('unredacted field: ${f.name}');
+      } else {
+        final labelPattern = RegExp(
+          '(?<![a-zA-Z0-9_\$])${RegExp.escape('${f.name}: ')}',
+        );
+        if (labelPattern.hasMatch(stringContent)) {
+          driftReasons.add('redacted placeholder mismatch: ${f.name}');
+        } else {
+          missingFields.add(f.name);
+        }
+      }
+    } else if (!collector.names.contains(f.name)) {
+      missingFields.add(f.name);
+    }
+  }
+
   return FieldSyncResult(
-    missingFields: [
-      for (final f in fields)
-        if (!collector.names.contains(f.name)) f.name,
-    ],
+    missingFields: missingFields,
+    driftReasons: driftReasons,
   );
 }
 
 /// Returns whether [body] references every field name in [fields].
-bool isBodyInSync(FunctionBody body, Iterable<ClassField> fields) =>
-    checkBodySync(body, fields).isInSync;
+bool isBodyInSync(
+  FunctionBody body,
+  Iterable<ClassField> fields, {
+  FeatureAnnotation? feature,
+}) => checkBodySync(body, fields, feature: feature).isInSync;
 
 /// Checks whether a serialization [body] (`toMap` / `toJson`) has map keys
-/// matching [fields].
+/// matching [fields], accounting for redacted fields.
 FieldSyncResult checkSerializeSync(
   FunctionBody body,
   Iterable<ClassField> fields,
@@ -176,16 +219,31 @@ FieldSyncResult checkSerializeSync(
 
   final fieldNames = [for (final f in fields) f.name];
   final fieldSet = fieldNames.toSet();
+  final missingFields = <String>[];
+  final driftReasons = <String>[];
+
+  for (final f in fields) {
+    if (f.redactedFor.contains(FeatureAnnotation.serialize)) {
+      final entryExpr = collector.mapEntries[f.name];
+      if (entryExpr == null) {
+        missingFields.add(f.name);
+      } else if (entryExpr is! StringLiteral) {
+        driftReasons.add('unredacted field: ${f.name}');
+      } else if (entryExpr.stringValue != f.redactPlaceholder) {
+        driftReasons.add('redacted placeholder mismatch: ${f.name}');
+      }
+    } else if (!collector.names.contains(f.name)) {
+      missingFields.add(f.name);
+    }
+  }
 
   return FieldSyncResult(
-    missingFields: [
-      for (final name in fieldNames)
-        if (!collector.names.contains(name)) name,
-    ],
+    missingFields: missingFields,
     extraFields: [
       for (final key in collector.mapKeys)
         if (!fieldSet.contains(key)) key,
     ],
+    driftReasons: driftReasons,
   );
 }
 
@@ -236,17 +294,23 @@ final class _FieldReferenceCollector extends RecursiveAstVisitor<void> {
     this.collectMapKeys = false,
     this.collectOtherFields = false,
     this.collectMapIndexKeys = false,
+    this.collectStringContent = false,
   });
 
   final bool includeStringLiterals;
   final bool collectMapKeys;
   final bool collectOtherFields;
   final bool collectMapIndexKeys;
+  final bool collectStringContent;
   final Set<String> names = {};
   final Set<String> mapKeys = {};
+  final Map<String, ast.Expression> mapEntries = {};
   final Set<String> otherFields = {};
   final Set<String> mapIndexKeys = {};
+  final StringBuffer _stringBuffer = StringBuffer();
   String? isTypeSource;
+
+  String get stringContent => _stringBuffer.toString();
 
   @override
   void visitSimpleIdentifier(SimpleIdentifier node) {
@@ -259,7 +323,26 @@ final class _FieldReferenceCollector extends RecursiveAstVisitor<void> {
     if (includeStringLiterals) {
       names.add(node.value);
     }
+    if (collectStringContent) {
+      _stringBuffer.write(node.value);
+    }
     super.visitSimpleStringLiteral(node);
+  }
+
+  @override
+  void visitInterpolationString(InterpolationString node) {
+    if (collectStringContent) {
+      _stringBuffer.write(node.value);
+    }
+    super.visitInterpolationString(node);
+  }
+
+  @override
+  void visitInterpolationExpression(InterpolationExpression node) {
+    if (collectStringContent) {
+      _stringBuffer.write('\u0000');
+    }
+    super.visitInterpolationExpression(node);
   }
 
   @override
@@ -267,6 +350,7 @@ final class _FieldReferenceCollector extends RecursiveAstVisitor<void> {
     if (collectMapKeys) {
       if (node.key case final SimpleStringLiteral keyLiteral) {
         mapKeys.add(keyLiteral.value);
+        mapEntries[keyLiteral.value] = node.value;
       }
     }
     super.visitMapLiteralEntry(node);

@@ -14,6 +14,8 @@ import 'package:analyzer/dart/ast/ast.dart'
         GenericFunctionType,
         IndexExpression,
         InstanceCreationExpression,
+        InterpolationExpression,
+        InterpolationString,
         IsExpression,
         MapLiteralEntry,
         MethodDeclaration,
@@ -23,7 +25,9 @@ import 'package:analyzer/dart/ast/ast.dart'
         PrimaryConstructorDeclaration,
         SimpleIdentifier,
         SimpleStringLiteral,
+        StringLiteral,
         TypeAnnotation;
+import 'package:analyzer/dart/ast/ast.dart' as ast show Expression;
 import 'package:analyzer/dart/ast/visitor.dart' show RecursiveAstVisitor;
 import 'package:analyzer/dart/constant/value.dart' show DartObject;
 import 'package:analyzer_kit/src/enums.dart';
