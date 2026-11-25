@@ -14,6 +14,16 @@ enum FeatureAnnotation {
   final String name;
 }
 
+/// Field-level annotation names recognized by the plugin.
+enum FieldAnnotation {
+  ignore('Ignore'),
+  redact('Redact');
+
+  const FieldAnnotation(this.name);
+
+  final String name;
+}
+
 /// Method names that each annotation expects on the class.
 enum FeatureMethod {
   copyWith('copyWith'),

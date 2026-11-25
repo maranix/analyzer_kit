@@ -127,8 +127,20 @@ void main() {
         LintCodes.serializeOutOfSync.lowerCaseName,
         LintCodes.deserialize.lowerCaseName,
         LintCodes.deserializeOutOfSync.lowerCaseName,
+        LintCodes.invalidCompositeAnnotationEntry.lowerCaseName,
+        LintCodes.misplacedFieldAnnotation.lowerCaseName,
+        LintCodes.misplacedClassAnnotation.lowerCaseName,
       ];
       expect(names.toSet().length, names.length);
+    });
+
+    test('annotation target and composite entry codes are WARNINGs', () {
+      expect(
+        LintCodes.invalidCompositeAnnotationEntry.severity.name,
+        'WARNING',
+      );
+      expect(LintCodes.misplacedFieldAnnotation.severity.name, 'WARNING');
+      expect(LintCodes.misplacedClassAnnotation.severity.name, 'WARNING');
     });
   });
 }

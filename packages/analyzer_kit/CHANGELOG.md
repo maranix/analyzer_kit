@@ -1,5 +1,6 @@
 ## Unreleased
 
+- Added lint warnings in `AnalyzerKitRule` for invalid `CompositeAnnotation` entries (`invalid_composite_annotation_entry`), misplaced field-level annotations on classes (`misplaced_field_annotation`), and misplaced class-level/composite annotations on fields or parameters (`misplaced_class_annotation`).
 - Added support for field-level `@redact`, `@Redact()`, and `@Redact({...}, placeholder)` annotations across `AnalyzerKitRule` sync checks (`checkBodySync` / `checkSerializeSync`), `OverrideToStringMethod`, `AddSerializeMethod`, and `AddCompositeMethods` (including primary constructor parameters, body fields, and inherited fields).
 - Added support for field-level `@ignore`, `@Ignore()`, and `@Ignore({...})` annotations across `AnalyzerKitRule` sync checks and all code generation quick fixes / assists (including primary constructor parameters and inherited fields).
 

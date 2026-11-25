@@ -2,23 +2,56 @@ import 'package:analyzer/analysis_rule/analysis_rule.dart'
     show MultiAnalysisRule;
 import 'package:analyzer/analysis_rule/rule_context.dart';
 import 'package:analyzer/analysis_rule/rule_visitor_registry.dart';
-import 'package:analyzer/dart/ast/ast.dart' show Annotation, ClassDeclaration;
+import 'package:analyzer/dart/ast/ast.dart'
+    show
+        Annotation,
+        ArgumentList,
+        AstNode,
+        ClassDeclaration,
+        Expression,
+        FieldDeclaration,
+        FormalParameterList,
+        InstanceCreationExpression,
+        ListLiteral,
+        MethodInvocation,
+        NodeList,
+        PrefixedIdentifier,
+        SimpleIdentifier;
 import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:analyzer/error/error.dart' show DiagnosticCode;
 import 'package:analyzer_kit/src/constants.dart';
 import 'package:analyzer_kit/src/enums.dart';
 import 'package:analyzer_kit/src/utils/utils.dart';
 
+/// Callback invoked when an annotation validation lint is detected.
+typedef DiagnosticReporter = void Function(
+  AstNode node,
+  DiagnosticCode diagnosticCode,
+  List<Object> arguments,
+);
+
+bool _isClassAnnotationName(String name) =>
+    FeatureAnnotation.values.any(
+      (f) => stringEqualsIgnoreCaseByAscii(name, f.name),
+    ) ||
+    stringEqualsIgnoreCaseByAscii(name, 'CompositeAnnotation');
+
+bool _isFieldAnnotationName(String name) => FieldAnnotation.values.any(
+  (f) => stringEqualsIgnoreCaseByAscii(name, f.name),
+);
+
 /// Single-pass warning rule that checks all `analyzer_kit` annotations on each
 /// [ClassDeclaration] in one AST visit, avoiding redundant metadata and field
-/// traversals across features.
+/// traversals across features, and validates annotation targets and
+/// `CompositeAnnotation` entries.
 final class AnalyzerKitRule extends MultiAnalysisRule {
   AnalyzerKitRule()
     : super(
         name: 'analyzer_kit',
         description:
             'Checks that classes with analyzer_kit annotations implement and '
-            'keep their generated methods in sync.',
+            'keep their generated methods in sync, and validates annotation '
+            'targets and CompositeAnnotation entries.',
       );
 
   @override
@@ -33,6 +66,9 @@ final class AnalyzerKitRule extends MultiAnalysisRule {
     LintCodes.serializeOutOfSync,
     LintCodes.deserialize,
     LintCodes.deserializeOutOfSync,
+    LintCodes.invalidCompositeAnnotationEntry,
+    LintCodes.misplacedFieldAnnotation,
+    LintCodes.misplacedClassAnnotation,
   ];
 
   @override
@@ -40,19 +76,65 @@ final class AnalyzerKitRule extends MultiAnalysisRule {
     RuleVisitorRegistry registry,
     RuleContext context,
   ) {
-    registry.addClassDeclaration(this, _AnalyzerKitVisitor(this));
+    final visitor = _AnalyzerKitVisitor(this);
+    registry.addClassDeclaration(this, visitor);
+    registry.addFieldDeclaration(this, visitor);
+    registry.addFormalParameterList(this, visitor);
+    registry.addInstanceCreationExpression(this, visitor);
+    registry.addAnnotation(this, visitor);
   }
 }
 
-final class _AnalyzerKitVisitor extends RecursiveAstVisitor<void> {
+final class _AnalyzerKitVisitor extends SimpleAstVisitor<void> {
   _AnalyzerKitVisitor(this.rule);
 
   final AnalyzerKitRule rule;
 
+  void _reportDiagnostic(
+    AstNode node,
+    DiagnosticCode code,
+    List<Object> arguments,
+  ) {
+    rule.reportAtNode(node, diagnosticCode: code, arguments: arguments);
+  }
+
+  @override
+  void visitAnnotation(Annotation node) {
+    if (_annotationName(node) == 'CompositeAnnotation') {
+      validateCompositeAnnotationArgs(node.arguments, _reportDiagnostic);
+    }
+  }
+
+  @override
+  void visitInstanceCreationExpression(InstanceCreationExpression node) {
+    final typeName =
+        node.constructorName.type.element?.name ??
+        node.constructorName.type.name.lexeme;
+    if (typeName == 'CompositeAnnotation') {
+      validateCompositeAnnotationArgs(node.argumentList, _reportDiagnostic);
+    }
+  }
+
+  @override
+  void visitFieldDeclaration(FieldDeclaration node) {
+    validateFieldOrParamMetadata(node.metadata, _reportDiagnostic);
+  }
+
+  @override
+  void visitFormalParameterList(FormalParameterList node) {
+    for (final param in node.parameters) {
+      validateFieldOrParamMetadata(param.metadata, _reportDiagnostic);
+    }
+  }
+
   @override
   void visitClassDeclaration(ClassDeclaration node) {
-    // Fast-path exit: skip abstract or unannotated classes immediately.
-    if (node.abstractKeyword != null || node.metadata.isEmpty) return;
+    if (node.metadata.isEmpty) return;
+
+    validateClassMetadata(node.metadata, _reportDiagnostic);
+
+    // Fast-path exit: skip abstract classes for codegen sync checks.
+    if (node.abstractKeyword != null) return;
 
     final config = extractAnnotationConfig(node);
     if (!config.hasAnyFeature) return;
@@ -197,3 +279,93 @@ final class _AnalyzerKitVisitor extends RecursiveAstVisitor<void> {
     }
   }
 }
+
+/// Validates [metadata] on a `ClassDeclaration`, reporting
+/// [LintCodes.misplacedFieldAnnotation] for `@Ignore` / `@Redact`.
+void validateClassMetadata(
+  NodeList<Annotation> metadata,
+  DiagnosticReporter report,
+) => _validateMetadataTargets(
+  metadata,
+  _isFieldAnnotationName,
+  LintCodes.misplacedFieldAnnotation,
+  report,
+);
+
+/// Validates [metadata] on a `FieldDeclaration` or `FormalParameter`, reporting
+/// [LintCodes.misplacedClassAnnotation] for class-level annotations and
+/// `CompositeAnnotation` bundles.
+void validateFieldOrParamMetadata(
+  NodeList<Annotation> metadata,
+  DiagnosticReporter report,
+) => _validateMetadataTargets(
+  metadata,
+  _isClassAnnotationName,
+  LintCodes.misplacedClassAnnotation,
+  report,
+);
+
+void _validateMetadataTargets(
+  NodeList<Annotation> metadata,
+  bool Function(String name) matches,
+  DiagnosticCode code,
+  DiagnosticReporter report,
+) {
+  for (final annotation in metadata) {
+    final constantTypeName = annotation.elementAnnotation
+        ?.computeConstantValue()
+        ?.type
+        ?.element
+        ?.name;
+    final rawName = _annotationName(annotation);
+    if (matches(constantTypeName ?? rawName)) {
+      report(annotation, code, [rawName]);
+    }
+  }
+}
+
+/// Validates elements inside a `CompositeAnnotation([...])` argument list,
+/// reporting [LintCodes.invalidCompositeAnnotationEntry] for non-class
+/// annotations or unrecognized objects.
+void validateCompositeAnnotationArgs(
+  ArgumentList? arguments,
+  DiagnosticReporter report,
+) {
+  final first = arguments?.arguments.firstOrNull;
+  if (first is! ListLiteral) return;
+
+  for (final element in first.elements) {
+    if (element is! Expression) continue;
+
+    final resolvedTypeName = element.staticType?.element?.name;
+    if (resolvedTypeName != null) {
+      if (!_isClassAnnotationName(resolvedTypeName)) {
+        report(element, LintCodes.invalidCompositeAnnotationEntry, [
+          resolvedTypeName,
+        ]);
+      }
+      continue;
+    }
+
+    final unresolvedName = _unresolvedExpressionName(element);
+    if (unresolvedName == null || !_isClassAnnotationName(unresolvedName)) {
+      report(element, LintCodes.invalidCompositeAnnotationEntry, [
+        unresolvedName ?? element.toSource(),
+      ]);
+    }
+  }
+}
+
+String _annotationName(Annotation annotation) => switch (annotation.name) {
+  PrefixedIdentifier(:final identifier) => identifier.name,
+  final id => id.name,
+};
+
+String? _unresolvedExpressionName(Expression expr) => switch (expr) {
+  InstanceCreationExpression(:final constructorName) =>
+    constructorName.type.name.lexeme,
+  MethodInvocation(:final methodName) => methodName.name,
+  PrefixedIdentifier(:final identifier) => identifier.name,
+  SimpleIdentifier(:final name) => name,
+  _ => null,
+};
