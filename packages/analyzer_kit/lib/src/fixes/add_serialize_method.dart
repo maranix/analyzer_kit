@@ -6,6 +6,7 @@ import 'package:analyzer_kit/src/enums.dart';
 import 'package:analyzer_kit/src/utils/utils.dart';
 import 'package:analyzer_plugin/utilities/change_builder/change_builder_core.dart';
 import 'package:analyzer_plugin/utilities/fixes/fixes.dart';
+import 'package:analyzer_plugin/utilities/range_factory.dart';
 
 /// Quick fix that generates a serialization method for classes annotated
 /// with `@Serialize`.
@@ -37,11 +38,20 @@ final class AddSerializeMethod extends ResolvedCorrectionProducer {
 
     if (methodName != null) {
       final fields = extractGeneratableFields(declaration);
+      final existing = findMethodDeclaration(declaration, methodName);
+      final generated = generateSerializeMethod(methodName, fields);
 
       await builder.addDartFileEdit(file, (fileEditBuilder) {
-        fileEditBuilder.insertMethod(declaration, (editBuilder) {
-          editBuilder.write(generateSerializeMethod(methodName, fields));
-        });
+        if (existing != null) {
+          fileEditBuilder.addSimpleReplacement(
+            range.node(existing),
+            generated.trimRight(),
+          );
+        } else {
+          fileEditBuilder.insertMethod(declaration, (editBuilder) {
+            editBuilder.write(generated);
+          });
+        }
       });
     }
   }

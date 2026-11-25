@@ -6,6 +6,7 @@ import 'package:analyzer_kit/src/enums.dart';
 import 'package:analyzer_kit/src/utils/utils.dart';
 import 'package:analyzer_plugin/utilities/change_builder/change_builder_core.dart';
 import 'package:analyzer_plugin/utilities/fixes/fixes.dart';
+import 'package:analyzer_plugin/utilities/range_factory.dart';
 
 /// Quick fix that generates a deserialization  method for classes annotated
 /// with `@Deserialize`.
@@ -37,17 +38,25 @@ final class AddDeserializeMethod extends ResolvedCorrectionProducer {
 
     if (methodName != null) {
       final fields = extractGeneratableFields(declaration);
+      final existing = findDeserializeMember(declaration, methodName);
+      final generated = generateDeserializeMethod(
+        declaration.namePart.typeName.lexeme,
+        methodName,
+        fields,
+        constructorName: extractPrimaryConstructorName(declaration),
+      );
 
       await builder.addDartFileEdit(file, (fileEditBuilder) {
-        fileEditBuilder.insertMethod(declaration, (editBuilder) {
-          editBuilder.write(
-            generateDeserializeMethod(
-              declaration.namePart.typeName.lexeme,
-              methodName,
-              fields,
-            ),
+        if (existing != null) {
+          fileEditBuilder.addSimpleReplacement(
+            range.node(existing),
+            generated.trimRight(),
           );
-        });
+        } else {
+          fileEditBuilder.insertMethod(declaration, (editBuilder) {
+            editBuilder.write(generated);
+          });
+        }
       });
     }
   }

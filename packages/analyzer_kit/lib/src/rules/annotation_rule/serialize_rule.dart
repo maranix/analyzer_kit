@@ -15,9 +15,12 @@ final class _SerializeVisitor extends AnnotationVisitor {
   _SerializeVisitor(super.rule);
 
   @override
-  Iterable<String>? getExpectedMethodNames(ClassDeclaration node) {
+  bool isSatisfied(ClassDeclaration node) {
     final expectedName = extractFeatureMethodName(node, annotation, 'toMap');
-    if (expectedName == null) return null;
-    return [expectedName];
+    if (expectedName == null) return true;
+
+    final method = findMethodDeclaration(node, expectedName);
+    if (method == null) return false;
+    return isBodyInSync(method.body, extractGeneratableFields(node));
   }
 }

@@ -6,9 +6,10 @@ import 'package:analyzer_kit/src/enums.dart';
 import 'package:analyzer_kit/src/utils/utils.dart';
 import 'package:analyzer_plugin/utilities/change_builder/change_builder_core.dart';
 import 'package:analyzer_plugin/utilities/fixes/fixes.dart';
+import 'package:analyzer_plugin/utilities/range_factory.dart';
 
-/// Quick fix that generates `==` operator and `hashCode` overrides for
-/// classes annotated with `@OverrideEquality`.
+/// Quick fix that generates or updates `==` operator and `hashCode` overrides
+/// for classes annotated with `@OverrideEquality`.
 final class OverrideEqualityMethods extends ResolvedCorrectionProducer {
   OverrideEqualityMethods({required super.context});
 
@@ -29,47 +30,63 @@ final class OverrideEqualityMethods extends ResolvedCorrectionProducer {
     final declaration = node.thisOrAncestorOfType<ClassDeclaration>();
     if (declaration == null) return;
 
-    if (hasFeatureEnabled(declaration, FeatureAnnotation.overrideEquality)) {
-      final deepCollectionEquality = extractDeepCollectionEquality(declaration);
+    if (!hasFeatureEnabled(declaration, FeatureAnnotation.overrideEquality)) {
+      return;
+    }
 
-      var hasHashCodeOverride = false;
-      var hasEqualityOperatorOverride = false;
-      for (final m in declaration.body.members) {
-        if (m is MethodDeclaration) {
-          final name = m.name.lexeme;
-          if (name == FeatureMethod.overrideHashCode.name) {
-            hasHashCodeOverride = true;
-          } else if (name == FeatureMethod.operatorEquals.name) {
-            hasEqualityOperatorOverride = true;
-          }
-        }
+    final fields = extractGeneratableFields(declaration);
+    if (fields.isEmpty) return;
+
+    final deepCollectionEquality = extractDeepCollectionEquality(declaration);
+    final existingHashCode = findMethodDeclaration(
+      declaration,
+      FeatureMethod.overrideHashCode.name,
+    );
+    final existingEquals = findMethodDeclaration(
+      declaration,
+      FeatureMethod.overrideEquals.name,
+    );
+
+    final hashCodeCode = generateHashCodeOverride(
+      fields,
+      deepCollectionEquality: deepCollectionEquality,
+    );
+    final equalsCode = generateEqualityOperatorOverride(
+      declaration.namePart.typeName.lexeme,
+      fields,
+      deepCollectionEquality: deepCollectionEquality,
+    );
+
+    final needsHashCodeInsert = existingHashCode == null;
+    final needsEqualsInsert = existingEquals == null;
+
+    await builder.addDartFileEdit(file, (fileEditBuilder) {
+      if (existingHashCode != null &&
+          !isBodyInSync(existingHashCode.body, fields)) {
+        fileEditBuilder.addSimpleReplacement(
+          range.node(existingHashCode),
+          hashCodeCode.trimRight(),
+        );
       }
 
-      final fields = extractGeneratableFields(declaration);
-      if (fields.isEmpty) return;
+      if (existingEquals != null &&
+          !isBodyInSync(existingEquals.body, fields)) {
+        fileEditBuilder.addSimpleReplacement(
+          range.node(existingEquals),
+          equalsCode.trimRight(),
+        );
+      }
 
-      await builder.addDartFileEdit(file, (fileEditBuilder) {
+      if (needsHashCodeInsert || needsEqualsInsert) {
         fileEditBuilder.insertMethod(declaration, (editBuilder) {
-          if (!hasHashCodeOverride) {
-            editBuilder.writeln(
-              generateHashCodeOverride(
-                fields,
-                deepCollectionEquality: deepCollectionEquality,
-              ),
-            );
+          if (needsHashCodeInsert) {
+            editBuilder.writeln(hashCodeCode);
           }
-
-          if (!hasEqualityOperatorOverride) {
-            editBuilder.writeln(
-              generateEqualityOperatorOverride(
-                declaration.namePart.typeName.lexeme,
-                fields,
-                deepCollectionEquality: deepCollectionEquality,
-              ),
-            );
+          if (needsEqualsInsert) {
+            editBuilder.writeln(equalsCode);
           }
         });
-      });
-    }
+      }
+    });
   }
 }

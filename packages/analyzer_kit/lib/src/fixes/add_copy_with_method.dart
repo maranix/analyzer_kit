@@ -6,6 +6,7 @@ import 'package:analyzer_kit/src/enums.dart';
 import 'package:analyzer_kit/src/utils/utils.dart';
 import 'package:analyzer_plugin/utilities/change_builder/change_builder_core.dart';
 import 'package:analyzer_plugin/utilities/fixes/fixes.dart';
+import 'package:analyzer_plugin/utilities/range_factory.dart';
 
 /// Quick fix that generates a `copyWith` method for classes annotated
 /// with `@CopyWith`.
@@ -33,15 +34,27 @@ final class AddCopyWithMethod extends ResolvedCorrectionProducer {
       final fields = extractGeneratableFields(declaration);
       if (fields.isEmpty) return;
 
+      final existing = findMethodDeclaration(
+        declaration,
+        FeatureMethod.copyWith.name,
+      );
+      final generated = generateCopyWithMethod(
+        declaration.namePart.typeName.lexeme,
+        fields,
+        constructorName: extractPrimaryConstructorName(declaration),
+      );
+
       await builder.addDartFileEdit(file, (fileEditBuilder) {
-        fileEditBuilder.insertMethod(declaration, (editBuilder) {
-          editBuilder.write(
-            generateCopyWithMethod(
-              declaration.namePart.typeName.lexeme,
-              fields,
-            ),
+        if (existing != null) {
+          fileEditBuilder.addSimpleReplacement(
+            range.node(existing),
+            generated.trimRight(),
           );
-        });
+        } else {
+          fileEditBuilder.insertMethod(declaration, (editBuilder) {
+            editBuilder.write(generated);
+          });
+        }
       });
     }
   }

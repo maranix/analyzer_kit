@@ -2,9 +2,11 @@ import 'package:analysis_server_plugin/edit/dart/correction_producer.dart';
 import 'package:analysis_server_plugin/edit/dart/dart_fix_kind_priority.dart'
     show DartFixKindPriority;
 import 'package:analyzer/dart/ast/ast.dart';
+import 'package:analyzer_kit/src/enums.dart';
 import 'package:analyzer_kit/src/utils/utils.dart';
 import 'package:analyzer_plugin/utilities/change_builder/change_builder_core.dart';
 import 'package:analyzer_plugin/utilities/fixes/fixes.dart';
+import 'package:analyzer_plugin/utilities/range_factory.dart';
 
 /// Quick fix that generates a `toString` override for classes annotated
 /// with `@OverrideToString`.
@@ -30,16 +32,26 @@ final class OverrideToStringMethod extends ResolvedCorrectionProducer {
 
     if (hasFeatureEnabled(declaration, .overrideToString)) {
       final fields = extractGeneratableFields(declaration);
+      final existing = findMethodDeclaration(
+        declaration,
+        FeatureMethod.overrideToString.name,
+      );
+      final generated = generateToStringMethod(
+        declaration.namePart.typeName.lexeme,
+        fields,
+      );
 
       await builder.addDartFileEdit(file, (fileEditBuilder) {
-        fileEditBuilder.insertMethod(declaration, (editBuilder) {
-          editBuilder.write(
-            generateToStringMethod(
-              declaration.namePart.typeName.lexeme,
-              fields,
-            ),
+        if (existing != null) {
+          fileEditBuilder.addSimpleReplacement(
+            range.node(existing),
+            generated.trimRight(),
           );
-        });
+        } else {
+          fileEditBuilder.insertMethod(declaration, (editBuilder) {
+            editBuilder.write(generated);
+          });
+        }
       });
     }
   }

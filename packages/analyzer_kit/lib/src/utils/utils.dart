@@ -4,13 +4,20 @@ import 'package:analyzer/dart/ast/ast.dart'
         ArgumentList,
         BooleanLiteral,
         ClassDeclaration,
+        ClassMember,
+        ConstructorDeclaration,
         DotShorthandConstructorInvocation,
         DotShorthandInvocation,
         FieldDeclaration,
+        FunctionBody,
         InstanceCreationExpression,
+        MethodDeclaration,
         MethodInvocation,
         NamedArgument,
+        PrimaryConstructorDeclaration,
+        SimpleIdentifier,
         SimpleStringLiteral;
+import 'package:analyzer/dart/ast/visitor.dart' show RecursiveAstVisitor;
 import 'package:analyzer/dart/constant/value.dart' show DartObject;
 import 'package:analyzer_kit/src/enums.dart';
 import 'package:analyzer_kit/src/types.dart';
@@ -20,10 +27,24 @@ import 'package:dart_style/dart_style.dart';
 part 'code_gen_utils.dart';
 part 'code_utils.dart';
 part 'string_utils.dart';
+part 'sync_utils.dart';
 
-/// Extracts generatable fields from a [ClassDeclaration].
+/// Extracts generatable fields from a [ClassDeclaration], including declaring
+/// parameters on a primary constructor and body [FieldDeclaration]s.
 List<ClassField> extractGeneratableFields(ClassDeclaration declaration) {
   final fields = <ClassField>[];
+
+  if (declaration.namePart case final PrimaryConstructorDeclaration primary) {
+    for (final param in primary.formalParameters.parameters) {
+      if (param.constFinalOrVarKeyword != null && param.name != null) {
+        final field = ClassField.fromPrimaryConstructorParameter(param);
+        if (field.isGeneratable) {
+          fields.add(field);
+        }
+      }
+    }
+  }
+
   for (final member in declaration.body.members) {
     if (member is FieldDeclaration) {
       for (final field in ClassField.fromFieldDeclarationAll(member)) {
@@ -34,6 +55,18 @@ List<ClassField> extractGeneratableFields(ClassDeclaration declaration) {
     }
   }
   return fields;
+}
+
+/// Returns the named primary constructor name for [declaration] (e.g. `'named'`
+/// for `class Foo.named(...)`), or `null` for unnamed or `.new` constructors.
+String? extractPrimaryConstructorName(ClassDeclaration declaration) {
+  if (declaration.namePart case PrimaryConstructorDeclaration(
+    :final constructorName?,
+  )) {
+    final name = constructorName.name.lexeme;
+    return name == 'new' ? null : name;
+  }
+  return null;
 }
 
 /// Checks whether a specific code generation [feature] is enabled for [node],

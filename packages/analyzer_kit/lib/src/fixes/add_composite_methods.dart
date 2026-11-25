@@ -6,9 +6,10 @@ import 'package:analyzer_kit/src/enums.dart';
 import 'package:analyzer_kit/src/utils/utils.dart';
 import 'package:analyzer_plugin/utilities/change_builder/change_builder_core.dart';
 import 'package:analyzer_plugin/utilities/fixes/fixes.dart';
+import 'package:analyzer_plugin/utilities/range_factory.dart';
 
-/// Quick fix that generates all missing methods for classes annotated with a
-/// `CompositeAnnotation`.
+/// Quick fix that generates or updates all missing/out-of-sync methods for
+/// classes annotated with a `CompositeAnnotation`.
 final class AddCompositeMethods extends ResolvedCorrectionProducer {
   AddCompositeMethods({required super.context});
 
@@ -35,77 +36,124 @@ final class AddCompositeMethods extends ResolvedCorrectionProducer {
     final fields = extractGeneratableFields(declaration);
     if (fields.isEmpty) return;
 
-    final existingMembers = <String>{};
-    for (final member in declaration.body.members) {
-      if (member is MethodDeclaration) {
-        existingMembers.add(member.name.lexeme);
-      } else if (member is ConstructorDeclaration) {
-        final name = member.name?.lexeme;
-        if (name != null) existingMembers.add(name);
+    final className = declaration.namePart.typeName.lexeme;
+    final constructorName = extractPrimaryConstructorName(declaration);
+
+    final toReplace = <(ClassMember, String)>[];
+    final toInsert = <String>[];
+
+    void handleMethod(
+      MethodDeclaration? existing,
+      bool inSync,
+      String generated,
+    ) {
+      if (existing == null) {
+        toInsert.add(generated);
+      } else if (!inSync) {
+        toReplace.add((existing, generated));
       }
     }
 
-    final className = declaration.namePart.typeName.lexeme;
-    final hasCopyWith = existingMembers.contains(FeatureMethod.copyWith.name);
-    final hasToString = existingMembers.contains(
-      FeatureMethod.overrideToString.name,
-    );
-    final hasHashCode = existingMembers.contains(
-      FeatureMethod.overrideHashCode.name,
-    );
-    final hasEquals = existingMembers.contains(
-      FeatureMethod.overrideEquals.name,
-    );
+    if (config.copyWith) {
+      final existing = findMethodDeclaration(
+        declaration,
+        FeatureMethod.copyWith.name,
+      );
+      handleMethod(
+        existing,
+        existing != null && isCopyWithInSync(existing, fields),
+        generateCopyWithMethod(
+          className,
+          fields,
+          constructorName: constructorName,
+        ),
+      );
+    }
+
+    if (config.overrideToString) {
+      final existing = findMethodDeclaration(
+        declaration,
+        FeatureMethod.overrideToString.name,
+      );
+      handleMethod(
+        existing,
+        existing != null && isBodyInSync(existing.body, fields),
+        generateToStringMethod(className, fields),
+      );
+    }
+
+    if (config.overrideEquality) {
+      final existingHashCode = findMethodDeclaration(
+        declaration,
+        FeatureMethod.overrideHashCode.name,
+      );
+      handleMethod(
+        existingHashCode,
+        existingHashCode != null && isBodyInSync(existingHashCode.body, fields),
+        generateHashCodeOverride(
+          fields,
+          deepCollectionEquality: config.deepCollectionEquality,
+        ),
+      );
+
+      final existingEquals = findMethodDeclaration(
+        declaration,
+        FeatureMethod.overrideEquals.name,
+      );
+      handleMethod(
+        existingEquals,
+        existingEquals != null && isBodyInSync(existingEquals.body, fields),
+        generateEqualityOperatorOverride(
+          className,
+          fields,
+          deepCollectionEquality: config.deepCollectionEquality,
+        ),
+      );
+    }
 
     final toMapName = config.serializeMethodName;
-    final hasSerialize =
-        toMapName != null && existingMembers.contains(toMapName);
+    if (config.serialize && toMapName != null) {
+      final existing = findMethodDeclaration(declaration, toMapName);
+      handleMethod(
+        existing,
+        existing != null && isBodyInSync(existing.body, fields),
+        generateSerializeMethod(toMapName, fields),
+      );
+    }
 
     final fromMapName = config.deserializeMethodName;
-    final hasDeserialize =
-        fromMapName != null && existingMembers.contains(fromMapName);
+    if (config.deserialize && fromMapName != null) {
+      final existing = findDeserializeMember(declaration, fromMapName);
+      final generated = generateDeserializeMethod(
+        className,
+        fromMapName,
+        fields,
+        constructorName: constructorName,
+      );
+      if (existing == null) {
+        toInsert.add(generated);
+      } else if (!isDeserializeInSync(existing, fields)) {
+        toReplace.add((existing, generated));
+      }
+    }
+
+    if (toReplace.isEmpty && toInsert.isEmpty) return;
 
     await builder.addDartFileEdit(file, (fileEditBuilder) {
-      fileEditBuilder.insertMethod(declaration, (editBuilder) {
-        if (config.copyWith && !hasCopyWith) {
-          editBuilder.writeln(generateCopyWithMethod(className, fields));
-        }
+      for (final (member, code) in toReplace) {
+        fileEditBuilder.addSimpleReplacement(
+          range.node(member),
+          code.trimRight(),
+        );
+      }
 
-        if (config.overrideToString && !hasToString) {
-          editBuilder.writeln(generateToStringMethod(className, fields));
-        }
-
-        if (config.overrideEquality) {
-          if (!hasHashCode) {
-            editBuilder.writeln(
-              generateHashCodeOverride(
-                fields,
-                deepCollectionEquality: config.deepCollectionEquality,
-              ),
-            );
+      if (toInsert.isNotEmpty) {
+        fileEditBuilder.insertMethod(declaration, (editBuilder) {
+          for (final code in toInsert) {
+            editBuilder.writeln(code);
           }
-
-          if (!hasEquals) {
-            editBuilder.writeln(
-              generateEqualityOperatorOverride(
-                className,
-                fields,
-                deepCollectionEquality: config.deepCollectionEquality,
-              ),
-            );
-          }
-        }
-
-        if (config.serialize && !hasSerialize && toMapName != null) {
-          editBuilder.writeln(generateSerializeMethod(toMapName, fields));
-        }
-
-        if (config.deserialize && !hasDeserialize && fromMapName != null) {
-          editBuilder.writeln(
-            generateDeserializeMethod(className, fromMapName, fields),
-          );
-        }
-      });
+        });
+      }
     });
   }
 }

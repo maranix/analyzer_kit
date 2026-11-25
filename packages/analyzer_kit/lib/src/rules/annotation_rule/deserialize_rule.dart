@@ -15,31 +15,12 @@ final class _DeserializeVisitor extends AnnotationVisitor {
   _DeserializeVisitor(super.rule);
 
   @override
-  Iterable<String>? getExpectedMethodNames(ClassDeclaration node) {
+  bool isSatisfied(ClassDeclaration node) {
     final expectedName = extractFeatureMethodName(node, annotation, 'fromMap');
-    if (expectedName == null) return null;
-    return [expectedName];
-  }
+    if (expectedName == null) return true;
 
-  @override
-  bool reduceExpectedMethods(
-    NodeList<ClassMember> members,
-    Iterable<String> expectedMethods,
-  ) {
-    bool found = false;
-    // A deserialize function can be a factory constructor OR a static method.
-    for (final member in members) {
-      if (found) break;
-
-      if (member is ConstructorDeclaration && member.factoryKeyword != null) {
-        found = expectedMethods.contains(member.name?.lexeme);
-      }
-
-      if (member is MethodDeclaration && member.isStatic) {
-        found = expectedMethods.contains(member.name.lexeme);
-      }
-    }
-
-    return found;
+    final member = findDeserializeMember(node, expectedName);
+    if (member == null) return false;
+    return isDeserializeInSync(member, extractGeneratableFields(node));
   }
 }

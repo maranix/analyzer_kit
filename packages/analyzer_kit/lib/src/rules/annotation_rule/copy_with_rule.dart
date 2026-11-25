@@ -14,7 +14,9 @@ final class _CopyWithVisitor extends AnnotationVisitor {
   _CopyWithVisitor(super.rule);
 
   @override
-  Iterable<String>? getExpectedMethodNames(ClassDeclaration node) {
-    return [FeatureMethod.copyWith.name];
+  bool isSatisfied(ClassDeclaration node) {
+    final method = findMethodDeclaration(node, FeatureMethod.copyWith.name);
+    if (method == null) return false;
+    return isCopyWithInSync(method, extractGeneratableFields(node));
   }
 }
