@@ -391,4 +391,110 @@ abstract class AbstractBase {
       expect(extractGeneratableFields(abstractCls), isEmpty);
     },
   );
+
+  test(
+    'supports field-level @ignore, @Ignore(), and @Ignore.only() across all features',
+    () async {
+      final unitResult = await resolveCode('ignore_fields.dart', '''
+import 'package:analyzer_kit_annotation/analyzer_kit_annotation.dart';
+
+const dataClass = CompositeAnnotation([
+  CopyWith(),
+  OverrideEquality(),
+  OverrideToString(),
+  Serialize(),
+  Deserialize(),
+]);
+
+@dataClass
+class Account({
+  required final String id,
+  @Ignore.only(stringify: true, serialize: true) final String? token,
+}) {
+  @ignore
+  final String? cachedLabel;
+
+  @Ignore(deserialize: false)
+  final String? legacyNote;
+}
+''');
+
+      final cls = unitResult.unit.declarations
+          .whereType<ClassDeclaration>()
+          .single;
+      final fields = extractGeneratableFields(cls);
+
+      final idField = fields.firstWhere((f) => f.name == 'id');
+      expect(idField.ignoreCopyWith, isFalse);
+      expect(idField.ignoreEquality, isFalse);
+      expect(idField.ignoreToString, isFalse);
+      expect(idField.ignoreSerialize, isFalse);
+      expect(idField.ignoreDeserialize, isFalse);
+
+      final tokenField = fields.firstWhere((f) => f.name == 'token');
+      expect(tokenField.ignoreCopyWith, isFalse);
+      expect(tokenField.ignoreEquality, isFalse);
+      expect(tokenField.ignoreToString, isTrue);
+      expect(tokenField.ignoreSerialize, isTrue);
+      expect(tokenField.ignoreDeserialize, isFalse);
+
+      final cachedField = fields.firstWhere((f) => f.name == 'cachedLabel');
+      expect(cachedField.ignoreCopyWith, isTrue);
+      expect(cachedField.ignoreEquality, isTrue);
+      expect(cachedField.ignoreToString, isTrue);
+      expect(cachedField.ignoreSerialize, isTrue);
+      expect(cachedField.ignoreDeserialize, isTrue);
+
+      final legacyField = fields.firstWhere((f) => f.name == 'legacyNote');
+      expect(legacyField.ignoreCopyWith, isTrue);
+      expect(legacyField.ignoreEquality, isTrue);
+      expect(legacyField.ignoreToString, isTrue);
+      expect(legacyField.ignoreSerialize, isTrue);
+      expect(legacyField.ignoreDeserialize, isFalse);
+
+      expect(
+        fieldsForFeature(fields, FeatureAnnotation.copyWith).map((f) => f.name),
+        ['id', 'token'],
+      );
+      expect(
+        fieldsForFeature(fields, FeatureAnnotation.overrideToString)
+            .map((f) => f.name),
+        ['id'],
+      );
+      expect(
+        fieldsForFeature(fields, FeatureAnnotation.serialize)
+            .map((f) => f.name),
+        ['id'],
+      );
+      expect(
+        fieldsForFeature(fields, FeatureAnnotation.deserialize)
+            .map((f) => f.name),
+        ['id', 'token', 'legacyNote'],
+      );
+
+      final libraryResult = await unitResult.session.getResolvedLibraryByElement(
+        unitResult.libraryElement,
+      ) as ResolvedLibraryResult;
+      final context = CorrectionProducerContext.createResolved(
+        libraryResult: libraryResult,
+        unitResult: unitResult,
+        selectionOffset: cls.offset,
+      );
+
+      final builder = ChangeBuilder(session: unitResult.session);
+      await AddCompositeMethods(context: context).compute(builder);
+
+      final generated = builder.sourceChange.edits.single.edits
+          .map((e) => e.replacement)
+          .join('\n');
+
+      // cachedLabel is ignored everywhere
+      expect(generated, isNot(contains('cachedLabel')));
+      // token is in copyWith & equality & fromMap, but not in toString or toMap
+      expect(generated, contains('String? token'));
+      expect(generated, contains('other.token == token'));
+      expect(generated, contains("toString() => 'Account(id: \$id)'"));
+      expect(generated, contains("toMap() => {'id': id}"));
+    },
+  );
 }

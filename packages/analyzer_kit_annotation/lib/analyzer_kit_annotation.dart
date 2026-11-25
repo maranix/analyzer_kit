@@ -15,6 +15,7 @@
 /// | [OverrideToString] | [overrideToString] | `toString` method |
 /// | [Serialize] | [serialize] | Serialization method (configurable via [SerializeMethod]) |
 /// | [Deserialize] | [deserialize] | Deserialization factory (configurable via [DeserializeMethod]) |
+/// | [Ignore] | [ignore] | Excludes a field from generated methods |
 ///
 /// ## Usage
 ///
@@ -48,6 +49,7 @@ export 'src/analyzer_kit.dart';
 export 'src/composite_annotation.dart';
 export 'src/copy_with.dart';
 export 'src/deserialize.dart';
+export 'src/ignore.dart';
 export 'src/override_equality.dart';
 export 'src/override_to_string.dart';
 export 'src/serialize.dart';

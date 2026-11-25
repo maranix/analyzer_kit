@@ -33,7 +33,10 @@ base class AddCopyWithMethod extends ResolvedCorrectionProducer {
 
     final config = extractAnnotationConfig(declaration);
     if (config.copyWith) {
-      final fields = extractGeneratableFields(declaration);
+      final fields = fieldsForFeature(
+        extractGeneratableFields(declaration),
+        FeatureAnnotation.copyWith,
+      );
       if (fields.isEmpty) return;
 
       final existing = findMethodDeclaration(

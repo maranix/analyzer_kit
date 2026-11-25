@@ -119,6 +119,25 @@ class Profile {
 - **Inherited fields** from non-`dart:core` superclasses and positional/named constructor parameters (including primary constructors) are matched automatically.
 - **Rich serialization** (`@Serialize` / `@Deserialize`) handles `DateTime`, `Uri`, `Duration`, `BigInt`, `Enum`, `List`, `Set`, `Iterable`, `Map`, and nested `@Serialize`/`@Deserialize` classes out of the box.
 
+### Ignoring Fields (`@Ignore`)
+
+Exclude specific fields (including primary constructor parameters and inherited fields) using `@ignore`, `@Ignore(...)`, or `@Ignore.only(...)`:
+
+```dart
+@dataClass
+class Account {
+  final String id;
+
+  @ignore
+  final String? cachedLabel;
+
+  @Ignore.only(stringify: true, serialize: true)
+  final String? token;
+
+  Account({required this.id, this.cachedLabel, this.token});
+}
+```
+
 ## Architecture
 
 The plugin is built on the Dart analysis server plugin API:

@@ -38,7 +38,11 @@ base class AddDeserializeMethod extends ResolvedCorrectionProducer {
     );
 
     if (methodName != null) {
-      final fields = extractGeneratableFields(declaration);
+      final fields = fieldsForFeature(
+        extractGeneratableFields(declaration),
+        FeatureAnnotation.deserialize,
+      );
+      if (fields.isEmpty) return;
       final existing = findDeserializeMember(declaration, methodName);
       final generated = generateDeserializeMethod(
         declaration.namePart.typeName.lexeme,

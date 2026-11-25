@@ -134,6 +134,23 @@ List<ClassField> extractGeneratableFields(ClassDeclaration declaration) {
   return fields;
 }
 
+/// Filters [fields] to those not ignored for [feature].
+List<ClassField> fieldsForFeature(
+  List<ClassField> fields,
+  FeatureAnnotation feature,
+) => switch (feature) {
+  FeatureAnnotation.copyWith =>
+    fields.where((f) => !f.ignoreCopyWith).toList(),
+  FeatureAnnotation.overrideEquality =>
+    fields.where((f) => !f.ignoreEquality).toList(),
+  FeatureAnnotation.overrideToString =>
+    fields.where((f) => !f.ignoreToString).toList(),
+  FeatureAnnotation.serialize =>
+    fields.where((f) => !f.ignoreSerialize).toList(),
+  FeatureAnnotation.deserialize =>
+    fields.where((f) => !f.ignoreDeserialize).toList(),
+};
+
 /// Returns the named primary constructor name for [declaration] (e.g. `'named'`
 /// for `class Foo.named(...)`), or `null` for unnamed or `.new` constructors.
 String? extractPrimaryConstructorName(ClassDeclaration declaration) {

@@ -38,7 +38,11 @@ base class AddSerializeMethod extends ResolvedCorrectionProducer {
     );
 
     if (methodName != null) {
-      final fields = extractGeneratableFields(declaration);
+      final fields = fieldsForFeature(
+        extractGeneratableFields(declaration),
+        FeatureAnnotation.serialize,
+      );
+      if (fields.isEmpty) return;
       final existing = findMethodDeclaration(declaration, methodName);
       final generated = generateSerializeMethod(methodName, fields);
 

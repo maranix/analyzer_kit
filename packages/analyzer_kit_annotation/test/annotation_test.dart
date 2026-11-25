@@ -262,4 +262,37 @@ void main() {
       expect(deserialize.name.methodName, 'fromMap');
     });
   });
+
+  group('Ignore', () {
+    test('default constructor ignores all features', () {
+      const annotation = Ignore();
+      expect(annotation.copyWith, isTrue);
+      expect(annotation.equality, isTrue);
+      expect(annotation.stringify, isTrue);
+      expect(annotation.serialize, isTrue);
+      expect(annotation.deserialize, isTrue);
+    });
+
+    test('convenience constant is identical to const Ignore()', () {
+      expect(identical(ignore, const Ignore()), isTrue);
+    });
+
+    test('default constructor can opt individual features back in', () {
+      const annotation = Ignore(stringify: false, serialize: false);
+      expect(annotation.copyWith, isTrue);
+      expect(annotation.equality, isTrue);
+      expect(annotation.stringify, isFalse);
+      expect(annotation.serialize, isFalse);
+      expect(annotation.deserialize, isTrue);
+    });
+
+    test('Ignore.only ignores only selected features', () {
+      const annotation = Ignore.only(stringify: true, equality: true);
+      expect(annotation.copyWith, isFalse);
+      expect(annotation.equality, isTrue);
+      expect(annotation.stringify, isTrue);
+      expect(annotation.serialize, isFalse);
+      expect(annotation.deserialize, isFalse);
+    });
+  });
 }
