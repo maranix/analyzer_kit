@@ -41,33 +41,33 @@ class AnalyzerKit extends Plugin {
   @override
   void register(PluginRegistry registry) {
     registry
-      ..registerLintRule(DataClassRule())
+      ..registerWarningRule(DataClassRule())
       ..registerFixForRule(LintCodes.dataClass, AddDataClassMethods.new);
 
     registry
-      ..registerLintRule(CopyWithRule())
+      ..registerWarningRule(CopyWithRule())
       ..registerFixForRule(LintCodes.copyWith, AddCopyWithMethod.new);
 
     registry
-      ..registerLintRule(OverrideToStringRule())
+      ..registerWarningRule(OverrideToStringRule())
       ..registerFixForRule(
         LintCodes.overrideToString,
         OverrideToStringMethod.new,
       );
 
     registry
-      ..registerLintRule(OverrideEqualityRule())
+      ..registerWarningRule(OverrideEqualityRule())
       ..registerFixForRule(
         LintCodes.overrideEquality,
         OverrideEqualityMethods.new,
       );
 
     registry
-      ..registerLintRule(SerializeRule())
+      ..registerWarningRule(SerializeRule())
       ..registerFixForRule(LintCodes.serialize, AddSerializeMethod.new);
 
     registry
-      ..registerLintRule(DeserializeRule())
+      ..registerWarningRule(DeserializeRule())
       ..registerFixForRule(LintCodes.deserialize, AddDeserializeMethod.new);
   }
 }

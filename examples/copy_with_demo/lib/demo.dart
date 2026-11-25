@@ -31,8 +31,7 @@ final class User {
       'User(name: $name, age: $age, tags: $tags, scores: $scores)';
 
   @override
-  int get hashCode =>
-      Object.hashAll([name, age, deepHash(tags), deepHash(scores)]);
+  int get hashCode => Object.hash(name, age, deepHash(tags), deepHash(scores));
 
   @override
   bool operator ==(Object other) {
