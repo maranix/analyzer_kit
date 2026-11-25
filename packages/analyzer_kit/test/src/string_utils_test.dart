@@ -106,4 +106,19 @@ void main() {
       });
     });
   });
+
+  group('escapeSingleQuotedString', () {
+    test('returns identical string when no characters need escaping', () {
+      const input = '[REDACTED]';
+      expect(identical(escapeSingleQuotedString(input), input), isTrue);
+      expect(escapeSingleQuotedString(''), '');
+    });
+
+    test('escapes backslash, quote, dollar, and control whitespace', () {
+      expect(
+        escapeSingleQuotedString("a\\b'c\$d\ne\rf\tg"),
+        r"a\\b\'c\$d\ne\rf\tg",
+      );
+    });
+  });
 }

@@ -19,11 +19,30 @@ bool stringEqualsIgnoreCaseByAscii(String a, String b) {
 }
 
 /// Escapes special characters in [value] for inclusion inside a single-quoted
-/// Dart string literal.
-String escapeSingleQuotedString(String value) => value
-    .replaceAll(r'\', r'\\')
-    .replaceAll("'", r"\'")
-    .replaceAll(r'$', r'\$')
-    .replaceAll('\n', r'\n')
-    .replaceAll('\r', r'\r')
-    .replaceAll('\t', r'\t');
+/// Dart string literal in a single pass without allocations when nothing needs
+/// escaping.
+String escapeSingleQuotedString(String value) {
+  StringBuffer? buffer;
+  final length = value.length;
+
+  for (var i = 0; i < length; i++) {
+    final code = value.codeUnitAt(i);
+    final replacement = switch (code) {
+      0x5C => r'\\', // \
+      0x27 => r"\'", // '
+      0x24 => r'\$', // $
+      0x0A => r'\n', // \n
+      0x0D => r'\r', // \r
+      0x09 => r'\t', // \t
+      _ => null,
+    };
+    if (replacement != null) {
+      buffer ??= StringBuffer(value.substring(0, i));
+      buffer.write(replacement);
+    } else {
+      buffer?.writeCharCode(code);
+    }
+  }
+
+  return buffer?.toString() ?? value;
+}
