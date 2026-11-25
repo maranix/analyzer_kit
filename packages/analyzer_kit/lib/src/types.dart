@@ -1,11 +1,11 @@
 import 'package:analyzer/dart/ast/ast.dart'
     show
         Annotation,
-        BooleanLiteral,
+        DotShorthandPropertyAccess,
         FieldDeclaration,
         FormalParameter,
-        NamedArgument,
         PrefixedIdentifier,
+        SetOrMapLiteral,
         SimpleIdentifier,
         VariableDeclaration;
 import 'package:analyzer/dart/constant/value.dart' show DartObject;
@@ -14,6 +14,7 @@ import 'package:analyzer/dart/element/element.dart'
 import 'package:analyzer/dart/element/nullability_suffix.dart'
     show NullabilitySuffix;
 import 'package:analyzer/dart/element/type.dart' show DartType, InterfaceType;
+import 'package:analyzer_kit/src/enums.dart' show FeatureAnnotation;
 
 /// Semantic type classification for a [ClassField], used by serialization and
 /// collection code generation.
@@ -52,11 +53,7 @@ final class ClassField {
     this.typeArguments = const [],
     this.serializeMethodName,
     this.deserializeMethodName,
-    this.ignoreCopyWith = false,
-    this.ignoreEquality = false,
-    this.ignoreToString = false,
-    this.ignoreSerialize = false,
-    this.ignoreDeserialize = false,
+    this.ignoredFor = const {},
   });
 
   final String name;
@@ -93,20 +90,8 @@ final class ClassField {
   /// when this field's type is a deserializable class, or `null` otherwise.
   final String? deserializeMethodName;
 
-  /// Whether this field is ignored in generated `copyWith` methods.
-  final bool ignoreCopyWith;
-
-  /// Whether this field is ignored in generated `==` and `hashCode` overrides.
-  final bool ignoreEquality;
-
-  /// Whether this field is ignored in generated `toString` overrides.
-  final bool ignoreToString;
-
-  /// Whether this field is ignored in generated serialization methods.
-  final bool ignoreSerialize;
-
-  /// Whether this field is ignored in generated deserialization factories.
-  final bool ignoreDeserialize;
+  /// Class-level annotations for which this field is ignored.
+  final Set<FeatureAnnotation> ignoredFor;
 
   /// Whether this field should be included in generated methods.
   ///
@@ -215,7 +200,9 @@ final class ClassField {
     final isPrivate = name.startsWith('_');
     final dartType = element.type;
     final resolved = _resolveDartType(dartType);
-    final ignore = _extractIgnoreFlagsFromElements(element.metadata.annotations);
+    final ignoredFor = _extractIgnoredForFromElements(
+      element.metadata.annotations,
+    );
     final suffix = dartType.nullabilitySuffix == NullabilitySuffix.question
         ? '?'
         : '';
@@ -240,11 +227,7 @@ final class ClassField {
       typeArguments: resolved.args,
       serializeMethodName: resolved.serializeMethodName,
       deserializeMethodName: resolved.deserializeMethodName,
-      ignoreCopyWith: ignore.copyWith,
-      ignoreEquality: ignore.equality,
-      ignoreToString: ignore.stringify,
-      ignoreSerialize: ignore.serialize,
-      ignoreDeserialize: ignore.deserialize,
+      ignoredFor: ignoredFor,
     );
   }
 
@@ -271,11 +254,7 @@ final class ClassField {
     typeArguments: typeArguments,
     serializeMethodName: serializeMethodName,
     deserializeMethodName: deserializeMethodName,
-    ignoreCopyWith: ignoreCopyWith,
-    ignoreEquality: ignoreEquality,
-    ignoreToString: ignoreToString,
-    ignoreSerialize: ignoreSerialize,
-    ignoreDeserialize: ignoreDeserialize,
+    ignoredFor: ignoredFor,
   );
 
   /// Extracts a [ClassField] from a declaring [FormalParameter] in a
@@ -285,7 +264,7 @@ final class ClassField {
     final isPrivate = name.startsWith('_');
     final dartType = param.declaredFragment?.element.type;
     final resolved = _resolveDartType(dartType);
-    final ignore = _extractIgnoreFlags(param.metadata);
+    final ignoredFor = _extractIgnoredFor(param.metadata);
 
     return ClassField(
       keyword: param.constFinalOrVarKeyword?.lexeme,
@@ -300,11 +279,7 @@ final class ClassField {
       typeArguments: resolved.args,
       serializeMethodName: resolved.serializeMethodName,
       deserializeMethodName: resolved.deserializeMethodName,
-      ignoreCopyWith: ignore.copyWith,
-      ignoreEquality: ignore.equality,
-      ignoreToString: ignore.stringify,
-      ignoreSerialize: ignore.serialize,
-      ignoreDeserialize: ignore.deserialize,
+      ignoredFor: ignoredFor,
     );
   }
 
@@ -320,7 +295,7 @@ final class ClassField {
     final isPrivate = name.startsWith('_');
     final resolvedDartType = dartType ?? fd.fields.type?.type;
     final resolved = _resolveDartType(resolvedDartType);
-    final ignore = _extractIgnoreFlags(fd.metadata);
+    final ignoredFor = _extractIgnoredFor(fd.metadata);
 
     return ClassField(
       keyword: keyword ?? fd.fields.keyword?.lexeme,
@@ -339,11 +314,7 @@ final class ClassField {
       typeArguments: resolved.args,
       serializeMethodName: resolved.serializeMethodName,
       deserializeMethodName: resolved.deserializeMethodName,
-      ignoreCopyWith: ignore.copyWith,
-      ignoreEquality: ignore.equality,
-      ignoreToString: ignore.stringify,
-      ignoreSerialize: ignore.serialize,
-      ignoreDeserialize: ignore.deserialize,
+      ignoredFor: ignoredFor,
     );
   }
 
@@ -560,63 +531,47 @@ final class ClassField {
       'isPublic: $isPublic, isPrivate: $isPrivate)';
 }
 
-typedef _IgnoreFlags = ({
-  bool copyWith,
-  bool equality,
-  bool stringify,
-  bool serialize,
-  bool deserialize,
-});
+FeatureAnnotation? _featureFromEnumName(String? name) => switch (name) {
+  'copyWith' => FeatureAnnotation.copyWith,
+  'overrideEquality' => FeatureAnnotation.overrideEquality,
+  'overrideToString' => FeatureAnnotation.overrideToString,
+  'serialize' => FeatureAnnotation.serialize,
+  'deserialize' => FeatureAnnotation.deserialize,
+  _ => null,
+};
 
-const _noIgnore = (
-  copyWith: false,
-  equality: false,
-  stringify: false,
-  serialize: false,
-  deserialize: false,
-);
-
-_IgnoreFlags _mergeIgnore(_IgnoreFlags a, _IgnoreFlags b) => (
-  copyWith: a.copyWith || b.copyWith,
-  equality: a.equality || b.equality,
-  stringify: a.stringify || b.stringify,
-  serialize: a.serialize || b.serialize,
-  deserialize: a.deserialize || b.deserialize,
-);
-
-_IgnoreFlags? _ignoreFlagsFromDartObject(DartObject? constant) {
+Set<FeatureAnnotation>? _ignoredForFromDartObject(DartObject? constant) {
   if (constant == null) return null;
   if (constant.type?.element?.name != 'Ignore') return null;
-  return (
-    copyWith: constant.getField('copyWith')?.toBoolValue() ?? false,
-    equality: constant.getField('equality')?.toBoolValue() ?? false,
-    stringify: constant.getField('stringify')?.toBoolValue() ?? false,
-    serialize: constant.getField('serialize')?.toBoolValue() ?? false,
-    deserialize: constant.getField('deserialize')?.toBoolValue() ?? false,
-  );
+  final setVal = constant.getField('annotations')?.toSetValue();
+  if (setVal == null) return const {};
+  return {
+    for (final item in setVal)
+      if (_featureFromEnumName(item.variable?.name) case final f?) f,
+  };
 }
 
-_IgnoreFlags _extractIgnoreFlagsFromElements(
+Set<FeatureAnnotation> _extractIgnoredForFromElements(
   Iterable<ElementAnnotation> metadata,
 ) {
-  var flags = _noIgnore;
+  final result = <FeatureAnnotation>{};
   for (final meta in metadata) {
-    final parsed = _ignoreFlagsFromDartObject(meta.computeConstantValue());
+    final parsed = _ignoredForFromDartObject(meta.computeConstantValue());
     if (parsed != null) {
-      flags = _mergeIgnore(flags, parsed);
+      result.addAll(parsed);
     }
   }
-  return flags;
+  return result;
 }
 
-_IgnoreFlags _extractIgnoreFlags(Iterable<Annotation> metadata) {
-  var flags = _noIgnore;
+Set<FeatureAnnotation> _extractIgnoredFor(Iterable<Annotation> metadata) {
+  final result = <FeatureAnnotation>{};
   for (final annotation in metadata) {
-    final resolved = _ignoreFlagsFromDartObject(
+    final resolved = _ignoredForFromDartObject(
       annotation.elementAnnotation?.computeConstantValue(),
     );
     if (resolved != null) {
-      flags = _mergeIgnore(flags, resolved);
+      result.addAll(resolved);
       continue;
     }
 
@@ -627,42 +582,26 @@ _IgnoreFlags _extractIgnoreFlags(Iterable<Annotation> metadata) {
     };
     if (rawName != 'ignore' && rawName != 'Ignore') continue;
 
-    final isOnly = annotation.constructorName?.name == 'only';
-    final defaultVal = !isOnly;
-    var copyWith = defaultVal;
-    var equality = defaultVal;
-    var stringify = defaultVal;
-    var serialize = defaultVal;
-    var deserialize = defaultVal;
-
     final args = annotation.arguments?.arguments;
-    if (args != null) {
-      for (final arg in args) {
-        if (arg is NamedArgument && arg.argumentExpression is BooleanLiteral) {
-          final val = (arg.argumentExpression as BooleanLiteral).value;
-          switch (arg.name.lexeme) {
-            case 'copyWith':
-              copyWith = val;
-            case 'equality':
-              equality = val;
-            case 'stringify':
-              stringify = val;
-            case 'serialize':
-              serialize = val;
-            case 'deserialize':
-              deserialize = val;
-          }
+    if (args == null || args.isEmpty) {
+      result.addAll(FeatureAnnotation.values);
+      continue;
+    }
+
+    final first = args.first;
+    if (first is SetOrMapLiteral) {
+      for (final element in first.elements) {
+        final enumName = switch (element) {
+          DotShorthandPropertyAccess(:final propertyName) => propertyName.name,
+          PrefixedIdentifier(:final identifier) => identifier.name,
+          SimpleIdentifier(:final name) => name,
+          _ => null,
+        };
+        if (_featureFromEnumName(enumName) case final f?) {
+          result.add(f);
         }
       }
     }
-
-    flags = _mergeIgnore(flags, (
-      copyWith: copyWith,
-      equality: equality,
-      stringify: stringify,
-      serialize: serialize,
-      deserialize: deserialize,
-    ));
   }
-  return flags;
+  return result;
 }

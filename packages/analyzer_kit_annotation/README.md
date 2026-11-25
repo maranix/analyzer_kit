@@ -133,13 +133,10 @@ class Account {
   @ignore // Ignored in all generated methods
   final String? cachedLabel;
 
-  @Ignore.only(stringify: true, serialize: true) // Ignored only in toString & toMap
+  @Ignore({.overrideToString, .serialize}) // Ignored only in toString & toMap
   final String? token;
 
-  @Ignore(deserialize: false) // Ignored everywhere except fromMap
-  final String? legacyNote;
-
-  Account({required this.id, this.cachedLabel, this.token, this.legacyNote});
+  Account({required this.id, this.cachedLabel, this.token});
 }
 ```
 class Inventory {

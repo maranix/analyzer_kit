@@ -1,6 +1,6 @@
 ## Unreleased
 
-- Added support for field-level `@ignore`, `@Ignore(...)`, and `@Ignore.only(...)` annotations across `AnalyzerKitRule` sync checks and all code generation quick fixes / assists (including primary constructor parameters and inherited fields).
+- Added support for field-level `@ignore`, `@Ignore()`, and `@Ignore({...})` annotations across `AnalyzerKitRule` sync checks and all code generation quick fixes / assists (including primary constructor parameters and inherited fields).
 
 ## 2.0.0
 

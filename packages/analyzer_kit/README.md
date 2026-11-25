@@ -121,7 +121,7 @@ class Profile {
 
 ### Ignoring Fields (`@Ignore`)
 
-Exclude specific fields (including primary constructor parameters and inherited fields) using `@ignore`, `@Ignore(...)`, or `@Ignore.only(...)`:
+Exclude specific fields (including primary constructor parameters and inherited fields) using `@ignore`, `@Ignore()`, or `@Ignore({...})`:
 
 ```dart
 @dataClass
@@ -131,7 +131,7 @@ class Account {
   @ignore
   final String? cachedLabel;
 
-  @Ignore.only(stringify: true, serialize: true)
+  @Ignore({.overrideToString, .serialize})
   final String? token;
 
   Account({required this.id, this.cachedLabel, this.token});
