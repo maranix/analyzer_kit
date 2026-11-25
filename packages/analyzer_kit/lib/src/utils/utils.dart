@@ -134,10 +134,7 @@ bool? extractDeepCollectionEquality(ClassDeclaration declaration) {
           name,
           FeatureAnnotation.overrideEquality.name,
         ) ||
-        stringEqualsIgnoreCaseByAscii(
-          name,
-          FeatureAnnotation.dataClass.name,
-        )) {
+        stringEqualsIgnoreCaseByAscii(name, FeatureAnnotation.dataClass.name)) {
       final arguments = annotation.arguments?.arguments;
       if (arguments == null) continue;
       for (final arg in arguments) {

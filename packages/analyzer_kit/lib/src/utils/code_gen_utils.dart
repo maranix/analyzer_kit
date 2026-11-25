@@ -16,9 +16,8 @@ String generateCopyWithMethod(String className, Iterable<ClassField> fields) {
       ),
     );
 
-    namedArgs[field.name] = refer(
-      field.name,
-    ).ifNullThen(refer('this.${field.name}'));
+    namedArgs[field.name] = refer(field.name)
+        .ifNullThen(refer('this.${field.name}'));
   }
 
   final method = Method(
