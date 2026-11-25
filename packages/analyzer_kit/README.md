@@ -84,7 +84,7 @@ class ApiModel {
 
 ### Deep Collection Equality
 
-By default, generated `==` and `hashCode` use deep recursive equality for collection fields. Opt out per-class:
+By default, generated `==` and `hashCode` use deep recursive equality for collection fields (and automatically import `package:analyzer_kit_annotation/analyzer_kit_annotation.dart` when needed). Opt out per-class:
 
 ```dart
 @OverrideEquality(deepCollectionEquality: false)
@@ -97,14 +97,34 @@ class Inventory {
 }
 ```
 
+### Nullable-Aware `copyWith`
+
+Enable `@CopyWith(nullable: true)` to wrap nullable fields in `T? Function()?` parameters so callers can explicitly reset them to `null`:
+
+```dart
+@CopyWith(nullable: true)
+class Profile {
+  final String name;
+  final String? bio;
+
+  const Profile({required this.name, this.bio});
+}
+
+// profile.copyWith(bio: () => null)
+```
+
+### Generics, Inheritance, & Rich Serialization
+
+- **Generic classes** (`class Box<T>`) preserve type arguments across `copyWith`, `==`, and `fromMap`.
+- **Inherited fields** from non-`dart:core` superclasses and positional/named constructor parameters (including primary constructors) are matched automatically.
+- **Rich serialization** (`@Serialize` / `@Deserialize`) handles `DateTime`, `Uri`, `Duration`, `BigInt`, `Enum`, `List`, `Set`, `Iterable`, `Map`, and nested `@Serialize`/`@Deserialize` classes out of the box.
+
 ## Architecture
 
 The plugin is built on the Dart analysis server plugin API:
 
-- **`BaseAnnotationRule`** — `MultiAnalysisRule` base for all warning rules, handling visitor registration and reporting on direct or `CompositeAnnotation` metadata.
-- **`AnnotationRule`** / **`AnnotationVisitor`** — Base classes for rules that emit `*_annotation` errors when methods are missing and `*_out_of_sync` warnings (with field diffs) when methods are out of sync.
-- **5 concrete warning rules** — One per feature annotation, each verifying method presence and field synchronization (including removed fields in `copyWith` and serialization).
-- **6 quick fixes & 6 force-regenerate assists** — One pair per feature annotation plus `AddCompositeMethods` / `RegenerateCompositeMethods`, inserting missing methods, replacing out-of-sync ones, or force-regenerating via IDE assists at any time.
+- **`AnalyzerKitRule`** — A single-pass `MultiAnalysisRule` that skips `abstract` and unannotated classes, parses `CompositeAnnotation` bundles once per class, and reports `*_annotation` errors when methods are missing or `*_out_of_sync` warnings (including removed fields and signature/type-argument drift) when out of sync.
+- **6 quick fixes & 6 force-regenerate assists** — One pair per feature annotation plus `AddCompositeMethods` / `RegenerateCompositeMethods`, inserting missing methods in a single formatted pass, replacing out-of-sync ones in-place, or force-regenerating via IDE assists at any time.
 - **Code generation** — Uses [`code_builder`](https://pub.dev/packages/code_builder) for AST construction and [`dart_style`](https://pub.dev/packages/dart_style) for formatting.
 
 ## Requirements

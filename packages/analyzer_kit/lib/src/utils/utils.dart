@@ -173,7 +173,10 @@ bool annotationEnablesFeature(
   Annotation annotation,
   FeatureAnnotation feature,
 ) {
-  if (stringEqualsIgnoreCaseByAscii(annotation.name.name, feature.name)) {
+  if (stringEqualsIgnoreCaseByAscii(
+    _annotationSimpleName(annotation),
+    feature.name,
+  )) {
     return true;
   }
 
@@ -268,7 +271,7 @@ AnnotationConfig extractAnnotationConfig(ClassDeclaration node) {
   final annotationNodes = <FeatureAnnotation, Annotation>{};
 
   for (final annotation in node.metadata) {
-    final name = annotation.name.name;
+    final name = _annotationSimpleName(annotation);
     final arguments = annotation.arguments?.arguments;
 
     if (stringEqualsIgnoreCaseByAscii(name, FeatureAnnotation.copyWith.name)) {
@@ -419,6 +422,12 @@ AnnotationConfig extractAnnotationConfig(ClassDeclaration node) {
     annotationNodes: annotationNodes,
   );
 }
+
+String _annotationSimpleName(Annotation annotation) =>
+    switch (annotation.name) {
+      PrefixedIdentifier(:final identifier) => identifier.name,
+      final id => id.name,
+    };
 
 bool _isCompositeAnnotation(DartObject obj) =>
     obj.type?.element?.name == 'CompositeAnnotation';

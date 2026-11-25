@@ -348,4 +348,47 @@ class DerivedEntity extends BaseEntity {
     expect(allEdits, contains('big.toString()'));
     expect(allEdits, isNot(contains('String? computed')));
   });
+
+  test(
+    'supports prefixed annotation imports and skips abstract classes',
+    () async {
+      final unitResult = await resolveCode('prefixed.dart', '''
+import 'package:analyzer_kit_annotation/analyzer_kit_annotation.dart' as ak;
+
+@ak.CopyWith(nullable: true)
+class PrefixedModel {
+  final String? title;
+  const PrefixedModel({this.title});
+}
+
+@ak.CopyWith()
+abstract class AbstractBase {
+  String get id;
+}
+''');
+
+      final classes = unitResult.unit.declarations
+          .whereType<ClassDeclaration>()
+          .toList();
+      final prefixed = classes[0];
+      final abstractCls = classes[1];
+
+      final config = extractAnnotationConfig(prefixed);
+      expect(config.copyWith, isTrue);
+      expect(config.copyWithNullable, isTrue);
+      expect(
+        config.annotationNodes[FeatureAnnotation.copyWith],
+        same(prefixed.metadata.single),
+      );
+      expect(
+        annotationEnablesFeature(
+          prefixed.metadata.single,
+          FeatureAnnotation.copyWith,
+        ),
+        isTrue,
+      );
+
+      expect(extractGeneratableFields(abstractCls), isEmpty);
+    },
+  );
 }

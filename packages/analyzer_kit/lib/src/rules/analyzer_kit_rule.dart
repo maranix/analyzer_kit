@@ -51,13 +51,14 @@ final class _AnalyzerKitVisitor extends RecursiveAstVisitor<void> {
 
   @override
   void visitClassDeclaration(ClassDeclaration node) {
-    // Fast-path exit: skip unannotated classes immediately.
-    if (node.metadata.isEmpty) return;
+    // Fast-path exit: skip abstract or unannotated classes immediately.
+    if (node.abstractKeyword != null || node.metadata.isEmpty) return;
 
     final config = extractAnnotationConfig(node);
     if (!config.hasAnyFeature) return;
 
     final fields = extractGeneratableFields(node);
+    if (fields.isEmpty) return;
 
     if (config.copyWith) {
       final method = findMethodDeclaration(node, FeatureMethod.copyWith.name);
