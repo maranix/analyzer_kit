@@ -1,3 +1,12 @@
+## Unreleased
+
+- **Breaking:** Removed `DataClassRule`, `AddDataClassMethods`, and `data_class_annotation` in favor of `CompositeAnnotation` bundles.
+- Registered all 5 rules as warning rules (`registerWarningRule`), so diagnostics are enabled by default without a `diagnostics:` block in `analysis_options.yaml`.
+- Added `AddCompositeMethods` quick fix to generate or update all bundled methods for a `CompositeAnnotation` in one pass.
+- Added support for Dart primary constructors (declaring positional and named parameters, named primary constructors, and empty `;` class bodies).
+- Added out-of-sync field detection across all rules and in-place replacement in all quick fixes when fields are added or changed.
+- Updated SDK constraint to `^3.14.0` and bumped `analyzer`, `analyzer_plugin`, `analysis_server_plugin`, `code_builder`, and `dart_style`.
+
 ## 1.0.0+2
 - Documentation:
     - Minor documentation updates

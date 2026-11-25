@@ -23,19 +23,19 @@ dependencies:
 ```yaml
 # analysis_options.yaml
 plugins:
-  analyzer_kit: 
-    version: ^1.0.0+2
-    diagnostics:
-      data_class_annotation: true
-      copy_with_annotation: true
-      override_equality_annotation: true
-      override_to_string_annotation: true
-      serialize_annotation: true
-      deserialize_annotation: true
+  analyzer_kit: ^1.0.0+2
 ```
 
 ```dart
 import 'package:analyzer_kit_annotation/analyzer_kit_annotation.dart';
+
+const dataClass = CompositeAnnotation([
+  CopyWith(),
+  OverrideEquality(),
+  OverrideToString(),
+  Serialize(),
+  Deserialize(),
+]);
 
 @dataClass
 class User {

@@ -11,42 +11,42 @@ dependencies:
   analyzer_kit_annotation: ^1.0.0+1
 ```
 
-Then enable the plugin in your `analysis_options.yaml`:
+Then enable the plugin in your `analysis_options.yaml` (all rules are enabled by default):
 
 ```yaml
 plugins:
-  analyzer_kit: 
-    version: ^1.0.0+2
-    diagnostics:
-      data_class_annotation: true
-      copy_with_annotation: true
-      override_equality_annotation: true
-      override_to_string_annotation: true
-      serialize_annotation: true
-      deserialize_annotation: true
+  analyzer_kit: ^1.0.0+2
 ```
 
 ## Annotations
 
 | Annotation | Convenience Constant | Generated Code |
 |---|---|---|
-| `@DataClass()` | `@dataClass` | `copyWith`, `==`, `hashCode`, `toString`, `toMap`, `fromMap` |
+| `CompositeAnnotation([...])` | — | Bundles any combination of the annotations below |
 | `@CopyWith()` | `@copyWith` | `copyWith` method |
 | `@OverrideEquality()` | `@overrideEquality` | `==` operator and `hashCode` getter |
 | `@OverrideToString()` | `@overrideToString` | `toString` method |
 | `@Serialize()` | `@serialize` | Serialization method (default: `toMap`) |
 | `@Deserialize()` | `@deserialize` | Deserialization factory (default: `fromMap`) |
 
-Every annotation has a convenience `const` for concise usage (e.g., `@dataClass` is equivalent to `@DataClass()`).
+Each feature annotation has a convenience `const` for concise usage (e.g., `@copyWith` is equivalent to `@CopyWith()`).
 
 ## Usage
 
-### `@DataClass` — All-in-One
+### `CompositeAnnotation` — Reusable Bundles
 
-`@DataClass` is a composite annotation that enables all features by default. Apply it to a class and use the IDE quick fix to generate the missing methods:
+`CompositeAnnotation` lets you group any combination of annotations (including custom configurations) into a reusable `const`:
 
 ```dart
 import 'package:analyzer_kit_annotation/analyzer_kit_annotation.dart';
+
+const dataClass = CompositeAnnotation([
+  CopyWith(),
+  OverrideEquality(),
+  OverrideToString(),
+  Serialize(),
+  Deserialize(),
+]);
 
 @dataClass
 class User {
@@ -55,20 +55,21 @@ class User {
 
   User({required this.name, required this.age});
 
-  // IDE quick fix generates: copyWith, ==, hashCode, toString, toMap, fromMap
+  // IDE quick fix generates: copyWith, toString, hashCode, ==, toMap, fromMap
 }
 ```
 
-You can selectively disable features by passing `false`:
+You can define specialized bundles for different layers of your app:
 
 ```dart
-@DataClass(
-  copyWith: true,
-  overrideEquality: true,
-  overrideToString: true,
-  serialize: false,    // no toMap method
-  deserialize: false,  // no fromMap factory
-)
+const apiModel = CompositeAnnotation([
+  CopyWith(),
+  OverrideEquality(deepCollectionEquality: false),
+  Serialize(name: .toJson()),
+  Deserialize(name: .fromJson()),
+]);
+
+@apiModel
 class Point {
   final double x;
   final double y;
@@ -220,4 +221,4 @@ This package also provides two runtime utility functions used by generated equal
 | `deepHash(Object?)` | Computes a hash using deep recursive collection equality |
 | `deepEquals(Object?, Object?)` | Compares two objects using deep recursive collection equality |
 
-These functions are powered by `DeepCollectionEquality.unordered()` from [package:collection](https://pub.dev/packages/collection) and handle nested collections (`List<List<int>>`, `Map<String, List<int>>`, etc.) correctly.
+These functions are powered by `DeepCollectionEquality()` from [package:collection](https://pub.dev/packages/collection) and handle nested collections (`List<List<int>>`, `Map<String, List<int>>`, etc.) correctly.

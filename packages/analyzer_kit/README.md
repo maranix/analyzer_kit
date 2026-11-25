@@ -1,50 +1,50 @@
 # Dart Analyzer Kit
 
-A Dart Analyzer plugin that provides lint rules and quick fixes for [analyzer_kit_annotation](https://pub.dev/packages/analyzer_kit_annotation) annotations. Apply an annotation to a class, see an error diagnostic, and use the IDE quick fix to generate the boilerplate — no build runners, no code generation steps.
+A Dart Analyzer plugin that provides warning rules and quick fixes for [analyzer_kit_annotation](https://pub.dev/packages/analyzer_kit_annotation) annotations. Apply an annotation to a class, see a diagnostic when methods are missing or out of sync with fields, and use the IDE quick fix to generate or update the boilerplate — no build runners, no code generation steps.
 
 ## Features
 
-| Annotation | Lint Rule | Quick Fix |
+| Annotation | Diagnostic Rule | Quick Fix |
 |---|---|---|
-| `@DataClass` | `data_class_annotation` | Generates all enabled methods in one pass |
-| `@CopyWith` | `copy_with_annotation` | Generates `copyWith` method |
-| `@OverrideEquality` | `override_equality_annotation` | Generates `==` operator and `hashCode` getter |
-| `@OverrideToString` | `override_to_string_annotation` | Generates `toString` override |
-| `@Serialize` | `serialize_annotation` | Generates serialization method (`toMap`, `toJson`, or custom) |
-| `@Deserialize` | `deserialize_annotation` | Generates deserialization factory (`fromMap`, `fromJson`, or custom) |
+| `CompositeAnnotation` | Triggers all bundled rules | `AddCompositeMethods` — generates/updates all bundled methods in one pass |
+| `@CopyWith` | `copy_with_annotation` | Generates or updates `copyWith` method |
+| `@OverrideEquality` | `override_equality_annotation` | Generates or updates `==` operator and `hashCode` getter |
+| `@OverrideToString` | `override_to_string_annotation` | Generates or updates `toString` override |
+| `@Serialize` | `serialize_annotation` | Generates or updates serialization method (`toMap`, `toJson`, or custom) |
+| `@Deserialize` | `deserialize_annotation` | Generates or updates deserialization factory (`fromMap`, `fromJson`, or custom) |
 
 ## Installation
 
-Add annotation package to your `pubspec.yaml`:
+Add the annotation package to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
   analyzer_kit_annotation: ^1.0.0+1
 ```
 
-Enable the plugin and required features in your `analysis_options.yaml`:
+Enable the plugin in your `analysis_options.yaml` (all rules are registered as warning rules and enabled by default):
 
 ```yaml
 plugins:
-  analyzer_kit:
-    version: ^1.0.0+2
-    diagnostics:
-      data_class_annotation: true
-      copy_with_annotation: true
-      override_equality_annotation: true
-      override_to_string_annotation: true
-      serialize_annotation: true
-      deserialize_annotation: true
+  analyzer_kit: ^1.0.0+2
 ```
 
 ## How It Works
 
-1. **Annotate** a class with any supported annotation.
-2. **See the lint** — the analyzer reports an error if the required methods are missing.
-3. **Apply the quick fix** — use your IDE's quick fix action to generate the methods.
+1. **Annotate** a class with any supported annotation or `CompositeAnnotation` bundle.
+2. **See the diagnostic** — the analyzer reports an error if required methods are missing or out of sync with the class's generatable fields.
+3. **Apply the quick fix** — use your IDE's quick fix action to insert missing methods or replace out-of-sync ones in-place.
 
 ```dart
 import 'package:analyzer_kit_annotation/analyzer_kit_annotation.dart';
+
+const dataClass = CompositeAnnotation([
+  CopyWith(),
+  OverrideEquality(),
+  OverrideToString(),
+  Serialize(),
+  Deserialize(),
+]);
 
 @dataClass
 class User {
@@ -53,26 +53,19 @@ class User {
 
   User({required this.name, required this.age});
 
-  // ERROR: Classes annotated with @DataClass must contain the required methods...
-  // Quick Fix → "Add missing DataClass methods"
-  // Generates: copyWith, toString, ==, hashCode, toMap, fromMap
+  // ERROR: Missing or out-of-sync methods for bundled annotations
+  // Quick Fix → "Add missing composite annotation methods"
+  // Generates: copyWith, toString, hashCode, ==, toMap, fromMap
 }
 ```
 
-### Selective `@DataClass`
+### Primary Constructors
 
-Disable individual features by passing `false`:
+Primary constructors (both positional and named parameters, including empty `;` bodies) are supported:
 
 ```dart
-@DataClass(serialize: false, deserialize: false)
-class Point {
-  final double x;
-  final double y;
-
-  Point({required this.x, required this.y});
-
-  // Only generates: copyWith, toString, ==, hashCode
-}
+@dataClass
+final class Point(final int x, final int y);
 ```
 
 ### Custom Serialization Names
@@ -108,13 +101,13 @@ class Inventory {
 
 The plugin is built on the Dart analysis server plugin API:
 
-- **`BaseAnnotationRule`** — Abstract base for all lint rules, handling visitor registration.
-- **`AnnotationRule`** / **`AnnotationVisitor`** — Base classes for rules that detect missing methods on annotated classes.
-- **6 concrete rules** — One per annotation, each defining expected method names.
-- **6 concrete fixes** — One per annotation, each using code generation utilities to produce formatted Dart code.
+- **`BaseAnnotationRule`** — Abstract base for all warning rules, handling visitor registration and reporting on direct or `CompositeAnnotation` metadata.
+- **`AnnotationRule`** / **`AnnotationVisitor`** — Base classes for rules that detect missing or out-of-sync methods on annotated classes.
+- **5 concrete warning rules** — One per feature annotation, each verifying method presence and field synchronization.
+- **6 concrete fixes** — One per feature annotation plus `AddCompositeMethods`, inserting missing methods or replacing out-of-sync ones in-place.
 - **Code generation** — Uses [`code_builder`](https://pub.dev/packages/code_builder) for AST construction and [`dart_style`](https://pub.dev/packages/dart_style) for formatting.
 
 ## Requirements
 
-- Dart SDK `^3.10.4`
-- Depends on `analyzer ^9.0.0`, `analysis_server_plugin ^0.3.4`, `code_builder ^4.11.0`, `dart_style ^3.1.3`
+- Dart SDK `^3.14.0`
+- Depends on `analyzer ^14.7.0`, `analysis_server_plugin ^0.3.26`, `analyzer_plugin ^0.14.20`, `code_builder ^4.13.0`, `dart_style ^3.1.14`
