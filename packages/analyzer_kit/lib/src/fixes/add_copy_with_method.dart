@@ -22,8 +22,7 @@ final class AddCopyWithMethod extends ResolvedCorrectionProducer {
   FixKind? get fixKind => _fix;
 
   @override
-  CorrectionApplicability get applicability =>
-      CorrectionApplicability.automatically;
+  CorrectionApplicability get applicability => .automatically;
 
   @override
   Future<void> compute(ChangeBuilder builder) async {
@@ -37,7 +36,10 @@ final class AddCopyWithMethod extends ResolvedCorrectionProducer {
       await builder.addDartFileEdit(file, (fileEditBuilder) {
         fileEditBuilder.insertMethod(declaration, (editBuilder) {
           editBuilder.write(
-            generateCopyWithMethod(declaration.name.lexeme, fields),
+            generateCopyWithMethod(
+              declaration.namePart.typeName.lexeme,
+              fields,
+            ),
           );
         });
       });

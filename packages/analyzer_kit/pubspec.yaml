@@ -12,7 +12,7 @@ topics:
   - annotation
 
 environment:
-  sdk: ^3.10.4
+  sdk: ^3.14.0
 
 resolution: workspace
 
@@ -23,12 +23,12 @@ plugins:
       fileName: main.dart
 
 dependencies:
-  analysis_server_plugin: ^0.3.10
-  analyzer: ^10.2.0
-  analyzer_plugin: ^0.14.4
-  code_builder: ^4.11.0
-  dart_style: ^3.1.6
+  analysis_server_plugin: ^0.3.26
+  analyzer: ^14.7.0
+  analyzer_plugin: ^0.14.20
+  code_builder: ^4.13.0
+  dart_style: ^3.1.14
 
 dev_dependencies:
   lints: ^6.0.0
-  test: ^1.25.6
+  test: ^1.33.0

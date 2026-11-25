@@ -22,8 +22,7 @@ final class AddDeserializeMethod extends ResolvedCorrectionProducer {
   FixKind? get fixKind => _fix;
 
   @override
-  CorrectionApplicability get applicability =>
-      CorrectionApplicability.automatically;
+  CorrectionApplicability get applicability => .automatically;
 
   @override
   Future<void> compute(ChangeBuilder builder) async {
@@ -43,7 +42,7 @@ final class AddDeserializeMethod extends ResolvedCorrectionProducer {
         fileEditBuilder.insertMethod(declaration, (editBuilder) {
           editBuilder.write(
             generateDeserializeMethod(
-              declaration.name.lexeme,
+              declaration.namePart.typeName.lexeme,
               methodName,
               fields,
             ),

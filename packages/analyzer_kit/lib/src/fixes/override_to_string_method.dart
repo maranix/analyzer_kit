@@ -34,7 +34,10 @@ final class OverrideToStringMethod extends ResolvedCorrectionProducer {
       await builder.addDartFileEdit(file, (fileEditBuilder) {
         fileEditBuilder.insertMethod(declaration, (editBuilder) {
           editBuilder.write(
-            generateToStringMethod(declaration.name.lexeme, fields),
+            generateToStringMethod(
+              declaration.namePart.typeName.lexeme,
+              fields,
+            ),
           );
         });
       });

@@ -39,8 +39,8 @@ void main() {
   });
 
   group('FeatureMethod', () {
-    test('has exactly 8 values', () {
-      expect(FeatureMethod.values.length, 8);
+    test('has exactly 7 values', () {
+      expect(FeatureMethod.values.length, 7);
     });
 
     test('copyWith has name "copyWith"', () {
@@ -65,10 +65,6 @@ void main() {
 
     test('fromMap has name "fromMap"', () {
       expect(FeatureMethod.fromMap.name, 'fromMap');
-    });
-
-    test('fromString has name "fromString"', () {
-      expect(FeatureMethod.fromString.name, 'fromString');
     });
 
     test('toMap has name "toMap"', () {

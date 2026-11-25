@@ -16,41 +16,28 @@ final class _DataClassVisitor extends AnnotationVisitor {
 
   @override
   Iterable<String>? getExpectedMethodNames(ClassDeclaration node) {
+    final config = extractAnnotationConfig(node);
     final expectedMethods = <String>[];
 
-    if (hasFeatureEnabled(node, FeatureAnnotation.copyWith)) {
+    if (config.copyWith) {
       expectedMethods.add(FeatureMethod.copyWith.name);
     }
 
-    if (hasFeatureEnabled(node, FeatureAnnotation.overrideToString)) {
+    if (config.overrideToString) {
       expectedMethods.add(FeatureMethod.overrideToString.name);
     }
 
-    if (hasFeatureEnabled(node, FeatureAnnotation.overrideEquality)) {
+    if (config.overrideEquality) {
       expectedMethods.add(FeatureMethod.overrideEquals.name);
       expectedMethods.add(FeatureMethod.overrideHashCode.name);
     }
 
-    if (hasFeatureEnabled(node, FeatureAnnotation.serialize)) {
-      final methodName = extractFeatureMethodName(
-        node,
-        FeatureAnnotation.serialize,
-        FeatureMethod.toMap.name,
-      );
-      if (methodName != null) {
-        expectedMethods.add(methodName);
-      }
+    if (config.serialize && config.serializeMethodName != null) {
+      expectedMethods.add(config.serializeMethodName!);
     }
 
-    if (hasFeatureEnabled(node, FeatureAnnotation.deserialize)) {
-      final methodName = extractFeatureMethodName(
-        node,
-        FeatureAnnotation.deserialize,
-        FeatureMethod.fromMap.name,
-      );
-      if (methodName != null) {
-        expectedMethods.add(methodName);
-      }
+    if (config.deserialize && config.deserializeMethodName != null) {
+      expectedMethods.add(config.deserializeMethodName!);
     }
 
     return expectedMethods.isEmpty ? null : expectedMethods;

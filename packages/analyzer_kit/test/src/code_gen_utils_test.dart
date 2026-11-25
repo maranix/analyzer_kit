@@ -1,6 +1,5 @@
 import 'package:analyzer_kit/src/types.dart';
 import 'package:analyzer_kit/src/utils/utils.dart';
-import 'package:dart_style/dart_style.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -30,19 +29,14 @@ void main() {
       expect(result, contains('age'));
     });
 
-    test(
-      'throws FormatException for already-nullable type fields (String? becomes String??)',
-      () {
-        const fields = [ClassField(name: 'nickname', type: 'String?')];
+    test('preserves single ? for already-nullable type fields (String? stays String?)', () {
+      const fields = [ClassField(name: 'nickname', type: 'String?')];
 
-        // copyWith wraps every param type with ?, so String? becomes String??
-        // which is invalid Dart syntax and cannot be formatted
-        expect(
-          () => generateCopyWithMethod('User', fields),
-          throwsA(isA<FormatterException>()),
-        );
-      },
-    );
+      final result = generateCopyWithMethod('User', fields);
+
+      expect(result, contains('String? nickname'));
+      expect(result, isNot(contains('String??')));
+    });
 
     test('returns the class type', () {
       const fields = [ClassField(name: 'x', type: 'int')];
@@ -116,21 +110,18 @@ void main() {
       expect(result, contains('@override'));
       expect(result, contains('int'));
       expect(result, contains('hashCode'));
-      expect(result, contains('Object.hashAll'));
+      expect(result, contains('Object.hash'));
       expect(result, contains('name'));
       expect(result, contains('age'));
     });
 
-    test(
-      'uses deepHash for collection fields when deepCollectionEquality is null (default)',
-      () {
-        const fields = [ClassField(name: 'items', type: 'List<int>')];
+    test('uses deepHash for collection fields when deepCollectionEquality is null (default)', () {
+      const fields = [ClassField(name: 'items', type: 'List<int>')];
 
-        final result = generateHashCodeOverride(fields);
+      final result = generateHashCodeOverride(fields);
 
-        expect(result, contains('deepHash(items)'));
-      },
-    );
+      expect(result, contains('deepHash(items)'));
+    });
 
     test(
       'uses deepHash for collection fields when deepCollectionEquality is true',
@@ -146,50 +137,41 @@ void main() {
       },
     );
 
-    test(
-      'uses Object.hashAll for List fields when deepCollectionEquality is false',
-      () {
-        const fields = [ClassField(name: 'items', type: 'List<int>')];
+    test('uses Object.hashAll for List fields when deepCollectionEquality is false', () {
+      const fields = [ClassField(name: 'items', type: 'List<int>')];
 
-        final result = generateHashCodeOverride(
-          fields,
-          deepCollectionEquality: false,
-        );
+      final result = generateHashCodeOverride(
+        fields,
+        deepCollectionEquality: false,
+      );
 
-        expect(result, contains('Object.hashAll(items)'));
-        expect(result, isNot(contains('deepHash')));
-      },
-    );
+      expect(result, contains('Object.hashAll(items)'));
+      expect(result, isNot(contains('deepHash')));
+    });
 
-    test(
-      'uses Object.hashAllUnordered for Set fields when deepCollectionEquality is false',
-      () {
-        const fields = [ClassField(name: 'tags', type: 'Set<String>')];
+    test('uses Object.hashAllUnordered for Set fields when deepCollectionEquality is false', () {
+      const fields = [ClassField(name: 'tags', type: 'Set<String>')];
 
-        final result = generateHashCodeOverride(
-          fields,
-          deepCollectionEquality: false,
-        );
+      final result = generateHashCodeOverride(
+        fields,
+        deepCollectionEquality: false,
+      );
 
-        expect(result, contains('Object.hashAllUnordered(tags)'));
-      },
-    );
+      expect(result, contains('Object.hashAllUnordered(tags)'));
+    });
 
-    test(
-      'uses Object.hashAllUnordered with entries for Map fields when deep is false',
-      () {
-        const fields = [ClassField(name: 'meta', type: 'Map<String, int>')];
+    test('uses Object.hashAllUnordered with entries for Map fields when deep is false', () {
+      const fields = [ClassField(name: 'meta', type: 'Map<String, int>')];
 
-        final result = generateHashCodeOverride(
-          fields,
-          deepCollectionEquality: false,
-        );
+      final result = generateHashCodeOverride(
+        fields,
+        deepCollectionEquality: false,
+      );
 
-        expect(result, contains('Object.hashAllUnordered'));
-        expect(result, contains('meta'));
-        expect(result, contains('entries'));
-      },
-    );
+      expect(result, contains('Object.hashAllUnordered'));
+      expect(result, contains('meta'));
+      expect(result, contains('entries'));
+    });
 
     test('handles nullable List with deep=false', () {
       const fields = [ClassField(name: 'items', type: 'List<int>?')];
@@ -281,31 +263,25 @@ void main() {
       expect(result, contains('other is Empty'));
     });
 
-    test(
-      'uses deepEquals for collection fields when deepCollectionEquality is null',
-      () {
-        const fields = [ClassField(name: 'items', type: 'List<int>')];
+    test('uses deepEquals for collection fields when deepCollectionEquality is null', () {
+      const fields = [ClassField(name: 'items', type: 'List<int>')];
 
-        final result = generateEqualityOperatorOverride('ListHolder', fields);
+      final result = generateEqualityOperatorOverride('ListHolder', fields);
 
-        expect(result, contains('deepEquals(other.items, items)'));
-      },
-    );
+      expect(result, contains('deepEquals(other.items, items)'));
+    });
 
-    test(
-      'uses deepEquals for collection fields when deepCollectionEquality is true',
-      () {
-        const fields = [ClassField(name: 'items', type: 'List<int>')];
+    test('uses deepEquals for collection fields when deepCollectionEquality is true', () {
+      const fields = [ClassField(name: 'items', type: 'List<int>')];
 
-        final result = generateEqualityOperatorOverride(
-          'ListHolder',
-          fields,
-          deepCollectionEquality: true,
-        );
+      final result = generateEqualityOperatorOverride(
+        'ListHolder',
+        fields,
+        deepCollectionEquality: true,
+      );
 
-        expect(result, contains('deepEquals(other.items, items)'));
-      },
-    );
+      expect(result, contains('deepEquals(other.items, items)'));
+    });
 
     test('uses element-wise comparison for List when deep is false', () {
       const fields = [ClassField(name: 'items', type: 'List<int>')];
@@ -317,7 +293,7 @@ void main() {
       );
 
       expect(result, contains('other.items.length == items.length'));
-      expect(result, contains('items.indexed.every'));
+      expect(result, contains('other.items[i] != items[i]'));
       expect(result, isNot(contains('deepEquals')));
     });
 

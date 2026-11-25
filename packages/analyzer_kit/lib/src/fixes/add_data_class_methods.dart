@@ -22,152 +22,90 @@ final class AddDataClassMethods extends ResolvedCorrectionProducer {
   FixKind? get fixKind => _fix;
 
   @override
-  CorrectionApplicability get applicability =>
-      CorrectionApplicability.automatically;
+  CorrectionApplicability get applicability => .automatically;
 
   @override
   Future<void> compute(ChangeBuilder builder) async {
     final declaration = node.thisOrAncestorOfType<ClassDeclaration>();
     if (declaration == null) return;
 
-    if (hasFeatureEnabled(declaration, FeatureAnnotation.dataClass)) {
-      final fields = extractGeneratableFields(declaration);
-      if (fields.isEmpty) return;
+    final config = extractAnnotationConfig(declaration);
+    if (!config.hasDataClass) return;
 
-      final members = declaration.members;
+    final fields = extractGeneratableFields(declaration);
+    if (fields.isEmpty) return;
 
-      final hasCopyWith = members.any(
-        (m) =>
-            m is MethodDeclaration &&
-            m.name.lexeme == FeatureMethod.copyWith.name,
-      );
-      final hasToString = members.any(
-        (m) =>
-            m is MethodDeclaration &&
-            m.name.lexeme == FeatureMethod.overrideToString.name,
-      );
-      final hasHashCode = members.any(
-        (m) =>
-            m is MethodDeclaration &&
-            m.name.lexeme == FeatureMethod.overrideHashCode.name,
-      );
-      final hasEquals = members.any(
-        (m) =>
-            m is MethodDeclaration &&
-            m.name.lexeme == FeatureMethod.overrideEquals.name,
-      );
-
-      final toMapName = extractFeatureMethodName(
-        declaration,
-        FeatureAnnotation.serialize,
-        FeatureMethod.toMap.name,
-      );
-      final hasSerialize =
-          toMapName != null &&
-          members.any(
-            (m) => m is MethodDeclaration && m.name.lexeme == toMapName,
-          );
-
-      final fromMapName = extractFeatureMethodName(
-        declaration,
-        FeatureAnnotation.deserialize,
-        FeatureMethod.fromMap.name,
-      );
-      final hasDeserialize =
-          fromMapName != null &&
-          members.any(
-            (m) =>
-                m is ConstructorDeclaration && m.name?.lexeme == fromMapName ||
-                m is MethodDeclaration && m.name.lexeme == fromMapName,
-          );
-
-      await builder.addDartFileEdit(file, (fileEditBuilder) {
-        fileEditBuilder.insertMethod(declaration, (editBuilder) {
-          if (hasFeatureEnabled(declaration, FeatureAnnotation.copyWith) &&
-              !hasCopyWith) {
-            editBuilder.writeln(
-              generateCopyWithMethod(declaration.name.lexeme, fields),
-            );
-          }
-
-          if (hasFeatureEnabled(
-                declaration,
-                FeatureAnnotation.overrideToString,
-              ) &&
-              !hasToString) {
-            editBuilder.writeln(
-              generateToStringMethod(declaration.name.lexeme, fields),
-            );
-          }
-
-          if (hasFeatureEnabled(
-            declaration,
-            FeatureAnnotation.overrideEquality,
-          )) {
-            bool? deepCollectionEquality;
-
-            for (final annotation in declaration.metadata) {
-              final name = annotation.name.name;
-              if (stringEqualsIgnoreCaseByAscii(
-                name,
-                FeatureAnnotation.dataClass.name,
-              )) {
-                final arguments = annotation.arguments?.arguments;
-                if (arguments != null) {
-                  for (final arg in arguments) {
-                    if (arg is NamedExpression &&
-                        arg.name.label.name == 'deepCollectionEquality') {
-                      final expression = arg.expression;
-                      if (expression is BooleanLiteral) {
-                        deepCollectionEquality = expression.value;
-                      }
-                    }
-                  }
-                }
-              }
-            }
-
-            if (!hasHashCode) {
-              editBuilder.writeln(
-                generateHashCodeOverride(
-                  fields,
-                  deepCollectionEquality: deepCollectionEquality,
-                ),
-              );
-            }
-
-            if (!hasEquals) {
-              editBuilder.writeln(
-                generateEqualityOperatorOverride(
-                  declaration.name.lexeme,
-                  fields,
-                  deepCollectionEquality: deepCollectionEquality,
-                ),
-              );
-            }
-          }
-
-          if (hasFeatureEnabled(declaration, FeatureAnnotation.serialize) &&
-              !hasSerialize) {
-            if (toMapName != null) {
-              editBuilder.writeln(generateSerializeMethod(toMapName, fields));
-            }
-          }
-
-          if (hasFeatureEnabled(declaration, FeatureAnnotation.deserialize) &&
-              !hasDeserialize) {
-            if (fromMapName != null) {
-              editBuilder.writeln(
-                generateDeserializeMethod(
-                  declaration.name.lexeme,
-                  fromMapName,
-                  fields,
-                ),
-              );
-            }
-          }
-        });
-      });
+    final existingMembers = <String>{};
+    for (final member in declaration.body.members) {
+      if (member is MethodDeclaration) {
+        existingMembers.add(member.name.lexeme);
+      } else if (member is ConstructorDeclaration) {
+        final name = member.name?.lexeme;
+        if (name != null) existingMembers.add(name);
+      }
     }
+
+    final className = declaration.namePart.typeName.lexeme;
+    final hasCopyWith = existingMembers.contains(FeatureMethod.copyWith.name);
+    final hasToString = existingMembers.contains(
+      FeatureMethod.overrideToString.name,
+    );
+    final hasHashCode = existingMembers.contains(
+      FeatureMethod.overrideHashCode.name,
+    );
+    final hasEquals = existingMembers.contains(
+      FeatureMethod.overrideEquals.name,
+    );
+
+    final toMapName = config.serializeMethodName;
+    final hasSerialize =
+        toMapName != null && existingMembers.contains(toMapName);
+
+    final fromMapName = config.deserializeMethodName;
+    final hasDeserialize =
+        fromMapName != null && existingMembers.contains(fromMapName);
+
+    await builder.addDartFileEdit(file, (fileEditBuilder) {
+      fileEditBuilder.insertMethod(declaration, (editBuilder) {
+        if (config.copyWith && !hasCopyWith) {
+          editBuilder.writeln(generateCopyWithMethod(className, fields));
+        }
+
+        if (config.overrideToString && !hasToString) {
+          editBuilder.writeln(generateToStringMethod(className, fields));
+        }
+
+        if (config.overrideEquality) {
+          if (!hasHashCode) {
+            editBuilder.writeln(
+              generateHashCodeOverride(
+                fields,
+                deepCollectionEquality: config.deepCollectionEquality,
+              ),
+            );
+          }
+
+          if (!hasEquals) {
+            editBuilder.writeln(
+              generateEqualityOperatorOverride(
+                className,
+                fields,
+                deepCollectionEquality: config.deepCollectionEquality,
+              ),
+            );
+          }
+        }
+
+        if (config.serialize && !hasSerialize && toMapName != null) {
+          editBuilder.writeln(generateSerializeMethod(toMapName, fields));
+        }
+
+        if (config.deserialize && !hasDeserialize && fromMapName != null) {
+          editBuilder.writeln(
+            generateDeserializeMethod(className, fromMapName, fields),
+          );
+        }
+      });
+    });
   }
 }

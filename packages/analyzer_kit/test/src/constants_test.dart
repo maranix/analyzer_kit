@@ -6,7 +6,7 @@ void main() {
   group('LintCodes', () {
     group('dataClass', () {
       test('has correct name', () {
-        expect(LintCodes.dataClass.name, 'data_class_annotation');
+        expect(LintCodes.dataClass.lowerCaseName, 'data_class_annotation');
       });
 
       test('has correct problem message', () {
@@ -29,7 +29,7 @@ void main() {
 
     group('copyWith', () {
       test('has correct name', () {
-        expect(LintCodes.copyWith.name, 'copy_with_annotation');
+        expect(LintCodes.copyWith.lowerCaseName, 'copy_with_annotation');
       });
 
       test('has correct problem message', () {
@@ -52,7 +52,10 @@ void main() {
 
     group('overrideEquality', () {
       test('has correct name', () {
-        expect(LintCodes.overrideEquality.name, 'override_equality_annotation');
+        expect(
+          LintCodes.overrideEquality.lowerCaseName,
+          'override_equality_annotation',
+        );
       });
 
       test('has correct problem message', () {
@@ -75,7 +78,7 @@ void main() {
     group('overrideToString', () {
       test('has correct name', () {
         expect(
-          LintCodes.overrideToString.name,
+          LintCodes.overrideToString.lowerCaseName,
           'override_to_string_annotation',
         );
       });
@@ -99,7 +102,7 @@ void main() {
 
     group('serialize', () {
       test('has correct name', () {
-        expect(LintCodes.serialize.name, 'serialize_annotation');
+        expect(LintCodes.serialize.lowerCaseName, 'serialize_annotation');
       });
 
       test('has correct problem message', () {
@@ -118,7 +121,7 @@ void main() {
 
     group('deserialize', () {
       test('has correct name', () {
-        expect(LintCodes.deserialize.name, 'deserialize_annotation');
+        expect(LintCodes.deserialize.lowerCaseName, 'deserialize_annotation');
       });
 
       test('has correct problem message', () {
@@ -137,12 +140,12 @@ void main() {
 
     test('all codes have unique names', () {
       final names = [
-        LintCodes.dataClass.name,
-        LintCodes.copyWith.name,
-        LintCodes.overrideEquality.name,
-        LintCodes.overrideToString.name,
-        LintCodes.serialize.name,
-        LintCodes.deserialize.name,
+        LintCodes.dataClass.lowerCaseName,
+        LintCodes.copyWith.lowerCaseName,
+        LintCodes.overrideEquality.lowerCaseName,
+        LintCodes.overrideToString.lowerCaseName,
+        LintCodes.serialize.lowerCaseName,
+        LintCodes.deserialize.lowerCaseName,
       ];
       expect(names.toSet().length, names.length);
     });

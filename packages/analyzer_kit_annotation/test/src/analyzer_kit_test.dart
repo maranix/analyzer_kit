@@ -194,10 +194,8 @@ void main() {
       });
 
       test('list order matters for equality', () {
-        // DeepCollectionEquality.unordered treats lists as unordered
-        // This test documents the actual behavior
         final result = deepEquals([1, 2, 3], [3, 2, 1]);
-        expect(result, isTrue); // unordered equality
+        expect(result, isFalse);
       });
 
       test('nested equal lists are equal', () {

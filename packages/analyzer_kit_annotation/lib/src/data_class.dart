@@ -1,4 +1,4 @@
-/// Marks a class for `copyWith`, `==`, `hashCode` and `toString` generation.
+/// Marks a class for `copyWith`, `==`, `hashCode`, `toString`, `toMap`, and `fromMap` generation.
 ///
 /// Use as `@DataClass()` or `@dataClass` on a class declaration.
 final class DataClass {
@@ -12,6 +12,7 @@ final class DataClass {
     this.overrideToString = true,
     this.serialize = true,
     this.deserialize = true,
+    this.deepCollectionEquality,
   });
 
   /// Whether to generate the `copyWith` method. Defaults to `true`.
@@ -28,6 +29,13 @@ final class DataClass {
 
   /// Whether to generate the deserialization factory/method. Defaults to `true`.
   final bool deserialize;
+
+  /// Whether to use deep recursive equality for collections in this class.
+  ///
+  /// When `null` or `true`, generated equality/hashCode methods use
+  /// `deepEquals` and `deepHash`. When `false`, shallow collection equality is
+  /// generated instead.
+  final bool? deepCollectionEquality;
 }
 
 /// Convenience constant for `@DataClass()`.

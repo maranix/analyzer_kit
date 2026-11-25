@@ -23,7 +23,6 @@ enum FeatureMethod {
   overrideEquals('=='),
   operatorEquals('operator =='),
   fromMap('fromMap'),
-  fromString('fromString'),
   toMap('toMap');
 
   const FeatureMethod(this.name);
