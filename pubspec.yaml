@@ -1,7 +1,7 @@
 name: analyzer_kit_workspace
 
 environment:
-  sdk: ^3.10.4
+  sdk: ^3.14.0
 
 workspace:
   - packages/analyzer_kit

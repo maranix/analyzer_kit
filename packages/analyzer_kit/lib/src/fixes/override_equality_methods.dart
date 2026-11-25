@@ -46,9 +46,9 @@ final class OverrideEqualityMethods extends ResolvedCorrectionProducer {
           final arguments = annotation.arguments?.arguments;
           if (arguments != null) {
             for (final arg in arguments) {
-              if (arg is NamedExpression &&
-                  arg.name.label.name == 'deepCollectionEquality') {
-                final expression = arg.expression;
+              if (arg is NamedArgument &&
+                  arg.name.lexeme == 'deepCollectionEquality') {
+                final expression = arg.argumentExpression;
                 if (expression is BooleanLiteral) {
                   deepCollectionEquality = expression.value;
                 }
@@ -58,12 +58,12 @@ final class OverrideEqualityMethods extends ResolvedCorrectionProducer {
         }
       }
 
-      final hasHashCodeOverride = declaration.members.any(
+      final hasHashCodeOverride = declaration.body.members.any(
         (m) =>
             m is MethodDeclaration &&
             m.name.lexeme == FeatureMethod.overrideHashCode.name,
       );
-      final hasEqualityOperatorOverride = declaration.members.any(
+      final hasEqualityOperatorOverride = declaration.body.members.any(
         (m) =>
             m is MethodDeclaration &&
             m.name.lexeme == FeatureMethod.operatorEquals.name,
@@ -86,7 +86,7 @@ final class OverrideEqualityMethods extends ResolvedCorrectionProducer {
           if (!hasEqualityOperatorOverride) {
             editBuilder.writeln(
               generateEqualityOperatorOverride(
-                declaration.name.lexeme,
+                declaration.namePart.typeName.lexeme,
                 fields,
                 deepCollectionEquality: deepCollectionEquality,
               ),

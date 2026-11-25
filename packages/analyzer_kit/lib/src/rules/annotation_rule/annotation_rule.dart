@@ -57,7 +57,7 @@ abstract base class AnnotationVisitor extends BaseAnnotationVisitor {
     final methods = getExpectedMethodNames(node);
     if (methods == null || methods.isEmpty) return;
 
-    final success = reduceExpectedMethods(node.members, methods);
+    final success = reduceExpectedMethods(node.body.members, methods);
 
     if (!success) {
       reportError(node);

@@ -2,7 +2,7 @@ import 'package:analyzer/dart/ast/ast.dart'
     show
         ClassDeclaration,
         FieldDeclaration,
-        NamedExpression,
+        NamedArgument,
         BooleanLiteral,
         Annotation,
         NodeList;
@@ -17,7 +17,7 @@ part 'string_utils.dart';
 
 /// Extracts generatable fields from a [ClassDeclaration].
 Iterable<ClassField> extractGeneratableFields(ClassDeclaration declaration) {
-  return declaration.members
+  return declaration.body.members
       .map(
         (m) =>
             m is FieldDeclaration ? ClassField.fromFieldDeclaration(m) : null,
@@ -51,9 +51,9 @@ bool hasFeatureEnabled(ClassDeclaration node, FeatureAnnotation feature) {
       // Look for the specific argument corresponding to the feature
       // The argument name uses camelCase matching the enum name (e.g., 'copyWith')
       for (final arg in arguments) {
-        if (arg is NamedExpression &&
-            stringEqualsIgnoreCaseByAscii(arg.name.label.name, feature.name)) {
-          final expression = arg.expression;
+        if (arg is NamedArgument &&
+            stringEqualsIgnoreCaseByAscii(arg.name.lexeme, feature.name)) {
+          final expression = arg.argumentExpression;
           if (expression is BooleanLiteral) {
             return expression.value;
           }
@@ -93,8 +93,8 @@ String? extractFeatureMethodName(
 
       // Extract custom configuration e.g., @Serialize(name: .custom('xyz'))
       for (final arg in arguments) {
-        if (arg is NamedExpression && arg.name.label.name == 'name') {
-          final expression = arg.expression;
+        if (arg is NamedArgument && arg.name.lexeme == 'name') {
+          final expression = arg.argumentExpression;
           // Assuming a simple method invocation or custom string. Extract the method literal.
           final source = expression.toSource();
           // .toMap() -> toMap

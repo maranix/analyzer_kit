@@ -34,7 +34,7 @@ final class AddDataClassMethods extends ResolvedCorrectionProducer {
       final fields = extractGeneratableFields(declaration);
       if (fields.isEmpty) return;
 
-      final members = declaration.members;
+      final members = declaration.body.members;
 
       final hasCopyWith = members.any(
         (m) =>
@@ -86,7 +86,7 @@ final class AddDataClassMethods extends ResolvedCorrectionProducer {
           if (hasFeatureEnabled(declaration, FeatureAnnotation.copyWith) &&
               !hasCopyWith) {
             editBuilder.writeln(
-              generateCopyWithMethod(declaration.name.lexeme, fields),
+              generateCopyWithMethod(declaration.namePart.typeName.lexeme, fields),
             );
           }
 
@@ -96,7 +96,7 @@ final class AddDataClassMethods extends ResolvedCorrectionProducer {
               ) &&
               !hasToString) {
             editBuilder.writeln(
-              generateToStringMethod(declaration.name.lexeme, fields),
+              generateToStringMethod(declaration.namePart.typeName.lexeme, fields),
             );
           }
 
@@ -115,9 +115,9 @@ final class AddDataClassMethods extends ResolvedCorrectionProducer {
                 final arguments = annotation.arguments?.arguments;
                 if (arguments != null) {
                   for (final arg in arguments) {
-                    if (arg is NamedExpression &&
-                        arg.name.label.name == 'deepCollectionEquality') {
-                      final expression = arg.expression;
+                    if (arg is NamedArgument &&
+                        arg.name.lexeme == 'deepCollectionEquality') {
+                      final expression = arg.argumentExpression;
                       if (expression is BooleanLiteral) {
                         deepCollectionEquality = expression.value;
                       }
@@ -139,7 +139,7 @@ final class AddDataClassMethods extends ResolvedCorrectionProducer {
             if (!hasEquals) {
               editBuilder.writeln(
                 generateEqualityOperatorOverride(
-                  declaration.name.lexeme,
+                  declaration.namePart.typeName.lexeme,
                   fields,
                   deepCollectionEquality: deepCollectionEquality,
                 ),
@@ -159,7 +159,7 @@ final class AddDataClassMethods extends ResolvedCorrectionProducer {
             if (fromMapName != null) {
               editBuilder.writeln(
                 generateDeserializeMethod(
-                  declaration.name.lexeme,
+                  declaration.namePart.typeName.lexeme,
                   fromMapName,
                   fields,
                 ),
